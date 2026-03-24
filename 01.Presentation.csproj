@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>expense_tracker_backend</RootNamespace>
+    <UserSecretsId>d16fb0b4-8d34-4ba2-b74b-a8733d893db8</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerfileContext>.</DockerfileContext>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="02.Application\**" />
+    <Compile Remove="03.Domain\**" />
+    <Compile Remove="04.Infrastructure\**" />
+    <Compile Remove="Infrastructure\**" />
+    <Content Remove="02.Application\**" />
+    <Content Remove="03.Domain\**" />
+    <Content Remove="04.Infrastructure\**" />
+    <Content Remove="Infrastructure\**" />
+    <EmbeddedResource Remove="02.Application\**" />
+    <EmbeddedResource Remove="03.Domain\**" />
+    <EmbeddedResource Remove="04.Infrastructure\**" />
+    <EmbeddedResource Remove="Infrastructure\**" />
+    <None Remove="02.Application\**" />
+    <None Remove="03.Domain\**" />
+    <None Remove="04.Infrastructure\**" />
+    <None Remove="Infrastructure\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="02.Application\02.Application.csproj" />
+    <ProjectReference Include="04.Infrastructure\04.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
