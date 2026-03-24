@@ -1,4 +1,8 @@
-namespace expense_tracker_backend.Infrastructure.Resources
+using Microsoft.Extensions.Localization;
+
+[assembly: RootNamespace("_04.Infrastructure")]
+
+namespace _04.Infrastructure
 {
     /// <summary>
     /// Marker class for infrastructure layer localization resources.

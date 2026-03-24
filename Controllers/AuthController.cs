@@ -1,7 +1,6 @@
 using expense_tracker_backend.Domain.Entities;
 using expense_tracker_backend.Infrastructure.AWS.Cognito.Interfaces;
 using expense_tracker_backend.Infrastructure.AWS.Cognito.Models;
-using expense_tracker_backend.Resources;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;

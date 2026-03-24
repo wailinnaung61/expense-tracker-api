@@ -7,7 +7,7 @@ using expense_tracker_backend.Domain.Shared.Helpers;
 using expense_tracker_backend.Infrastructure.AWS.Cognito.Interfaces;
 using expense_tracker_backend.Infrastructure.AWS.Cognito.Models;
 using expense_tracker_backend.Infrastructure.AWS.Configuration;
-using expense_tracker_backend.Infrastructure.Resources;
+using _04.Infrastructure;
 using expense_tracker_backend.Infrastructure.Services;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
@@ -559,6 +559,9 @@ public class CognitoAuthService : ICognitoAuthService
 
             _logger.LogInformation("MFA verification successful for: {Username}", request.Username);
 
+            var subId = ExtractSubIdFromToken(response.AuthenticationResult.IdToken);
+            await _memberRepository.UpdateLastLoginAsync(subId, DateTime.UtcNow);
+
             return new UserSignInResponse(
                 response.AuthenticationResult.AccessToken,
                 response.AuthenticationResult.IdToken,
@@ -1075,7 +1078,10 @@ public class CognitoAuthService : ICognitoAuthService
         var existingProfile = await _memberRepository.GetProfileByUserIdAsync(userId);
 
         if (existingProfile != null)
+        {
+            await _memberRepository.UpdateLastLoginAsync(userId, DateTime.UtcNow);
             return;
+        }
 
         var profile = CreateMemberProfile(userName, email, userId);
         await _memberRepository.CreateProfileAsync(profile);

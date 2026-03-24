@@ -16,11 +16,14 @@ public class CurrentUserService
         _user?.Identity?.IsAuthenticated == true;
 
     public string? UserId =>
-        _user?.FindFirst("sub")?.Value;
+        _user?.FindFirst("sub")?.Value
+        ?? _user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
     public string? Email =>
-        _user?.FindFirst("email")?.Value;
+        _user?.FindFirst("email")?.Value
+        ?? _user?.FindFirst(ClaimTypes.Email)?.Value;
 
     public string? UserName =>
-        _user?.FindFirst("username")?.Value;
+        _user?.FindFirst("username")?.Value
+        ?? _user?.FindFirst(ClaimTypes.Name)?.Value;
 }
