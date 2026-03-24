@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -15,18 +15,22 @@
     <Compile Remove="03.Domain\**" />
     <Compile Remove="04.Infrastructure\**" />
     <Compile Remove="Infrastructure\**" />
+    <Compile Remove="logs\**" />
     <Content Remove="02.Application\**" />
     <Content Remove="03.Domain\**" />
     <Content Remove="04.Infrastructure\**" />
     <Content Remove="Infrastructure\**" />
+    <Content Remove="logs\**" />
     <EmbeddedResource Remove="02.Application\**" />
     <EmbeddedResource Remove="03.Domain\**" />
     <EmbeddedResource Remove="04.Infrastructure\**" />
     <EmbeddedResource Remove="Infrastructure\**" />
+    <EmbeddedResource Remove="logs\**" />
     <None Remove="02.Application\**" />
     <None Remove="03.Domain\**" />
     <None Remove="04.Infrastructure\**" />
     <None Remove="Infrastructure\**" />
+    <None Remove="logs\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,10 +44,6 @@
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Controllers\" />
   </ItemGroup>
 
   <ItemGroup>
