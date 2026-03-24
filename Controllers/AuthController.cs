@@ -1,8 +1,10 @@
 using expense_tracker_backend.Domain.Entities;
 using expense_tracker_backend.Infrastructure.AWS.Cognito.Interfaces;
 using expense_tracker_backend.Infrastructure.AWS.Cognito.Models;
+using expense_tracker_backend.Resources;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace expense_tracker_backend.API.Controllers;
 
@@ -12,13 +14,16 @@ public class AuthController : BaseController
 {
     private readonly ICognitoAuthService _authService;
     private readonly ILogger<AuthController> _logger;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
     public AuthController(
         ICognitoAuthService authService,
-        ILogger<AuthController> logger)
+        ILogger<AuthController> logger,
+        IStringLocalizer<SharedResource> localizer)
     {
         _authService = authService;
         _logger = logger;
+        _localizer = localizer;
     }
 
     [HttpPost("signup")]
@@ -49,8 +54,8 @@ public class AuthController : BaseController
         {
             var result = await _authService.ResendConfirmationCodeAsync(request.Username);
             return result 
-                ? SuccessResponse("If the account exists, a confirmation code has been sent.") 
-                : ErrorResponse("Unable to resend confirmation code. Please try again later.");
+                ? SuccessResponse(_localizer["ConfirmationCodeSent"]) 
+                : ErrorResponse(_localizer["UnableToResendConfirmationCode"]);
         }
         catch (InvalidOperationException ex)
         {
@@ -69,8 +74,8 @@ public class AuthController : BaseController
         {
             var result = await _authService.ConfirmSignUpAsync(request);
             return result
-                ? SuccessResponse("Account confirmed successfully. You can now sign in.")
-                : ErrorResponse("Account confirmation failed. Please try again.");
+                ? SuccessResponse(_localizer["AccountConfirmedSuccessfully"])
+                : ErrorResponse(_localizer["AccountConfirmationFailed"]);
         }
         catch (InvalidOperationException ex)
         {
@@ -127,7 +132,7 @@ public class AuthController : BaseController
         _logger.LogInformation("ForgotPassword request for: {UsernameOrEmail}", request.UsernameOrEmail);
 
         await _authService.ForgotPasswordAsync(request);
-        return SuccessResponse("If the account exists, a password reset code has been sent to the email");
+        return SuccessResponse(_localizer["PasswordResetCodeSent"]);
     }
 
     /// <summary>
@@ -142,7 +147,7 @@ public class AuthController : BaseController
         try
         {
             await _authService.ResetPasswordAsync(request);
-            return SuccessResponse("Password reset successfully");
+            return SuccessResponse(_localizer["PasswordResetSuccessfully"]);
         }
         catch (InvalidOperationException ex)
         {
@@ -160,7 +165,7 @@ public class AuthController : BaseController
         try
         {
             await _authService.ChangePasswordAsync(GetAccessToken(), request);
-            return SuccessResponse("Password changed successfully");
+            return SuccessResponse(_localizer["PasswordChangedSuccessfully"]);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -178,7 +183,7 @@ public class AuthController : BaseController
         try
         {
             await _authService.SignOutAsync(GetAccessToken());
-            return SuccessResponse("Signed out successfully");
+            return SuccessResponse(_localizer["SignedOutSuccessfully"]);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -192,7 +197,7 @@ public class AuthController : BaseController
     {
         var user = await _authService.GetUserAsync();
         if (user is null)
-            return Unauthorized(new { message = "Invalid token" });
+            return Unauthorized(new { message = _localizer["InvalidToken"].Value });
 
         return Ok(user);
     }
@@ -216,7 +221,7 @@ public class AuthController : BaseController
         catch (Exception ex)
         {
             _logger.LogError(ex, "Update profile failed");
-            return ErrorResponse("Unable to update profile");
+            return ErrorResponse(_localizer["UnableToUpdateProfile"]);
         }
     }
 
@@ -228,8 +233,8 @@ public class AuthController : BaseController
         {
             var result = await _authService.ResendEmailVerificationAsync(GetAccessToken());
             return result 
-                ? SuccessResponse("If the account exists, an email verification has been (re)sent.") 
-                : ErrorResponse("Unable to resend verification email. Please try again later.");
+                ? SuccessResponse(_localizer["EmailVerificationSent"]) 
+                : ErrorResponse(_localizer["UnableToResendVerificationEmail"]);
         }
         catch (InvalidOperationException ex)
         {
@@ -246,8 +251,8 @@ public class AuthController : BaseController
         {
             var result = await _authService.ConfirmEmailChangeAsync(GetAccessToken(), request.ConfirmationCode);
             return result 
-                ? SuccessResponse("Email confirmed and updated.") 
-                : ErrorResponse("Unable to confirm email. Please try again.");
+                ? SuccessResponse(_localizer["EmailConfirmedAndUpdated"]) 
+                : ErrorResponse(_localizer["UnableToConfirmEmail"]);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -333,7 +338,7 @@ public class AuthController : BaseController
         try
         {
             await _authService.DisableMfaAsync(GetAccessToken());
-            return SuccessResponse("MFA disabled successfully");
+            return SuccessResponse(_localizer["MfaDisabledSuccessfully"]);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -354,8 +359,8 @@ public class AuthController : BaseController
         {
             var result = await _authService.DisableMfaWithBackupCodeAsync(request);
             return result
-                ? Ok(new { success = true, message = "MFA disabled successfully. You can now sign in without MFA." })
-                : BadRequest(new { success = false, message = "Unable to disable MFA. Please try again." });
+                ? Ok(new { success = true, message = _localizer["MfaDisabledCanSignIn"].Value })
+                : BadRequest(new { success = false, message = _localizer["UnableToDisableMfa"].Value });
         }
         catch (InvalidOperationException ex)
         {
@@ -395,7 +400,7 @@ public class AuthController : BaseController
     {
         if (string.IsNullOrEmpty(redirectUri))
         {
-            return BadRequest(new { message = "redirectUri is required" });
+            return BadRequest(new { message = _localizer["RedirectUriRequired"].Value });
         }
 
         var response = await _authService.GetGoogleSignInUrlAsync(redirectUri);

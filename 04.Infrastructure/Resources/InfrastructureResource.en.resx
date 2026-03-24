@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="0" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <!-- General -->
+  <data name="TooManyRequests" xml:space="preserve">
+    <value>Too many requests. Please try again later.</value>
+  </data>
+  <data name="AuthenticationServiceError" xml:space="preserve">
+    <value>Authentication service error</value>
+  </data>
+  <data name="AuthenticationFailed" xml:space="preserve">
+    <value>Authentication failed</value>
+  </data>
+  <data name="InvalidAccessToken" xml:space="preserve">
+    <value>Invalid access token</value>
+  </data>
+  <data name="TooManyAttempts" xml:space="preserve">
+    <value>Too many attempts. Please try again later.</value>
+  </data>
+  <!-- Sign Up -->
+  <data name="UserRegisteredSuccessfully" xml:space="preserve">
+    <value>User registered successfully</value>
+  </data>
+  <data name="CheckEmailForConfirmationCode" xml:space="preserve">
+    <value>Please check your email for confirmation code</value>
+  </data>
+  <data name="UsernameAlreadyExists" xml:space="preserve">
+    <value>Username already exists</value>
+  </data>
+  <data name="PasswordDoesNotMeetRequirements" xml:space="preserve">
+    <value>Password does not meet security requirements</value>
+  </data>
+  <data name="InvalidSignUpData" xml:space="preserve">
+    <value>Invalid sign up data</value>
+  </data>
+  <data name="UnableToSendConfirmationEmail" xml:space="preserve">
+    <value>Unable to send confirmation email. Please try again later.</value>
+  </data>
+  <data name="SignUpLimitExceeded" xml:space="preserve">
+    <value>Sign up limit exceeded. Please try again later.</value>
+  </data>
+  <data name="SignUpNotAuthorized" xml:space="preserve">
+    <value>Sign up is not authorized. Please contact support.</value>
+  </data>
+  <data name="AuthenticationServiceErrorRetry" xml:space="preserve">
+    <value>Authentication service error. Please try again later.</value>
+  </data>
+  <data name="UnexpectedSignUpError" xml:space="preserve">
+    <value>Unexpected error occurred during sign up.</value>
+  </data>
+  <!-- Confirmation -->
+  <data name="InvalidConfirmationCode" xml:space="preserve">
+    <value>Invalid confirmation code</value>
+  </data>
+  <data name="ConfirmationCodeExpired" xml:space="preserve">
+    <value>Confirmation code has expired</value>
+  </data>
+  <!-- Sign In -->
+  <data name="PleaseConfirmAccount" xml:space="preserve">
+    <value>Please confirm your account before signing in</value>
+  </data>
+  <data name="PasswordResetRequired" xml:space="preserve">
+    <value>Password reset required</value>
+  </data>
+  <data name="InvalidCredentials" xml:space="preserve">
+    <value>Invalid username/email or password</value>
+  </data>
+  <!-- Refresh Token -->
+  <data name="RefreshTokenFailed" xml:space="preserve">
+    <value>Refresh token authentication failed</value>
+  </data>
+  <data name="InvalidOrExpiredRefreshToken" xml:space="preserve">
+    <value>Invalid or expired refresh token</value>
+  </data>
+  <data name="UserDoesNotExist" xml:space="preserve">
+    <value>User does not exist</value>
+  </data>
+  <!-- Password Management -->
+  <data name="UnableToProcessForgotPassword" xml:space="preserve">
+    <value>Unable to process forgot password request</value>
+  </data>
+  <data name="UnableToResetPassword" xml:space="preserve">
+    <value>Unable to reset password. Please try again later.</value>
+  </data>
+  <data name="SessionExpiredOrWrongPassword" xml:space="preserve">
+    <value>Session expired or current password is incorrect. Please login again.</value>
+  </data>
+  <data name="NewPasswordPolicyViolation" xml:space="preserve">
+    <value>New password does not meet password policy.</value>
+  </data>
+  <!-- Profile -->
+  <data name="UserNotFound" xml:space="preserve">
+    <value>User not found</value>
+  </data>
+  <data name="NotAuthorizedToUpdateProfile" xml:space="preserve">
+    <value>Not authorized to update profile</value>
+  </data>
+  <data name="InvalidUserData" xml:space="preserve">
+    <value>Invalid user data</value>
+  </data>
+  <data name="InvalidAuthenticationToken" xml:space="preserve">
+    <value>Invalid authentication token</value>
+  </data>
+  <!-- Email -->
+  <data name="InvalidOrExpiredSession" xml:space="preserve">
+    <value>Invalid or expired session</value>
+  </data>
+  <!-- MFA -->
+  <data name="InvalidVerificationCode" xml:space="preserve">
+    <value>Invalid verification code</value>
+  </data>
+  <data name="MfaEnabledSuccessfully" xml:space="preserve">
+    <value>MFA enabled successfully</value>
+  </data>
+  <data name="InvalidTotpCode" xml:space="preserve">
+    <value>Invalid TOTP code</value>
+  </data>
+  <data name="InvalidMfaCode" xml:space="preserve">
+    <value>Invalid MFA code</value>
+  </data>
+  <data name="MfaNotEnabled" xml:space="preserve">
+    <value>MFA is not enabled for this account</value>
+  </data>
+  <data name="InvalidBackupCode" xml:space="preserve">
+    <value>Invalid backup code</value>
+  </data>
+  <!-- MFA Challenge Messages -->
+  <data name="ChallengeSoftwareTokenMfa" xml:space="preserve">
+    <value>Enter the code from your authenticator app</value>
+  </data>
+  <data name="ChallengeSmsMfa" xml:space="preserve">
+    <value>Enter the SMS verification code</value>
+  </data>
+  <data name="ChallengeNewPasswordRequired" xml:space="preserve">
+    <value>You must set a new password</value>
+  </data>
+  <data name="ChallengeMfaSetup" xml:space="preserve">
+    <value>MFA setup required</value>
+  </data>
+  <data name="ChallengeDefault" xml:space="preserve">
+    <value>Additional authentication required</value>
+  </data>
+  <!-- Google OAuth -->
+  <data name="GoogleSignInFailed" xml:space="preserve">
+    <value>Google sign-in failed</value>
+  </data>
+  <data name="InvalidTokenResponse" xml:space="preserve">
+    <value>Invalid token response</value>
+  </data>
+  <data name="InvalidGoogleUserData" xml:space="preserve">
+    <value>Invalid Google user data</value>
+  </data>
+</root>

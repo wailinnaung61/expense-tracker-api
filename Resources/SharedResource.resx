@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="0" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ConfirmationCodeSent" xml:space="preserve">
+    <value>If the account exists, a confirmation code has been sent.</value>
+  </data>
+  <data name="UnableToResendConfirmationCode" xml:space="preserve">
+    <value>Unable to resend confirmation code. Please try again later.</value>
+  </data>
+  <data name="AccountConfirmedSuccessfully" xml:space="preserve">
+    <value>Account confirmed successfully. You can now sign in.</value>
+  </data>
+  <data name="AccountConfirmationFailed" xml:space="preserve">
+    <value>Account confirmation failed. Please try again.</value>
+  </data>
+  <data name="PasswordResetCodeSent" xml:space="preserve">
+    <value>If the account exists, a password reset code has been sent to the email</value>
+  </data>
+  <data name="PasswordResetSuccessfully" xml:space="preserve">
+    <value>Password reset successfully</value>
+  </data>
+  <data name="PasswordChangedSuccessfully" xml:space="preserve">
+    <value>Password changed successfully</value>
+  </data>
+  <data name="SignedOutSuccessfully" xml:space="preserve">
+    <value>Signed out successfully</value>
+  </data>
+  <data name="InvalidToken" xml:space="preserve">
+    <value>Invalid token</value>
+  </data>
+  <data name="UnableToUpdateProfile" xml:space="preserve">
+    <value>Unable to update profile</value>
+  </data>
+  <data name="EmailVerificationSent" xml:space="preserve">
+    <value>If the account exists, an email verification has been (re)sent.</value>
+  </data>
+  <data name="UnableToResendVerificationEmail" xml:space="preserve">
+    <value>Unable to resend verification email. Please try again later.</value>
+  </data>
+  <data name="EmailConfirmedAndUpdated" xml:space="preserve">
+    <value>Email confirmed and updated.</value>
+  </data>
+  <data name="UnableToConfirmEmail" xml:space="preserve">
+    <value>Unable to confirm email. Please try again.</value>
+  </data>
+  <data name="MfaDisabledSuccessfully" xml:space="preserve">
+    <value>MFA disabled successfully</value>
+  </data>
+  <data name="MfaDisabledCanSignIn" xml:space="preserve">
+    <value>MFA disabled successfully. You can now sign in without MFA.</value>
+  </data>
+  <data name="UnableToDisableMfa" xml:space="preserve">
+    <value>Unable to disable MFA. Please try again.</value>
+  </data>
+  <data name="RedirectUriRequired" xml:space="preserve">
+    <value>redirectUri is required</value>
+  </data>
+</root>

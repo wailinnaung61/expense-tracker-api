@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="0" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ConfirmationCodeSent" xml:space="preserve">
+    <value>အကောင့်ရှိပါက အတည်ပြုကုဒ်တစ်ခု ပေးပို့ပြီးပါပြီ။</value>
+  </data>
+  <data name="UnableToResendConfirmationCode" xml:space="preserve">
+    <value>အတည်ပြုကုဒ် ပြန်လည်ပို့၍မရပါ။ နောက်မှ ထပ်ကြိုးစားပါ။</value>
+  </data>
+  <data name="AccountConfirmedSuccessfully" xml:space="preserve">
+    <value>အကောင့်ကို အောင်မြင်စွာ အတည်ပြုပြီးပါပြီ။ ယခု အကောင့်ဝင်နိုင်ပါပြီ။</value>
+  </data>
+  <data name="AccountConfirmationFailed" xml:space="preserve">
+    <value>အကောင့် အတည်ပြုခြင်း မအောင်မြင်ပါ။ ထပ်ကြိုးစားပါ။</value>
+  </data>
+  <data name="PasswordResetCodeSent" xml:space="preserve">
+    <value>အကောင့်ရှိပါက စကားဝှက်ပြန်လည်သတ်မှတ်ရန် ကုဒ်တစ်ခုကို အီးမေးလ်သို့ ပေးပို့ပြီးပါပြီ။</value>
+  </data>
+  <data name="PasswordResetSuccessfully" xml:space="preserve">
+    <value>စကားဝှက်ကို အောင်မြင်စွာ ပြန်လည်သတ်မှတ်ပြီးပါပြီ။</value>
+  </data>
+  <data name="PasswordChangedSuccessfully" xml:space="preserve">
+    <value>စကားဝှက်ကို အောင်မြင်စွာ ပြောင်းလဲပြီးပါပြီ။</value>
+  </data>
+  <data name="SignedOutSuccessfully" xml:space="preserve">
+    <value>အောင်မြင်စွာ ထွက်ပြီးပါပြီ။</value>
+  </data>
+  <data name="InvalidToken" xml:space="preserve">
+    <value>တိုကင် မမှန်ကန်ပါ။</value>
+  </data>
+  <data name="UnableToUpdateProfile" xml:space="preserve">
+    <value>ပရိုဖိုင် အပ်ဒိတ်လုပ်၍ မရပါ။</value>
+  </data>
+  <data name="EmailVerificationSent" xml:space="preserve">
+    <value>အကောင့်ရှိပါက အီးမေးလ် အတည်ပြုခြင်းကို (ပြန်လည်) ပေးပို့ပြီးပါပြီ။</value>
+  </data>
+  <data name="UnableToResendVerificationEmail" xml:space="preserve">
+    <value>အတည်ပြု အီးမေးလ် ပြန်လည်ပို့၍ မရပါ။ နောက်မှ ထပ်ကြိုးစားပါ။</value>
+  </data>
+  <data name="EmailConfirmedAndUpdated" xml:space="preserve">
+    <value>အီးမေးလ် အတည်ပြုပြီး အပ်ဒိတ်လုပ်ပြီးပါပြီ။</value>
+  </data>
+  <data name="UnableToConfirmEmail" xml:space="preserve">
+    <value>အီးမေးလ် အတည်ပြု၍ မရပါ။ ထပ်ကြိုးစားပါ။</value>
+  </data>
+  <data name="MfaDisabledSuccessfully" xml:space="preserve">
+    <value>MFA ကို အောင်မြင်စွာ ပိတ်ပြီးပါပြီ</value>
+  </data>
+  <data name="MfaDisabledCanSignIn" xml:space="preserve">
+    <value>MFA ကို အောင်မြင်စွာ ပိတ်ပြီးပါပြီ။ ယခု MFA မပါဘဲ အကောင့်ဝင်နိုင်ပါပြီ။</value>
+  </data>
+  <data name="UnableToDisableMfa" xml:space="preserve">
+    <value>MFA ကို ပိတ်၍ မရပါ။ ထပ်ကြိုးစားပါ။</value>
+  </data>
+  <data name="RedirectUriRequired" xml:space="preserve">
+    <value>redirectUri လိုအပ်ပါသည်</value>
+  </data>
+</root>

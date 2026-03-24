@@ -7,7 +7,9 @@ using expense_tracker_backend.Domain.Shared.Helpers;
 using expense_tracker_backend.Infrastructure.AWS.Cognito.Interfaces;
 using expense_tracker_backend.Infrastructure.AWS.Cognito.Models;
 using expense_tracker_backend.Infrastructure.AWS.Configuration;
+using expense_tracker_backend.Infrastructure.Resources;
 using expense_tracker_backend.Infrastructure.Services;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.IdentityModel.Tokens.Jwt;
@@ -24,19 +26,22 @@ public class CognitoAuthService : ICognitoAuthService
     private readonly IMemberRepository _memberRepository;
     private readonly ILogger<CognitoAuthService> _logger;
     private readonly CurrentUserService _currentUser;
+    private readonly IStringLocalizer<InfrastructureResource> _localizer;
 
     public CognitoAuthService(
         IAmazonCognitoIdentityProvider cognitoClient,
         IOptions<AwsSettings> awsSettings,
         IMemberRepository memberRepository,
         ILogger<CognitoAuthService> logger,
-        CurrentUserService currentUser)
+        CurrentUserService currentUser,
+        IStringLocalizer<InfrastructureResource> localizer)
     {
         _cognitoClient = cognitoClient ?? throw new ArgumentNullException(nameof(cognitoClient));
         _cognitoSettings = awsSettings?.Value?.Cognito ?? throw new ArgumentNullException(nameof(awsSettings));
         _memberRepository = memberRepository ?? throw new ArgumentNullException(nameof(memberRepository));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _currentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
+        _localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
     }
 
     #region Sign Up & Confirmation
@@ -101,12 +106,12 @@ public class CognitoAuthService : ICognitoAuthService
         catch (Exception ex) when (ex is InvalidParameterException or TooManyRequestsException or LimitExceededException)
         {
             _logger.LogWarning(ex, "ResendConfirmationCode failed for: {Username}", username);
-            throw new InvalidOperationException("Too many requests. Please try again later.");
+            throw new InvalidOperationException(_localizer["TooManyRequests"]);
         }
         catch (AmazonCognitoIdentityProviderException ex)
         {
             _logger.LogError(ex, "Cognito error during resend confirmation for: {Username}", username);
-            throw new InvalidOperationException("Authentication service error");
+            throw new InvalidOperationException(_localizer["AuthenticationServiceError"]);
         }
     }
 
@@ -127,7 +132,7 @@ public class CognitoAuthService : ICognitoAuthService
                 return HandleAuthChallenge(response, request.UsernameOrEmail);
             }
 
-            var auth = response.AuthenticationResult ?? throw new InvalidOperationException("Authentication failed");
+            var auth = response.AuthenticationResult ?? throw new InvalidOperationException(_localizer["AuthenticationFailed"]);
             var subId = ExtractSubIdFromToken(auth.IdToken);
 
             await _memberRepository.UpdateLastLoginAsync(subId, DateTime.UtcNow);
@@ -138,27 +143,27 @@ public class CognitoAuthService : ICognitoAuthService
         catch (UserNotConfirmedException)
         {
             _logger.LogWarning("User not confirmed: {UsernameOrEmail}", request.UsernameOrEmail);
-            throw new InvalidOperationException("Please confirm your account before signing in");
+            throw new InvalidOperationException(_localizer["PleaseConfirmAccount"]);
         }
         catch (PasswordResetRequiredException)
         {
             _logger.LogWarning("Password reset required: {UsernameOrEmail}", request.UsernameOrEmail);
-            throw new InvalidOperationException("Password reset required");
+            throw new InvalidOperationException(_localizer["PasswordResetRequired"]);
         }
         catch (NotAuthorizedException)
         {
             _logger.LogWarning("Invalid credentials for: {UsernameOrEmail}", request.UsernameOrEmail);
-            throw new UnauthorizedAccessException("Invalid username/email or password");
+            throw new UnauthorizedAccessException(_localizer["InvalidCredentials"]);
         }
         catch (TooManyRequestsException)
         {
             _logger.LogWarning("Too many sign-in attempts for: {UsernameOrEmail}", request.UsernameOrEmail);
-            throw new InvalidOperationException("Too many attempts. Please try again later");
+            throw new InvalidOperationException(_localizer["TooManyAttempts"]);
         }
         catch (AmazonCognitoIdentityProviderException ex)
         {
             _logger.LogError(ex, "Cognito error during sign-in for {UsernameOrEmail}", request.UsernameOrEmail);
-            throw new InvalidOperationException("Authentication service error");
+            throw new InvalidOperationException(_localizer["AuthenticationServiceError"]);
         }
     }
 
@@ -172,7 +177,7 @@ public class CognitoAuthService : ICognitoAuthService
             var response = await _cognitoClient.InitiateAuthAsync(authRequest);
 
             var auth = response.AuthenticationResult 
-                ?? throw new InvalidOperationException("Refresh token authentication failed");
+                ?? throw new InvalidOperationException(_localizer["RefreshTokenFailed"]);
 
             _logger.LogInformation("RefreshToken successful for: {Username}", request.Username);
 
@@ -187,22 +192,22 @@ public class CognitoAuthService : ICognitoAuthService
         catch (NotAuthorizedException)
         {
             _logger.LogWarning("RefreshToken failed - invalid or expired token");
-            throw new UnauthorizedAccessException("Invalid or expired refresh token");
+            throw new UnauthorizedAccessException(_localizer["InvalidOrExpiredRefreshToken"]);
         }
         catch (UserNotFoundException)
         {
             _logger.LogWarning("RefreshToken failed - user not found: {Username}", request.Username);
-            throw new UnauthorizedAccessException("User does not exist");
+            throw new UnauthorizedAccessException(_localizer["UserDoesNotExist"]);
         }
         catch (TooManyRequestsException)
         {
             _logger.LogWarning("RefreshToken throttled for: {Username}", request.Username);
-            throw new InvalidOperationException("Too many requests. Please try again later");
+            throw new InvalidOperationException(_localizer["TooManyRequests"]);
         }
         catch (AmazonCognitoIdentityProviderException ex)
         {
             _logger.LogError(ex, "Cognito error during refresh token for {Username}", request.Username);
-            throw new InvalidOperationException("Authentication service error");
+            throw new InvalidOperationException(_localizer["AuthenticationServiceError"]);
         }
     }
 
@@ -221,7 +226,7 @@ public class CognitoAuthService : ICognitoAuthService
         catch (NotAuthorizedException)
         {
             _logger.LogWarning("SignOut failed - invalid access token");
-            throw new UnauthorizedAccessException("Invalid access token");
+            throw new UnauthorizedAccessException(_localizer["InvalidAccessToken"]);
         }
     }
 
@@ -247,12 +252,12 @@ public class CognitoAuthService : ICognitoAuthService
         }
         catch (LimitExceededException)
         {
-            throw new InvalidOperationException("Too many requests. Please try again later.");
+            throw new InvalidOperationException(_localizer["TooManyRequests"]);
         }
         catch (AmazonCognitoIdentityProviderException ex)
         {
             _logger.LogError(ex, "Cognito error during ForgotPassword for {UsernameOrEmail}", request.UsernameOrEmail);
-            throw new InvalidOperationException("Unable to process forgot password request");
+            throw new InvalidOperationException(_localizer["UnableToProcessForgotPassword"]);
         }
     }
 
@@ -271,17 +276,17 @@ public class CognitoAuthService : ICognitoAuthService
         catch (CodeMismatchException)
         {
             _logger.LogWarning("ResetPassword failed - invalid code for: {UsernameOrEmail}", request.UsernameOrEmail);
-            throw new InvalidOperationException("Invalid confirmation code");
+            throw new InvalidOperationException(_localizer["InvalidConfirmationCode"]);
         }
         catch (ExpiredCodeException)
         {
             _logger.LogWarning("ResetPassword failed - expired code for: {UsernameOrEmail}", request.UsernameOrEmail);
-            throw new InvalidOperationException("Confirmation code has expired");
+            throw new InvalidOperationException(_localizer["ConfirmationCodeExpired"]);
         }
         catch (InvalidPasswordException ex)
         {
             _logger.LogWarning(ex, "ResetPassword failed - password policy violation for: {UsernameOrEmail}", request.UsernameOrEmail);
-            throw new InvalidOperationException("Password does not meet security requirements");
+            throw new InvalidOperationException(_localizer["PasswordDoesNotMeetRequirements"]);
         }
         catch (UserNotFoundException)
         {
@@ -291,12 +296,12 @@ public class CognitoAuthService : ICognitoAuthService
         catch (TooManyRequestsException)
         {
             _logger.LogWarning("ResetPassword rate limited for: {UsernameOrEmail}", request.UsernameOrEmail);
-            throw new InvalidOperationException("Too many attempts. Please try again later.");
+            throw new InvalidOperationException(_localizer["TooManyAttempts"]);
         }
         catch (AmazonCognitoIdentityProviderException ex)
         {
             _logger.LogError(ex, "Cognito error during ResetPassword for: {UsernameOrEmail}", request.UsernameOrEmail);
-            throw new InvalidOperationException("Unable to reset password. Please try again later.");
+            throw new InvalidOperationException(_localizer["UnableToResetPassword"]);
         }
     }
 
@@ -320,16 +325,16 @@ public class CognitoAuthService : ICognitoAuthService
         {
             _logger.LogWarning("ChangePassword failed - unauthorized");
             throw new UnauthorizedAccessException(
-                "Session expired or current password is incorrect. Please login again."
+                _localizer["SessionExpiredOrWrongPassword"]
             );
         }
         catch (InvalidPasswordException)
         {
-            throw new ArgumentException("New password does not meet password policy.");
+            throw new ArgumentException(_localizer["NewPasswordPolicyViolation"]);
         }
         catch (LimitExceededException)
         {
-            throw new InvalidOperationException("Too many attempts. Please try again later.");
+            throw new InvalidOperationException(_localizer["TooManyAttempts"]);
         }
     }
 
@@ -393,17 +398,17 @@ public class CognitoAuthService : ICognitoAuthService
         catch (UserNotFoundException)
         {
             _logger.LogWarning("Cognito user not found while updating profile for {UserId}", userIdStr);
-            throw new InvalidOperationException("User not found");
+            throw new InvalidOperationException(_localizer["UserNotFound"]);
         }
         catch (NotAuthorizedException)
         {
             _logger.LogWarning("Not authorized to update Cognito attributes for {UserId}", userIdStr);
-            throw new UnauthorizedAccessException("Not authorized to update profile");
+            throw new UnauthorizedAccessException(_localizer["NotAuthorizedToUpdateProfile"]);
         }
         catch (AmazonCognitoIdentityProviderException ex)
         {
             _logger.LogError(ex, "Cognito error while updating profile for {UserId}", userIdStr);
-            throw new InvalidOperationException("Authentication service error");
+            throw new InvalidOperationException(_localizer["AuthenticationServiceError"]);
         }
     }
 
@@ -433,22 +438,22 @@ public class CognitoAuthService : ICognitoAuthService
         catch (CodeMismatchException)
         {
             _logger.LogWarning("ConfirmEmailChange failed - invalid code");
-            throw new InvalidOperationException("Invalid confirmation code");
+            throw new InvalidOperationException(_localizer["InvalidConfirmationCode"]);
         }
         catch (ExpiredCodeException)
         {
             _logger.LogWarning("ConfirmEmailChange failed - expired code");
-            throw new InvalidOperationException("Confirmation code has expired");
+            throw new InvalidOperationException(_localizer["ConfirmationCodeExpired"]);
         }
         catch (NotAuthorizedException)
         {
             _logger.LogWarning("ConfirmEmailChange failed - not authorized");
-            throw new UnauthorizedAccessException("Invalid access token");
+            throw new UnauthorizedAccessException(_localizer["InvalidAccessToken"]);
         }
         catch (AmazonCognitoIdentityProviderException ex)
         {
             _logger.LogError(ex, "Cognito error during confirm email change");
-            throw new InvalidOperationException("Authentication service error");
+            throw new InvalidOperationException(_localizer["AuthenticationServiceError"]);
         }
     }
 
@@ -471,12 +476,12 @@ public class CognitoAuthService : ICognitoAuthService
         catch (NotAuthorizedException)
         {
             _logger.LogWarning("User not authorized to resend email verification");
-            throw new UnauthorizedAccessException("Invalid or expired session");
+            throw new UnauthorizedAccessException(_localizer["InvalidOrExpiredSession"]);
         }
         catch (AmazonCognitoIdentityProviderException ex)
         {
             _logger.LogError(ex, "Cognito error during resend email verification");
-            throw new InvalidOperationException("Authentication service error");
+            throw new InvalidOperationException(_localizer["AuthenticationServiceError"]);
         }
     }
 
@@ -506,7 +511,7 @@ public class CognitoAuthService : ICognitoAuthService
         catch (NotAuthorizedException)
         {
             _logger.LogWarning("MFA setup failed - invalid access token");
-            throw new UnauthorizedAccessException("Invalid access token");
+            throw new UnauthorizedAccessException(_localizer["InvalidAccessToken"]);
         }
     }
 
@@ -522,24 +527,24 @@ public class CognitoAuthService : ICognitoAuthService
             if (verifyResponse.Status != VerifySoftwareTokenResponseType.SUCCESS)
             {
                 _logger.LogWarning("MFA setup verification failed - invalid code");
-                return new MfaVerifySetupResponse(false, new List<string>(), "Invalid verification code");
+                return new MfaVerifySetupResponse(false, new List<string>(), _localizer["InvalidVerificationCode"]);
             }
 
             await EnableMfaPreferenceAsync(accessToken);
             var backupCodes = await SaveMfaSettingsToDatabaseAsync();
 
             _logger.LogInformation("MFA setup completed successfully");
-            return new MfaVerifySetupResponse(true, backupCodes, "MFA enabled successfully");
+            return new MfaVerifySetupResponse(true, backupCodes, _localizer["MfaEnabledSuccessfully"]);
         }
         catch (EnableSoftwareTokenMFAException)
         {
             _logger.LogWarning("MFA setup failed - invalid TOTP code");
-            throw new InvalidOperationException("Invalid TOTP code");
+            throw new InvalidOperationException(_localizer["InvalidTotpCode"]);
         }
         catch (NotAuthorizedException)
         {
             _logger.LogWarning("MFA setup failed - invalid access token");
-            throw new UnauthorizedAccessException("Invalid access token");
+            throw new UnauthorizedAccessException(_localizer["InvalidAccessToken"]);
         }
     }
 
@@ -565,12 +570,12 @@ public class CognitoAuthService : ICognitoAuthService
         catch (NotAuthorizedException)
         {
             _logger.LogWarning("MFA verification failed - invalid code for: {Username}", request.Username);
-            throw new UnauthorizedAccessException("Invalid MFA code");
+            throw new UnauthorizedAccessException(_localizer["InvalidMfaCode"]);
         }
         catch (CodeMismatchException)
         {
             _logger.LogWarning("MFA verification failed - code mismatch for: {Username}", request.Username);
-            throw new InvalidOperationException("Invalid MFA code");
+            throw new InvalidOperationException(_localizer["InvalidMfaCode"]);
         }
     }
 
@@ -594,7 +599,7 @@ public class CognitoAuthService : ICognitoAuthService
         catch (NotAuthorizedException)
         {
             _logger.LogWarning("Disable MFA failed - invalid access token");
-            throw new UnauthorizedAccessException("Invalid access token");
+            throw new UnauthorizedAccessException(_localizer["InvalidAccessToken"]);
         }
     }
 
@@ -607,7 +612,7 @@ public class CognitoAuthService : ICognitoAuthService
             var user = await GetUserAsync();
             if (user == null)
             {
-                throw new UnauthorizedAccessException("Invalid access token");
+                throw new UnauthorizedAccessException(_localizer["InvalidAccessToken"]);
             }
 
             var profile = await _memberRepository.GetProfileByUserIdAsync(user.UserId);
@@ -620,7 +625,7 @@ public class CognitoAuthService : ICognitoAuthService
         catch (NotAuthorizedException)
         {
             _logger.LogWarning("Get MFA status failed - invalid access token");
-            throw new UnauthorizedAccessException("Invalid access token");
+            throw new UnauthorizedAccessException(_localizer["InvalidAccessToken"]);
         }
     }
 
@@ -642,12 +647,12 @@ public class CognitoAuthService : ICognitoAuthService
         catch (UserNotFoundException)
         {
             _logger.LogWarning("DisableMfaWithBackupCode failed - user not found: {Username}", request.Username);
-            throw new InvalidOperationException("User not found");
+            throw new InvalidOperationException(_localizer["UserNotFound"]);
         }
         catch (AmazonCognitoIdentityProviderException ex)
         {
             _logger.LogError(ex, "Cognito error during DisableMfaWithBackupCode for: {Username}", request.Username);
-            throw new InvalidOperationException("Authentication service error");
+            throw new InvalidOperationException(_localizer["AuthenticationServiceError"]);
         }
     }
 
@@ -691,7 +696,7 @@ public class CognitoAuthService : ICognitoAuthService
         catch (Exception ex) when (ex is not UnauthorizedAccessException)
         {
             _logger.LogError(ex, "Google SignIn error");
-            throw new UnauthorizedAccessException("Google sign-in failed");
+            throw new UnauthorizedAccessException(_localizer["GoogleSignInFailed"]);
         }
     }
 
@@ -780,12 +785,12 @@ public class CognitoAuthService : ICognitoAuthService
 
     #region Private Helper Methods - Response Builders
 
-    private static UserSignUpResponse CreateSignUpResponse(SignUpResponse response) => new(
+    private UserSignUpResponse CreateSignUpResponse(SignUpResponse response) => new(
         response.UserSub,
         response.UserConfirmed,
         response.UserConfirmed
-            ? "User registered successfully"
-            : "Please check your email for confirmation code"
+            ? _localizer["UserRegisteredSuccessfully"]
+            : _localizer["CheckEmailForConfirmationCode"]
     );
 
     private static AuthSignInResult CreateSuccessfulAuthResult(AuthenticationResultType auth) => new()
@@ -816,13 +821,13 @@ public class CognitoAuthService : ICognitoAuthService
         };
     }
 
-    private static string GetChallengeMessage(ChallengeNameType challenge) => challenge.Value switch
+    private string GetChallengeMessage(ChallengeNameType challenge) => challenge.Value switch
     {
-        "SOFTWARE_TOKEN_MFA" => "Enter the code from your authenticator app",
-        "SMS_MFA" => "Enter the SMS verification code",
-        "NEW_PASSWORD_REQUIRED" => "You must set a new password",
-        "MFA_SETUP" => "MFA setup required",
-        _ => "Additional authentication required"
+        "SOFTWARE_TOKEN_MFA" => _localizer["ChallengeSoftwareTokenMfa"],
+        "SMS_MFA" => _localizer["ChallengeSmsMfa"],
+        "NEW_PASSWORD_REQUIRED" => _localizer["ChallengeNewPasswordRequired"],
+        "MFA_SETUP" => _localizer["ChallengeMfaSetup"],
+        _ => _localizer["ChallengeDefault"]
     };
 
     private CognitoUser BuildCognitoUser(MemberProfile profile)
@@ -868,12 +873,12 @@ public class CognitoAuthService : ICognitoAuthService
         catch (CodeMismatchException)
         {
             _logger.LogWarning("ConfirmSignUp failed - code mismatch for: {Username}", request.Username);
-            throw new InvalidOperationException("Invalid confirmation code");
+            throw new InvalidOperationException(_localizer["InvalidConfirmationCode"]);
         }
         catch (ExpiredCodeException)
         {
             _logger.LogWarning("ConfirmSignUp failed - code expired for: {Username}", request.Username);
-            throw new InvalidOperationException("Confirmation code has expired");
+            throw new InvalidOperationException(_localizer["ConfirmationCodeExpired"]);
         }
         catch (NotAuthorizedException)
         {
@@ -894,12 +899,12 @@ public class CognitoAuthService : ICognitoAuthService
         catch (UserNotFoundException)
         {
             _logger.LogWarning("User not found in Cognito after confirmation: {Username}", username);
-            throw new InvalidOperationException("User does not exist");
+            throw new InvalidOperationException(_localizer["UserDoesNotExist"]);
         }
         catch (AmazonCognitoIdentityProviderException ex)
         {
             _logger.LogError(ex, "Failed to fetch user from Cognito: {Username}", username);
-            throw new InvalidOperationException("Authentication service error");
+            throw new InvalidOperationException(_localizer["AuthenticationServiceError"]);
         }
     }
 
@@ -984,31 +989,31 @@ public class CognitoAuthService : ICognitoAuthService
 
     #region Private Helper Methods - Data Extraction
 
-    private static (string email, string cognitoSub) ExtractUserAttributes(AdminGetUserResponse user)
+    private (string email, string cognitoSub) ExtractUserAttributes(AdminGetUserResponse user)
     {
         var email = user.UserAttributes.FirstOrDefault(a => a.Name == "email")?.Value;
         var cognitoSub = user.UserAttributes.FirstOrDefault(a => a.Name == "sub")?.Value;
 
         if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(cognitoSub))
         {
-            throw new InvalidOperationException("Invalid user data");
+            throw new InvalidOperationException(_localizer["InvalidUserData"]);
         }
 
         return (email, cognitoSub);
     }
 
-    private static string ExtractSubIdFromToken(string idToken)
+    private string ExtractSubIdFromToken(string idToken)
     {
         var handler = new JwtSecurityTokenHandler();
         var jwt = handler.ReadJwtToken(idToken);
         var subId = jwt.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
 
         return string.IsNullOrEmpty(subId)
-            ? throw new InvalidOperationException("Invalid authentication token")
+            ? throw new InvalidOperationException(_localizer["InvalidAuthenticationToken"])
             : subId;
     }
 
-    private static (string userId, string email, string userName) ExtractGoogleUserInfo(string idToken)
+    private (string userId, string email, string userName) ExtractGoogleUserInfo(string idToken)
     {
         var handler = new JwtSecurityTokenHandler();
         var jwt = handler.ReadJwtToken(idToken);
@@ -1018,7 +1023,7 @@ public class CognitoAuthService : ICognitoAuthService
         var userName = jwt.Claims.FirstOrDefault(c => c.Type == "name")?.Value ?? email;
 
         if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(email))
-            throw new UnauthorizedAccessException("Invalid Google user data");
+            throw new UnauthorizedAccessException(_localizer["InvalidGoogleUserData"]);
 
         return (userId, email, userName);
     }
@@ -1140,7 +1145,7 @@ public class CognitoAuthService : ICognitoAuthService
         if (string.IsNullOrEmpty(userId))
         {
             _logger.LogWarning("User sub not found: {Username}", username);
-            throw new InvalidOperationException("User not found");
+            throw new InvalidOperationException(_localizer["UserNotFound"]);
         }
 
         return userId;
@@ -1152,19 +1157,19 @@ public class CognitoAuthService : ICognitoAuthService
         if (profile == null)
         {
             _logger.LogWarning("Profile not found: {UserId}", userId);
-            throw new InvalidOperationException("User not found");
+            throw new InvalidOperationException(_localizer["UserNotFound"]);
         }
 
         if (!profile.MfaEnabled)
         {
             _logger.LogWarning("MFA not enabled: {UserId}", userId);
-            throw new InvalidOperationException("MFA is not enabled for this account");
+            throw new InvalidOperationException(_localizer["MfaNotEnabled"]);
         }
 
         if (profile.BackUpCodes == null || !profile.BackUpCodes.Contains(backupCode))
         {
             _logger.LogWarning("Invalid backup code: {UserId}", userId);
-            throw new InvalidOperationException("Invalid backup code");
+            throw new InvalidOperationException(_localizer["InvalidBackupCode"]);
         }
 
         return profile;
@@ -1230,11 +1235,11 @@ public class CognitoAuthService : ICognitoAuthService
         {
             var error = await response.Content.ReadAsStringAsync();
             _logger.LogWarning("Google SignIn failed: {Error}", error);
-            throw new UnauthorizedAccessException("Google sign-in failed");
+            throw new UnauthorizedAccessException(_localizer["GoogleSignInFailed"]);
         }
 
         return await response.Content.ReadFromJsonAsync<OAuthTokenResponse>()
-            ?? throw new UnauthorizedAccessException("Invalid token response");
+            ?? throw new UnauthorizedAccessException(_localizer["InvalidTokenResponse"]);
     }
 
     private static (string qrCodeUri, string secretCode) GenerateMfaQrCode(string secretCode)
@@ -1276,31 +1281,31 @@ public class CognitoAuthService : ICognitoAuthService
         {
             case UsernameExistsException:
                 _logger.LogWarning("SignUp failed - username already exists: {Username}", username);
-                throw new InvalidOperationException("Username already exists");
+                throw new InvalidOperationException(_localizer["UsernameAlreadyExists"]);
             case InvalidPasswordException:
                 _logger.LogWarning(ex, "SignUp failed - invalid password for username: {Username}", username);
-                throw new InvalidOperationException("Password does not meet security requirements");
+                throw new InvalidOperationException(_localizer["PasswordDoesNotMeetRequirements"]);
             case InvalidParameterException:
                 _logger.LogWarning(ex, "SignUp failed - invalid parameter for username: {Username}", username);
-                throw new InvalidOperationException("Invalid sign up data");
+                throw new InvalidOperationException(_localizer["InvalidSignUpData"]);
             case CodeDeliveryFailureException:
                 _logger.LogError(ex, "SignUp failed - unable to deliver confirmation code for username: {Username}", username);
-                throw new InvalidOperationException("Unable to send confirmation email. Please try again later.");
+                throw new InvalidOperationException(_localizer["UnableToSendConfirmationEmail"]);
             case TooManyRequestsException:
                 _logger.LogWarning(ex, "SignUp throttled for username: {Username}", username);
-                throw new InvalidOperationException("Too many requests. Please try again later.");
+                throw new InvalidOperationException(_localizer["TooManyRequests"]);
             case LimitExceededException:
                 _logger.LogWarning(ex, "SignUp failed - limit exceeded for username: {Username}", username);
-                throw new InvalidOperationException("Sign up limit exceeded. Please try again later.");
+                throw new InvalidOperationException(_localizer["SignUpLimitExceeded"]);
             case NotAuthorizedException:
                 _logger.LogError(ex, "SignUp failed - not authorized (ClientId / SecretHash issue) for username: {Username}", username);
-                throw new InvalidOperationException("Sign up is not authorized. Please contact support.");
+                throw new InvalidOperationException(_localizer["SignUpNotAuthorized"]);
             case AmazonCognitoIdentityProviderException:
                 _logger.LogError(ex, "Cognito error during signup for username: {Username}", username);
-                throw new InvalidOperationException("Authentication service error. Please try again later.");
+                throw new InvalidOperationException(_localizer["AuthenticationServiceErrorRetry"]);
             default:
                 _logger.LogError(ex, "Unexpected error during signup for username: {Username}", username);
-                throw new InvalidOperationException("Unexpected error occurred during sign up.");
+                throw new InvalidOperationException(_localizer["UnexpectedSignUpError"]);
         }
     }
 

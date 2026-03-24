@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="0" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ConfirmationCodeSent" xml:space="preserve">
+    <value>アカウントが存在する場合、確認コードが送信されました。</value>
+  </data>
+  <data name="UnableToResendConfirmationCode" xml:space="preserve">
+    <value>確認コードを再送信できません。後でもう一度お試しください。</value>
+  </data>
+  <data name="AccountConfirmedSuccessfully" xml:space="preserve">
+    <value>アカウントが正常に確認されました。サインインできます。</value>
+  </data>
+  <data name="AccountConfirmationFailed" xml:space="preserve">
+    <value>アカウントの確認に失敗しました。もう一度お試しください。</value>
+  </data>
+  <data name="PasswordResetCodeSent" xml:space="preserve">
+    <value>アカウントが存在する場合、パスワードリセットコードがメールに送信されました。</value>
+  </data>
+  <data name="PasswordResetSuccessfully" xml:space="preserve">
+    <value>パスワードが正常にリセットされました。</value>
+  </data>
+  <data name="PasswordChangedSuccessfully" xml:space="preserve">
+    <value>パスワードが正常に変更されました。</value>
+  </data>
+  <data name="SignedOutSuccessfully" xml:space="preserve">
+    <value>正常にサインアウトしました。</value>
+  </data>
+  <data name="InvalidToken" xml:space="preserve">
+    <value>無効なトークンです。</value>
+  </data>
+  <data name="UnableToUpdateProfile" xml:space="preserve">
+    <value>プロフィールを更新できません。</value>
+  </data>
+  <data name="EmailVerificationSent" xml:space="preserve">
+    <value>アカウントが存在する場合、メール確認が（再）送信されました。</value>
+  </data>
+  <data name="UnableToResendVerificationEmail" xml:space="preserve">
+    <value>確認メールを再送信できません。後でもう一度お試しください。</value>
+  </data>
+  <data name="EmailConfirmedAndUpdated" xml:space="preserve">
+    <value>メールが確認され、更新されました。</value>
+  </data>
+  <data name="UnableToConfirmEmail" xml:space="preserve">
+    <value>メールを確認できません。もう一度お試しください。</value>
+  </data>
+  <data name="MfaDisabledSuccessfully" xml:space="preserve">
+    <value>MFAが正常に無効化されました</value>
+  </data>
+  <data name="MfaDisabledCanSignIn" xml:space="preserve">
+    <value>MFAが正常に無効化されました。MFAなしでサインインできます。</value>
+  </data>
+  <data name="UnableToDisableMfa" xml:space="preserve">
+    <value>MFAを無効化できません。もう一度お試しください。</value>
+  </data>
+  <data name="RedirectUriRequired" xml:space="preserve">
+    <value>redirectUriが必要です</value>
+  </data>
+</root>

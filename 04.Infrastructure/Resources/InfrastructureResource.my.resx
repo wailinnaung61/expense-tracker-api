@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="0" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <!-- General -->
+  <data name="TooManyRequests" xml:space="preserve">
+    <value>တောင်းဆိုမှု များလွန်းပါသည်။ နောက်မှ ထပ်ကြိုးစားပါ။</value>
+  </data>
+  <data name="AuthenticationServiceError" xml:space="preserve">
+    <value>အထောက်အထား စိစစ်ရေး ဝန်ဆောင်မှု အမှား</value>
+  </data>
+  <data name="AuthenticationFailed" xml:space="preserve">
+    <value>အထောက်အထား စိစစ်ခြင်း မအောင်မြင်ပါ</value>
+  </data>
+  <data name="InvalidAccessToken" xml:space="preserve">
+    <value>ဝင်ရောက်ခွင့် တိုကင် မမှန်ကန်ပါ</value>
+  </data>
+  <data name="TooManyAttempts" xml:space="preserve">
+    <value>ကြိုးစားမှု များလွန်းပါသည်။ နောက်မှ ထပ်ကြိုးစားပါ။</value>
+  </data>
+  <!-- Sign Up -->
+  <data name="UserRegisteredSuccessfully" xml:space="preserve">
+    <value>အသုံးပြုသူ အောင်မြင်စွာ မှတ်ပုံတင်ပြီးပါပြီ</value>
+  </data>
+  <data name="CheckEmailForConfirmationCode" xml:space="preserve">
+    <value>အတည်ပြုကုဒ်အတွက် သင့်အီးမေးလ်ကို စစ်ဆေးပါ</value>
+  </data>
+  <data name="UsernameAlreadyExists" xml:space="preserve">
+    <value>အသုံးပြုသူအမည် ရှိပြီးသားဖြစ်ပါသည်</value>
+  </data>
+  <data name="PasswordDoesNotMeetRequirements" xml:space="preserve">
+    <value>စကားဝှက်သည် လုံခြုံရေး လိုအပ်ချက်များနှင့် မကိုက်ညီပါ</value>
+  </data>
+  <data name="InvalidSignUpData" xml:space="preserve">
+    <value>မှတ်ပုံတင် အချက်အလက် မမှန်ကန်ပါ</value>
+  </data>
+  <data name="UnableToSendConfirmationEmail" xml:space="preserve">
+    <value>အတည်ပြု အီးမေးလ် ပို့၍ မရပါ။ နောက်မှ ထပ်ကြိုးစားပါ။</value>
+  </data>
+  <data name="SignUpLimitExceeded" xml:space="preserve">
+    <value>မှတ်ပုံတင် ကန့်သတ်ချက် ကျော်လွန်ပါပြီ။ နောက်မှ ထပ်ကြိုးစားပါ။</value>
+  </data>
+  <data name="SignUpNotAuthorized" xml:space="preserve">
+    <value>မှတ်ပုံတင်ခြင်း ခွင့်ပြုမထားပါ။ ပံ့ပိုးကူညီရေးကို ဆက်သွယ်ပါ။</value>
+  </data>
+  <data name="AuthenticationServiceErrorRetry" xml:space="preserve">
+    <value>အထောက်အထား စိစစ်ရေး ဝန်ဆောင်မှု အမှား။ နောက်မှ ထပ်ကြိုးစားပါ။</value>
+  </data>
+  <data name="UnexpectedSignUpError" xml:space="preserve">
+    <value>မှတ်ပုံတင်စဉ် မမျှော်လင့်ထားသော အမှားတစ်ခု ဖြစ်ပေါ်ခဲ့ပါသည်။</value>
+  </data>
+  <!-- Confirmation -->
+  <data name="InvalidConfirmationCode" xml:space="preserve">
+    <value>အတည်ပြုကုဒ် မမှန်ကန်ပါ</value>
+  </data>
+  <data name="ConfirmationCodeExpired" xml:space="preserve">
+    <value>အတည်ပြုကုဒ် သက်တမ်းကုန်သွားပါပြီ</value>
+  </data>
+  <!-- Sign In -->
+  <data name="PleaseConfirmAccount" xml:space="preserve">
+    <value>အကောင့်ဝင်မတိုင်မီ သင့်အကောင့်ကို အတည်ပြုပါ</value>
+  </data>
+  <data name="PasswordResetRequired" xml:space="preserve">
+    <value>စကားဝှက် ပြန်လည်သတ်မှတ်ရန် လိုအပ်ပါသည်</value>
+  </data>
+  <data name="InvalidCredentials" xml:space="preserve">
+    <value>အသုံးပြုသူအမည်/အီးမေးလ် သို့မဟုတ် စကားဝှက် မမှန်ကန်ပါ</value>
+  </data>
+  <!-- Refresh Token -->
+  <data name="RefreshTokenFailed" xml:space="preserve">
+    <value>ပြန်လည်ဆန်းသစ်ခြင်း တိုကင် အထောက်အထားစိစစ်ခြင်း မအောင်မြင်ပါ</value>
+  </data>
+  <data name="InvalidOrExpiredRefreshToken" xml:space="preserve">
+    <value>ပြန်လည်ဆန်းသစ်ခြင်း တိုကင် မမှန်ကန် သို့မဟုတ် သက်တမ်းကုန်ပါပြီ</value>
+  </data>
+  <data name="UserDoesNotExist" xml:space="preserve">
+    <value>အသုံးပြုသူ မရှိပါ</value>
+  </data>
+  <!-- Password Management -->
+  <data name="UnableToProcessForgotPassword" xml:space="preserve">
+    <value>စကားဝှက် မေ့ခြင်း တောင်းဆိုမှုကို လုပ်ဆောင်၍ မရပါ</value>
+  </data>
+  <data name="UnableToResetPassword" xml:space="preserve">
+    <value>စကားဝှက် ပြန်လည်သတ်မှတ်၍ မရပါ။ နောက်မှ ထပ်ကြိုးစားပါ။</value>
+  </data>
+  <data name="SessionExpiredOrWrongPassword" xml:space="preserve">
+    <value>စက်ရှင် သက်တမ်းကုန် သို့မဟုတ် လက်ရှိ စကားဝှက် မမှန်ကန်ပါ။ ထပ်မံ ဝင်ရောက်ပါ။</value>
+  </data>
+  <data name="NewPasswordPolicyViolation" xml:space="preserve">
+    <value>စကားဝှက်အသစ်သည် စကားဝှက်မူဝါဒနှင့် မကိုက်ညီပါ။</value>
+  </data>
+  <!-- Profile -->
+  <data name="UserNotFound" xml:space="preserve">
+    <value>အသုံးပြုသူ ရှာမတွေ့ပါ</value>
+  </data>
+  <data name="NotAuthorizedToUpdateProfile" xml:space="preserve">
+    <value>ပရိုဖိုင် အပ်ဒိတ်လုပ်ခွင့် မရှိပါ</value>
+  </data>
+  <data name="InvalidUserData" xml:space="preserve">
+    <value>အသုံးပြုသူ အချက်အလက် မမှန်ကန်ပါ</value>
+  </data>
+  <data name="InvalidAuthenticationToken" xml:space="preserve">
+    <value>အထောက်အထား စိစစ်ခြင်း တိုကင် မမှန်ကန်ပါ</value>
+  </data>
+  <!-- Email -->
+  <data name="InvalidOrExpiredSession" xml:space="preserve">
+    <value>စက်ရှင် မမှန်ကန် သို့မဟုတ် သက်တမ်းကုန်ပါပြီ</value>
+  </data>
+  <!-- MFA -->
+  <data name="InvalidVerificationCode" xml:space="preserve">
+    <value>အတည်ပြုကုဒ် မမှန်ကန်ပါ</value>
+  </data>
+  <data name="MfaEnabledSuccessfully" xml:space="preserve">
+    <value>MFA ကို အောင်မြင်စွာ ဖွင့်လှစ်ပြီးပါပြီ</value>
+  </data>
+  <data name="InvalidTotpCode" xml:space="preserve">
+    <value>TOTP ကုဒ် မမှန်ကန်ပါ</value>
+  </data>
+  <data name="InvalidMfaCode" xml:space="preserve">
+    <value>MFA ကုဒ် မမှန်ကန်ပါ</value>
+  </data>
+  <data name="MfaNotEnabled" xml:space="preserve">
+    <value>ဤအကောင့်တွင် MFA ကို ဖွင့်မထားပါ</value>
+  </data>
+  <data name="InvalidBackupCode" xml:space="preserve">
+    <value>အရန်ကုဒ် မမှန်ကန်ပါ</value>
+  </data>
+  <!-- MFA Challenge Messages -->
+  <data name="ChallengeSoftwareTokenMfa" xml:space="preserve">
+    <value>သင်၏ authenticator အက်ပ်မှ ကုဒ်ကို ထည့်သွင်းပါ</value>
+  </data>
+  <data name="ChallengeSmsMfa" xml:space="preserve">
+    <value>SMS အတည်ပြုကုဒ်ကို ထည့်သွင်းပါ</value>
+  </data>
+  <data name="ChallengeNewPasswordRequired" xml:space="preserve">
+    <value>စကားဝှက်အသစ် သတ်မှတ်ရပါမည်</value>
+  </data>
+  <data name="ChallengeMfaSetup" xml:space="preserve">
+    <value>MFA စနစ်ထည့်သွင်းရန် လိုအပ်ပါသည်</value>
+  </data>
+  <data name="ChallengeDefault" xml:space="preserve">
+    <value>နောက်ထပ် အထောက်အထား စိစစ်ခြင်း လိုအပ်ပါသည်</value>
+  </data>
+  <!-- Google OAuth -->
+  <data name="GoogleSignInFailed" xml:space="preserve">
+    <value>Google ဖြင့် ဝင်ရောက်ခြင်း မအောင်မြင်ပါ</value>
+  </data>
+  <data name="InvalidTokenResponse" xml:space="preserve">
+    <value>တိုကင် တုံ့ပြန်မှု မမှန်ကန်ပါ</value>
+  </data>
+  <data name="InvalidGoogleUserData" xml:space="preserve">
+    <value>Google အသုံးပြုသူ အချက်အလက် မမှန်ကန်ပါ</value>
+  </data>
+</root>

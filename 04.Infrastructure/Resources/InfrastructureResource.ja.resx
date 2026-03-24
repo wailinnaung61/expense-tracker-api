@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="0" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <!-- General -->
+  <data name="TooManyRequests" xml:space="preserve">
+    <value>リクエストが多すぎます。後でもう一度お試しください。</value>
+  </data>
+  <data name="AuthenticationServiceError" xml:space="preserve">
+    <value>認証サービスエラー</value>
+  </data>
+  <data name="AuthenticationFailed" xml:space="preserve">
+    <value>認証に失敗しました</value>
+  </data>
+  <data name="InvalidAccessToken" xml:space="preserve">
+    <value>無効なアクセストークンです</value>
+  </data>
+  <data name="TooManyAttempts" xml:space="preserve">
+    <value>試行回数が多すぎます。後でもう一度お試しください。</value>
+  </data>
+  <!-- Sign Up -->
+  <data name="UserRegisteredSuccessfully" xml:space="preserve">
+    <value>ユーザーが正常に登録されました</value>
+  </data>
+  <data name="CheckEmailForConfirmationCode" xml:space="preserve">
+    <value>確認コードについてメールをご確認ください</value>
+  </data>
+  <data name="UsernameAlreadyExists" xml:space="preserve">
+    <value>ユーザー名は既に存在します</value>
+  </data>
+  <data name="PasswordDoesNotMeetRequirements" xml:space="preserve">
+    <value>パスワードがセキュリティ要件を満たしていません</value>
+  </data>
+  <data name="InvalidSignUpData" xml:space="preserve">
+    <value>無効なサインアップデータです</value>
+  </data>
+  <data name="UnableToSendConfirmationEmail" xml:space="preserve">
+    <value>確認メールを送信できません。後でもう一度お試しください。</value>
+  </data>
+  <data name="SignUpLimitExceeded" xml:space="preserve">
+    <value>サインアップ制限を超えました。後でもう一度お試しください。</value>
+  </data>
+  <data name="SignUpNotAuthorized" xml:space="preserve">
+    <value>サインアップが許可されていません。サポートにお問い合わせください。</value>
+  </data>
+  <data name="AuthenticationServiceErrorRetry" xml:space="preserve">
+    <value>認証サービスエラー。後でもう一度お試しください。</value>
+  </data>
+  <data name="UnexpectedSignUpError" xml:space="preserve">
+    <value>サインアップ中に予期しないエラーが発生しました。</value>
+  </data>
+  <!-- Confirmation -->
+  <data name="InvalidConfirmationCode" xml:space="preserve">
+    <value>無効な確認コードです</value>
+  </data>
+  <data name="ConfirmationCodeExpired" xml:space="preserve">
+    <value>確認コードの有効期限が切れています</value>
+  </data>
+  <!-- Sign In -->
+  <data name="PleaseConfirmAccount" xml:space="preserve">
+    <value>サインインする前にアカウントを確認してください</value>
+  </data>
+  <data name="PasswordResetRequired" xml:space="preserve">
+    <value>パスワードのリセットが必要です</value>
+  </data>
+  <data name="InvalidCredentials" xml:space="preserve">
+    <value>ユーザー名/メールアドレスまたはパスワードが正しくありません</value>
+  </data>
+  <!-- Refresh Token -->
+  <data name="RefreshTokenFailed" xml:space="preserve">
+    <value>リフレッシュトークン認証に失敗しました</value>
+  </data>
+  <data name="InvalidOrExpiredRefreshToken" xml:space="preserve">
+    <value>無効または期限切れのリフレッシュトークンです</value>
+  </data>
+  <data name="UserDoesNotExist" xml:space="preserve">
+    <value>ユーザーが存在しません</value>
+  </data>
+  <!-- Password Management -->
+  <data name="UnableToProcessForgotPassword" xml:space="preserve">
+    <value>パスワード忘れリクエストを処理できません</value>
+  </data>
+  <data name="UnableToResetPassword" xml:space="preserve">
+    <value>パスワードをリセットできません。後でもう一度お試しください。</value>
+  </data>
+  <data name="SessionExpiredOrWrongPassword" xml:space="preserve">
+    <value>セッションが期限切れか、現在のパスワードが正しくありません。再度ログインしてください。</value>
+  </data>
+  <data name="NewPasswordPolicyViolation" xml:space="preserve">
+    <value>新しいパスワードがパスワードポリシーを満たしていません。</value>
+  </data>
+  <!-- Profile -->
+  <data name="UserNotFound" xml:space="preserve">
+    <value>ユーザーが見つかりません</value>
+  </data>
+  <data name="NotAuthorizedToUpdateProfile" xml:space="preserve">
+    <value>プロフィールの更新が許可されていません</value>
+  </data>
+  <data name="InvalidUserData" xml:space="preserve">
+    <value>無効なユーザーデータです</value>
+  </data>
+  <data name="InvalidAuthenticationToken" xml:space="preserve">
+    <value>無効な認証トークンです</value>
+  </data>
+  <!-- Email -->
+  <data name="InvalidOrExpiredSession" xml:space="preserve">
+    <value>無効または期限切れのセッションです</value>
+  </data>
+  <!-- MFA -->
+  <data name="InvalidVerificationCode" xml:space="preserve">
+    <value>無効な確認コードです</value>
+  </data>
+  <data name="MfaEnabledSuccessfully" xml:space="preserve">
+    <value>MFAが正常に有効化されました</value>
+  </data>
+  <data name="InvalidTotpCode" xml:space="preserve">
+    <value>無効なTOTPコードです</value>
+  </data>
+  <data name="InvalidMfaCode" xml:space="preserve">
+    <value>無効なMFAコードです</value>
+  </data>
+  <data name="MfaNotEnabled" xml:space="preserve">
+    <value>このアカウントではMFAが有効になっていません</value>
+  </data>
+  <data name="InvalidBackupCode" xml:space="preserve">
+    <value>無効なバックアップコードです</value>
+  </data>
+  <!-- MFA Challenge Messages -->
+  <data name="ChallengeSoftwareTokenMfa" xml:space="preserve">
+    <value>認証アプリからコードを入力してください</value>
+  </data>
+  <data name="ChallengeSmsMfa" xml:space="preserve">
+    <value>SMS認証コードを入力してください</value>
+  </data>
+  <data name="ChallengeNewPasswordRequired" xml:space="preserve">
+    <value>新しいパスワードを設定する必要があります</value>
+  </data>
+  <data name="ChallengeMfaSetup" xml:space="preserve">
+    <value>MFAのセットアップが必要です</value>
+  </data>
+  <data name="ChallengeDefault" xml:space="preserve">
+    <value>追加の認証が必要です</value>
+  </data>
+  <!-- Google OAuth -->
+  <data name="GoogleSignInFailed" xml:space="preserve">
+    <value>Googleサインインに失敗しました</value>
+  </data>
+  <data name="InvalidTokenResponse" xml:space="preserve">
+    <value>無効なトークンレスポンスです</value>
+  </data>
+  <data name="InvalidGoogleUserData" xml:space="preserve">
+    <value>無効なGoogleユーザーデータです</value>
+  </data>
+</root>
