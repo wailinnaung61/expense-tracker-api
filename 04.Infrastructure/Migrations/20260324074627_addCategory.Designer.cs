@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace _04.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260324074627_addCategory")]
+    partial class addCategory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -74,16 +77,7 @@ namespace _04.Infrastructure.Migrations
 
                     b.HasKey("CategoryId");
 
-                    b.HasIndex("UserId", "CreatedAt")
-                        .IsDescending(false, true)
-                        .HasDatabaseName("ix_categories_user_created");
-
-                    b.HasIndex("UserId", "DisplayName")
-                        .HasDatabaseName("ix_categories_user_displayname");
-
-                    b.HasIndex("UserId", "Type", "IsActive", "CreatedAt")
-                        .IsDescending(false, false, false, true)
-                        .HasDatabaseName("ix_categories_user_type_active_created");
+                    b.HasIndex("UserId");
 
                     b.ToTable("categories", (string)null);
                 });

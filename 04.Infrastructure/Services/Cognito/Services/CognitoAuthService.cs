@@ -24,6 +24,7 @@ public class CognitoAuthService : ICognitoAuthService
     private readonly IAmazonCognitoIdentityProvider _cognitoClient;
     private readonly CognitoSettings _cognitoSettings;
     private readonly IMemberRepository _memberRepository;
+    private readonly IExpenseCategoryRepository _categoryRepository;
     private readonly ILogger<CognitoAuthService> _logger;
     private readonly CurrentUserService _currentUser;
     private readonly IStringLocalizer<InfrastructureResource> _localizer;
@@ -32,6 +33,7 @@ public class CognitoAuthService : ICognitoAuthService
         IAmazonCognitoIdentityProvider cognitoClient,
         IOptions<AwsSettings> awsSettings,
         IMemberRepository memberRepository,
+        IExpenseCategoryRepository categoryRepository,
         ILogger<CognitoAuthService> logger,
         CurrentUserService currentUser,
         IStringLocalizer<InfrastructureResource> localizer)
@@ -39,6 +41,7 @@ public class CognitoAuthService : ICognitoAuthService
         _cognitoClient = cognitoClient ?? throw new ArgumentNullException(nameof(cognitoClient));
         _cognitoSettings = awsSettings?.Value?.Cognito ?? throw new ArgumentNullException(nameof(awsSettings));
         _memberRepository = memberRepository ?? throw new ArgumentNullException(nameof(memberRepository));
+        _categoryRepository = categoryRepository ?? throw new ArgumentNullException(nameof(categoryRepository));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _currentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
         _localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
@@ -1049,6 +1052,7 @@ public class CognitoAuthService : ICognitoAuthService
         try
         {
             await _memberRepository.CreateProfileAsync(profile);
+            await _categoryRepository.SeedDefaultCategoriesAsync(cognitoSub);
             _logger.LogInformation("User profile saved to DB for: {Username}", username);
             return true;
         }
@@ -1085,6 +1089,7 @@ public class CognitoAuthService : ICognitoAuthService
 
         var profile = CreateMemberProfile(userName, email, userId);
         await _memberRepository.CreateProfileAsync(profile);
+        await _categoryRepository.SeedDefaultCategoriesAsync(userId);
         _logger.LogInformation("Created profile for Google user: {Email}", email);
     }
 

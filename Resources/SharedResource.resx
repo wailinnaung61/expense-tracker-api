@@ -92,4 +92,16 @@
   <data name="RedirectUriRequired" xml:space="preserve">
     <value>redirectUri is required</value>
   </data>
+  <data name="CategoryNotFound" xml:space="preserve">
+    <value>Category not found</value>
+  </data>
+  <data name="CategoryCreateFailed" xml:space="preserve">
+    <value>Failed to create category. Please try again.</value>
+  </data>
+  <data name="CategoryUpdateFailed" xml:space="preserve">
+    <value>Failed to update category. Please try again.</value>
+  </data>
+  <data name="CategoryDeleteFailed" xml:space="preserve">
+    <value>Failed to delete category. Please try again.</value>
+  </data>
 </root>

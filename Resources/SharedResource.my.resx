@@ -92,4 +92,16 @@
   <data name="RedirectUriRequired" xml:space="preserve">
     <value>redirectUri လိုအပ်ပါသည်</value>
   </data>
+  <data name="CategoryNotFound" xml:space="preserve">
+    <value>အမျိုးအစား ရှာမတွေ့ပါ</value>
+  </data>
+  <data name="CategoryCreateFailed" xml:space="preserve">
+    <value>အမျိုးအစား ဖန်တီး၍ မရပါ။ ထပ်ကြိုးစားပါ။</value>
+  </data>
+  <data name="CategoryUpdateFailed" xml:space="preserve">
+    <value>အမျိုးအစား အပ်ဒိတ်လုပ်၍ မရပါ။ ထပ်ကြိုးစားပါ။</value>
+  </data>
+  <data name="CategoryDeleteFailed" xml:space="preserve">
+    <value>အမျိုးအစား ဖျက်၍ မရပါ။ ထပ်ကြိုးစားပါ။</value>
+  </data>
 </root>

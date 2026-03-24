@@ -1,4 +1,6 @@
 using _04.Infrastructure.Services;
+using expense_tracker_backend.Application.Interfaces;
+using expense_tracker_backend.Application.Services;
 using expense_tracker_backend.Domain.Interfaces;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +20,10 @@ public static class DependencyInjection
 
         // Register repositories
         services.AddScoped<IMemberRepository, MemberRepository>();
+        services.AddScoped<IExpenseCategoryRepository, ExpenseCategoryRepository>();
+
+        // Register services
+        services.AddScoped<IExpenseCategoryService, ExpenseCategoryService>();
 
         return services;
     }

@@ -92,4 +92,16 @@
   <data name="RedirectUriRequired" xml:space="preserve">
     <value>redirectUriが必要です</value>
   </data>
+  <data name="CategoryNotFound" xml:space="preserve">
+    <value>カテゴリが見つかりません</value>
+  </data>
+  <data name="CategoryCreateFailed" xml:space="preserve">
+    <value>カテゴリの作成に失敗しました。もう一度お試しください。</value>
+  </data>
+  <data name="CategoryUpdateFailed" xml:space="preserve">
+    <value>カテゴリの更新に失敗しました。もう一度お試しください。</value>
+  </data>
+  <data name="CategoryDeleteFailed" xml:space="preserve">
+    <value>カテゴリの削除に失敗しました。もう一度お試しください。</value>
+  </data>
 </root>
