@@ -1,179 +1,32 @@
-using Amazon.DynamoDBv2;
-using Amazon.DynamoDBv2.Model;
 using expense_tracker_backend.Domain.Entities;
 using expense_tracker_backend.Domain.Interfaces;
-using expense_tracker_backend.Domain.Shared.Constants;
-using expense_tracker_backend.Infrastructure.AWS.Configuration;
+using Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using System.Globalization;
 
 namespace _04.Infrastructure.Services;
 
 public class AggregationRepository : IAggregationRepository
 {
-    private readonly IAmazonDynamoDB _dynamoDb;
-    private readonly string _tableName;
+    private readonly ApplicationDbContext _context;
     private readonly ILogger<AggregationRepository> _logger;
 
     public AggregationRepository(
-        IAmazonDynamoDB dynamoDb,
-        IOptions<AwsSettings> awsSettings,
+        ApplicationDbContext context,
         ILogger<AggregationRepository> logger)
     {
-        _dynamoDb = dynamoDb;
-        _tableName = awsSettings.Value.DynamoDB.AggregationsTableName;
+        _context = context;
         _logger = logger;
     }
 
     public async Task UpdateAggregationsAsync(Transaction transaction)
     {
-        await ApplyAggregationsAsync(transaction, 1);
+        await RefreshMaterializedViewsAsync();
     }
 
     public async Task ReverseAggregationsAsync(Transaction transaction)
     {
-        await ApplyAggregationsAsync(transaction, -1);
-    }
-
-    private async Task ApplyAggregationsAsync(Transaction transaction, int direction)
-    {
-        var userId = transaction.UserId;
-        var date = DateTime.Parse(transaction.TransactionDate);
-        var amount = transaction.Amount * direction;
-        var countDelta = direction;
-        var type = transaction.Type;
-        var categoryId = transaction.CategoryId;
-
-        var pk = $"USER#{userId}";
-        var amountField = GetAmountFieldName(type);
-
-        var tasks = new List<Task>
-        {
-            UpdateTimeAggregationAsync(pk, $"AGG#DAY#{date:yyyy-MM-dd}", date.ToString("yyyy/M/d"), amountField, amount, countDelta),
-            UpdateTimeAggregationAsync(pk, $"AGG#WEEK#{GetIsoWeek(date)}", GetIsoWeek(date), amountField, amount, countDelta),
-            UpdateMonthAggregationAsync(pk, $"AGG#MONTH#{date:yyyy-MM}", date, amountField, amount, countDelta),
-            UpdateTimeAggregationAsync(pk, $"AGG#YEAR#{date:yyyy}", date.ToString("yyyy"), amountField, amount, countDelta),
-            UpdateCategoryAggregationAsync(pk, type, categoryId, date, amount, countDelta)
-        };
-
-        await Task.WhenAll(tasks);
-
-        _logger.LogInformation(
-            "Aggregations {Direction} for User: {UserId}, Type: {Type}, Amount: {Amount}, Date: {Date}",
-            direction > 0 ? "incremented" : "decremented", userId, type, transaction.Amount, date);
-    }
-
-    private async Task UpdateTimeAggregationAsync(
-        string pk, string sk, string period, string amountField, decimal amount, int countDelta)
-    {
-        var request = new UpdateItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = pk },
-                ["SK"] = new() { S = sk }
-            },
-            UpdateExpression = $"SET #period = :period ADD {amountField} :amount, transactionCount :count",
-            ExpressionAttributeNames = new Dictionary<string, string>
-            {
-                ["#period"] = "period"
-            },
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":period"] = new() { S = period },
-                [":amount"] = new() { N = amount.ToString(CultureInfo.InvariantCulture) },
-                [":count"] = new() { N = countDelta.ToString() }
-            }
-        };
-
-        await _dynamoDb.UpdateItemAsync(request);
-    }
-
-    private async Task UpdateMonthAggregationAsync(
-        string pk, string sk, DateTime date, string amountField, decimal amount, int countDelta)
-    {
-        var periodStart = new DateTime(date.Year, date.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var periodEnd = periodStart.AddMonths(1).AddDays(-1);
-
-        var request = new UpdateItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = pk },
-                ["SK"] = new() { S = sk }
-            },
-            UpdateExpression = $"SET #period = :period, periodStart = :periodStart, periodEnd = :periodEnd ADD {amountField} :amount, transactionCount :count",
-            ExpressionAttributeNames = new Dictionary<string, string>
-            {
-                ["#period"] = "period"
-            },
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":period"] = new() { S = date.ToString("yyyy/M") },
-                [":periodStart"] = new() { S = periodStart.ToString("yyyy/MM/dd") },
-                [":periodEnd"] = new() { S = periodEnd.ToString("yyyy/MM/dd") },
-                [":amount"] = new() { N = amount.ToString(CultureInfo.InvariantCulture) },
-                [":count"] = new() { N = countDelta.ToString() }
-            }
-        };
-
-        await _dynamoDb.UpdateItemAsync(request);
-    }
-
-    private async Task UpdateCategoryAggregationAsync(
-        string pk, AppConstants.TransactionType type, string categoryId, DateTime date, decimal amount, int countDelta)
-    {
-        var typeLabel = type.ToString().ToUpperInvariant();
-        var monthKey = date.ToString("yyyy-MM");
-        var sk = $"CAT#{typeLabel}#{categoryId}#{monthKey}";
-
-        var periodStart = new DateTime(date.Year, date.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var periodEnd = periodStart.AddMonths(1).AddDays(-1);
-
-        var request = new UpdateItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = pk },
-                ["SK"] = new() { S = sk }
-            },
-            UpdateExpression = "SET categoryId = :categoryId, #period = :period, periodStart = :periodStart, periodEnd = :periodEnd ADD totalAmount :amount, transactionCount :count",
-            ExpressionAttributeNames = new Dictionary<string, string>
-            {
-                ["#period"] = "period"
-            },
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":categoryId"] = new() { S = categoryId },
-                [":period"] = new() { S = date.ToString("yyyy/M") },
-                [":periodStart"] = new() { S = periodStart.ToString("yyyy/MM/dd") },
-                [":periodEnd"] = new() { S = periodEnd.ToString("yyyy/MM/dd") },
-                [":amount"] = new() { N = amount.ToString(CultureInfo.InvariantCulture) },
-                [":count"] = new() { N = countDelta.ToString() }
-            }
-        };
-
-        await _dynamoDb.UpdateItemAsync(request);
-    }
-
-    private static string GetAmountFieldName(AppConstants.TransactionType type) => type switch
-    {
-        AppConstants.TransactionType.Income => "income",
-        AppConstants.TransactionType.Expense => "expense",
-        AppConstants.TransactionType.Savings => "saving",
-        AppConstants.TransactionType.Investment => "investment",
-        _ => "expense"
-    };
-
-    private static string GetIsoWeek(DateTime date)
-    {
-        var week = ISOWeek.GetWeekOfYear(date);
-        var year = ISOWeek.GetYear(date);
-        return $"{year}-W{week:D2}";
+        await RefreshMaterializedViewsAsync();
     }
 
     // ============================================================================
@@ -182,42 +35,45 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<Aggregation?> GetDailyAggregationAsync(Guid userId, string date)
     {
-        var pk = $"USER#{userId}";
-        var sk = $"AGG#DAY#{date}";
+        var userIdStr = userId.ToString();
+        var dateParam = DateOnly.Parse(date);
 
-        var response = await _dynamoDb.GetItemAsync(new GetItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = pk },
-                ["SK"] = new() { S = sk }
-            }
-        });
+        var row = await _context.Database
+            .SqlQuery<AggregationRow>($"""
+                SELECT
+                    period::text AS period,
+                    '' AS period_start,
+                    '' AS period_end,
+                    income, expense, saving, investment, transaction_count
+                FROM mv_daily_aggregations
+                WHERE user_id = {userIdStr} AND period = {dateParam}
+                """)
+            .FirstOrDefaultAsync();
 
-        return response.Item.Count == 0 ? null : MapAggregationFromItem(response.Item);
+        return row is null ? null : MapToAggregation(row);
     }
 
     public async Task<List<Aggregation>> GetDailyAggregationsRangeAsync(Guid userId, string startDate, string endDate)
     {
-        var pk = $"USER#{userId}";
+        var userIdStr = userId.ToString();
+        var startParam = DateOnly.Parse(startDate);
+        var endParam = DateOnly.Parse(endDate);
 
-        var response = await _dynamoDb.QueryAsync(new QueryRequest
-        {
-            TableName = _tableName,
-            KeyConditionExpression = "PK = :pk AND SK BETWEEN :start AND :end",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":pk"] = new() { S = pk },
-                [":start"] = new() { S = $"AGG#DAY#{startDate}" },
-                [":end"] = new() { S = $"AGG#DAY#{endDate}" }
-            }
-        });
+        var rows = await _context.Database
+            .SqlQuery<AggregationRow>($"""
+                SELECT
+                    period::text AS period,
+                    '' AS period_start,
+                    '' AS period_end,
+                    income, expense, saving, investment, transaction_count
+                FROM mv_daily_aggregations
+                WHERE user_id = {userIdStr}
+                    AND period BETWEEN {startParam} AND {endParam}
+                ORDER BY period
+                """)
+            .ToListAsync();
 
-        return response.Items
-            .Where(x => GetString(x, "SK").StartsWith("AGG#DAY#"))
-            .Select(MapAggregationFromItem)
-            .ToList();
+        return rows.Select(MapToAggregation).ToList();
     }
 
     // ============================================================================
@@ -226,42 +82,42 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<Aggregation?> GetWeeklyAggregationAsync(Guid userId, string week)
     {
-        var pk = $"USER#{userId}";
-        var sk = $"AGG#WEEK#{week}";
+        var userIdStr = userId.ToString();
 
-        var response = await _dynamoDb.GetItemAsync(new GetItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = pk },
-                ["SK"] = new() { S = sk }
-            }
-        });
+        var row = await _context.Database
+            .SqlQuery<AggregationRow>($"""
+                SELECT
+                    period,
+                    '' AS period_start,
+                    '' AS period_end,
+                    income, expense, saving, investment, transaction_count
+                FROM mv_weekly_aggregations
+                WHERE user_id = {userIdStr} AND period = {week}
+                """)
+            .FirstOrDefaultAsync();
 
-        return response.Item.Count == 0 ? null : MapAggregationFromItem(response.Item);
+        return row is null ? null : MapToAggregation(row);
     }
 
     public async Task<List<Aggregation>> GetWeeklyAggregationsRangeAsync(Guid userId, string startWeek, string endWeek)
     {
-        var pk = $"USER#{userId}";
+        var userIdStr = userId.ToString();
 
-        var response = await _dynamoDb.QueryAsync(new QueryRequest
-        {
-            TableName = _tableName,
-            KeyConditionExpression = "PK = :pk AND SK BETWEEN :start AND :end",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":pk"] = new() { S = pk },
-                [":start"] = new() { S = $"AGG#WEEK#{startWeek}" },
-                [":end"] = new() { S = $"AGG#WEEK#{endWeek}" }
-            }
-        });
+        var rows = await _context.Database
+            .SqlQuery<AggregationRow>($"""
+                SELECT
+                    period,
+                    '' AS period_start,
+                    '' AS period_end,
+                    income, expense, saving, investment, transaction_count
+                FROM mv_weekly_aggregations
+                WHERE user_id = {userIdStr}
+                    AND period BETWEEN {startWeek} AND {endWeek}
+                ORDER BY period
+                """)
+            .ToListAsync();
 
-        return response.Items
-            .Where(x => GetString(x, "SK").StartsWith("AGG#WEEK#"))
-            .Select(MapAggregationFromItem)
-            .ToList();
+        return rows.Select(MapToAggregation).ToList();
     }
 
     // ============================================================================
@@ -270,42 +126,42 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<Aggregation?> GetMonthlyAggregationAsync(Guid userId, string month)
     {
-        var pk = $"USER#{userId}";
-        var sk = $"AGG#MONTH#{month}";
+        var userIdStr = userId.ToString();
 
-        var response = await _dynamoDb.GetItemAsync(new GetItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = pk },
-                ["SK"] = new() { S = sk }
-            }
-        });
+        var row = await _context.Database
+            .SqlQuery<AggregationRow>($"""
+                SELECT
+                    period,
+                    TO_CHAR(period_start, 'YYYY/MM/DD') AS period_start,
+                    TO_CHAR(period_end, 'YYYY/MM/DD') AS period_end,
+                    income, expense, saving, investment, transaction_count
+                FROM mv_monthly_aggregations
+                WHERE user_id = {userIdStr} AND period = {month}
+                """)
+            .FirstOrDefaultAsync();
 
-        return response.Item.Count == 0 ? null : MapAggregationFromItem(response.Item);
+        return row is null ? null : MapToAggregation(row);
     }
 
     public async Task<List<Aggregation>> GetMonthlyAggregationsRangeAsync(Guid userId, string startMonth, string endMonth)
     {
-        var pk = $"USER#{userId}";
+        var userIdStr = userId.ToString();
 
-        var response = await _dynamoDb.QueryAsync(new QueryRequest
-        {
-            TableName = _tableName,
-            KeyConditionExpression = "PK = :pk AND SK BETWEEN :start AND :end",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":pk"] = new() { S = pk },
-                [":start"] = new() { S = $"AGG#MONTH#{startMonth}" },
-                [":end"] = new() { S = $"AGG#MONTH#{endMonth}" }
-            }
-        });
+        var rows = await _context.Database
+            .SqlQuery<AggregationRow>($"""
+                SELECT
+                    period,
+                    TO_CHAR(period_start, 'YYYY/MM/DD') AS period_start,
+                    TO_CHAR(period_end, 'YYYY/MM/DD') AS period_end,
+                    income, expense, saving, investment, transaction_count
+                FROM mv_monthly_aggregations
+                WHERE user_id = {userIdStr}
+                    AND period BETWEEN {startMonth} AND {endMonth}
+                ORDER BY period
+                """)
+            .ToListAsync();
 
-        return response.Items
-            .Where(x => GetString(x, "SK").StartsWith("AGG#MONTH#"))
-            .Select(MapAggregationFromItem)
-            .ToList();
+        return rows.Select(MapToAggregation).ToList();
     }
 
     // ============================================================================
@@ -314,42 +170,42 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<Aggregation?> GetYearlyAggregationAsync(Guid userId, string year)
     {
-        var pk = $"USER#{userId}";
-        var sk = $"AGG#YEAR#{year}";
+        var userIdStr = userId.ToString();
 
-        var response = await _dynamoDb.GetItemAsync(new GetItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = pk },
-                ["SK"] = new() { S = sk }
-            }
-        });
+        var row = await _context.Database
+            .SqlQuery<AggregationRow>($"""
+                SELECT
+                    period,
+                    '' AS period_start,
+                    '' AS period_end,
+                    income, expense, saving, investment, transaction_count
+                FROM mv_yearly_aggregations
+                WHERE user_id = {userIdStr} AND period = {year}
+                """)
+            .FirstOrDefaultAsync();
 
-        return response.Item.Count == 0 ? null : MapAggregationFromItem(response.Item);
+        return row is null ? null : MapToAggregation(row);
     }
 
     public async Task<List<Aggregation>> GetYearlyAggregationsRangeAsync(Guid userId, string startYear, string endYear)
     {
-        var pk = $"USER#{userId}";
+        var userIdStr = userId.ToString();
 
-        var response = await _dynamoDb.QueryAsync(new QueryRequest
-        {
-            TableName = _tableName,
-            KeyConditionExpression = "PK = :pk AND SK BETWEEN :start AND :end",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":pk"] = new() { S = pk },
-                [":start"] = new() { S = $"AGG#YEAR#{startYear}" },
-                [":end"] = new() { S = $"AGG#YEAR#{endYear}" }
-            }
-        });
+        var rows = await _context.Database
+            .SqlQuery<AggregationRow>($"""
+                SELECT
+                    period,
+                    '' AS period_start,
+                    '' AS period_end,
+                    income, expense, saving, investment, transaction_count
+                FROM mv_yearly_aggregations
+                WHERE user_id = {userIdStr}
+                    AND period BETWEEN {startYear} AND {endYear}
+                ORDER BY period
+                """)
+            .ToListAsync();
 
-        return response.Items
-            .Where(x => GetString(x, "SK").StartsWith("AGG#YEAR#"))
-            .Select(MapAggregationFromItem)
-            .ToList();
+        return rows.Select(MapToAggregation).ToList();
     }
 
     // ============================================================================
@@ -358,75 +214,112 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<List<CategoryAggregation>> GetCategoryMonthlyAggregationsAsync(Guid userId, string month)
     {
-        var pk = $"USER#{userId}";
+        var userIdStr = userId.ToString();
 
-        var response = await _dynamoDb.QueryAsync(new QueryRequest
-        {
-            TableName = _tableName,
-            KeyConditionExpression = "PK = :pk AND begins_with(SK, :sk)",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":pk"] = new() { S = pk },
-                [":sk"] = new() { S = "CAT#" }
-            }
-        });
+        var rows = await _context.Database
+            .SqlQuery<CategoryAggregationRow>($"""
+                SELECT
+                    category_id,
+                    period,
+                    TO_CHAR(period_start, 'YYYY/MM/DD') AS period_start,
+                    TO_CHAR(period_end, 'YYYY/MM/DD') AS period_end,
+                    total_amount, transaction_count
+                FROM mv_category_monthly_aggregations
+                WHERE user_id = {userIdStr} AND period = {month}
+                """)
+            .ToListAsync();
 
-        return response.Items
-            .Where(x => GetString(x, "period") == month)
-            .Select(MapCategoryFromItem)
-            .ToList();
+        return rows.Select(MapToCategoryAggregation).ToList();
     }
 
     public async Task<CategoryAggregation?> GetCategoryMonthlyAggregationAsync(Guid userId, Guid categoryId, string month)
     {
-        var pk = $"USER#{userId}";
-        var sk = $"CAT#EXPENSE#{categoryId}#{month}";
+        var userIdStr = userId.ToString();
+        var categoryIdStr = categoryId.ToString();
 
-        var response = await _dynamoDb.GetItemAsync(new GetItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = pk },
-                ["SK"] = new() { S = sk }
-            }
-        });
+        var row = await _context.Database
+            .SqlQuery<CategoryAggregationRow>($"""
+                SELECT
+                    category_id,
+                    period,
+                    TO_CHAR(period_start, 'YYYY/MM/DD') AS period_start,
+                    TO_CHAR(period_end, 'YYYY/MM/DD') AS period_end,
+                    total_amount, transaction_count
+                FROM mv_category_monthly_aggregations
+                WHERE user_id = {userIdStr}
+                    AND category_id = {categoryIdStr}
+                    AND period = {month}
+                """)
+            .FirstOrDefaultAsync();
 
-        return response.Item.Count == 0 ? null : MapCategoryFromItem(response.Item);
+        return row is null ? null : MapToCategoryAggregation(row);
     }
 
     // ============================================================================
-    // MAPPERS & HELPERS
+    // REFRESH
     // ============================================================================
 
-    private static Aggregation MapAggregationFromItem(Dictionary<string, AttributeValue> item) => new()
+    private async Task RefreshMaterializedViewsAsync()
     {
-        Period = GetString(item, "period"),
-        PeriodStart = GetString(item, "periodStart"),
-        PeriodEnd = GetString(item, "periodEnd"),
-        Income = GetDecimal(item, "income"),
-        Expense = GetDecimal(item, "expense"),
-        Saving = GetDecimal(item, "saving"),
-        Investment = GetDecimal(item, "investment"),
-        TransactionCount = GetInt(item, "transactionCount")
+        try
+        {
+            await _context.Database.ExecuteSqlRawAsync("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_daily_aggregations");
+            await _context.Database.ExecuteSqlRawAsync("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_weekly_aggregations");
+            await _context.Database.ExecuteSqlRawAsync("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_monthly_aggregations");
+            await _context.Database.ExecuteSqlRawAsync("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_yearly_aggregations");
+            await _context.Database.ExecuteSqlRawAsync("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_category_monthly_aggregations");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to refresh materialized views");
+        }
+    }
+
+    // ============================================================================
+    // MAPPERS & ROW TYPES
+    // ============================================================================
+
+    private static Aggregation MapToAggregation(AggregationRow row) => new()
+    {
+        Period = row.period,
+        PeriodStart = row.period_start,
+        PeriodEnd = row.period_end,
+        Income = row.income,
+        Expense = row.expense,
+        Saving = row.saving,
+        Investment = row.investment,
+        TransactionCount = row.transaction_count
     };
 
-    private static CategoryAggregation MapCategoryFromItem(Dictionary<string, AttributeValue> item) => new()
+    private static CategoryAggregation MapToCategoryAggregation(CategoryAggregationRow row) => new()
     {
-        CategoryId = GetString(item, "categoryId"),
-        Period = GetString(item, "period"),
-        PeriodStart = GetString(item, "periodStart"),
-        PeriodEnd = GetString(item, "periodEnd"),
-        TotalAmount = GetDecimal(item, "totalAmount"),
-        TransactionCount = GetInt(item, "transactionCount")
+        CategoryId = row.category_id,
+        Period = row.period,
+        PeriodStart = row.period_start,
+        PeriodEnd = row.period_end,
+        TotalAmount = row.total_amount,
+        TransactionCount = row.transaction_count
     };
 
-    private static string GetString(Dictionary<string, AttributeValue> item, string key) =>
-        item.TryGetValue(key, out var v) ? v.S ?? "" : "";
+    private class AggregationRow
+    {
+        public string period { get; set; } = string.Empty;
+        public string period_start { get; set; } = string.Empty;
+        public string period_end { get; set; } = string.Empty;
+        public decimal income { get; set; }
+        public decimal expense { get; set; }
+        public decimal saving { get; set; }
+        public decimal investment { get; set; }
+        public int transaction_count { get; set; }
+    }
 
-    private static decimal GetDecimal(Dictionary<string, AttributeValue> item, string key) =>
-        item.TryGetValue(key, out var v) && decimal.TryParse(v.N, NumberStyles.Any, CultureInfo.InvariantCulture, out var d) ? d : 0;
-
-    private static int GetInt(Dictionary<string, AttributeValue> item, string key) =>
-        item.TryGetValue(key, out var v) && int.TryParse(v.N, out var i) ? i : 0;
+    private class CategoryAggregationRow
+    {
+        public string category_id { get; set; } = string.Empty;
+        public string period { get; set; } = string.Empty;
+        public string period_start { get; set; } = string.Empty;
+        public string period_end { get; set; } = string.Empty;
+        public decimal total_amount { get; set; }
+        public int transaction_count { get; set; }
+    }
 }

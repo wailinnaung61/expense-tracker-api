@@ -10,12 +10,10 @@ namespace _04.Infrastructure.Services;
 public class ExpenseCategoryRepository : IExpenseCategoryRepository
 {
     private readonly ApplicationDbContext _context;
-    private readonly IAggregationRepository _aggregationRepository;
 
-    public ExpenseCategoryRepository(ApplicationDbContext context, IAggregationRepository aggregationRepository)
+    public ExpenseCategoryRepository(ApplicationDbContext context)
     {
         _context = context;
-        _aggregationRepository = aggregationRepository;
     }
 
     public async Task<(List<ExpenseCategory> Items, int TotalCount)> GetCategoriesAsync(
@@ -120,15 +118,7 @@ public class ExpenseCategoryRepository : IExpenseCategoryRepository
         var categories = DefaultCategorySeeder.GetDefaultCategories(userId, now);
 
         await _context.ExpenseCategories.AddRangeAsync(categories);
-
-        var transactions = DefaultTransactionSeeder.GetDefaultTransactions(userId, categories, now);
-        await _context.Transactions.AddRangeAsync(transactions);
-
         await _context.SaveChangesAsync();
-
-        // Sync seed data to DynamoDB aggregations
-        var aggregationTasks = transactions.Select(t => _aggregationRepository.UpdateAggregationsAsync(t));
-        await Task.WhenAll(aggregationTasks);
     }
 
     public async Task<ExpenseCategory?> UpdateExpenseCategoryAsync(ExpenseCategory category)

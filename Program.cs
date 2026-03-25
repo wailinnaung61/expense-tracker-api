@@ -1,7 +1,6 @@
 using System.Globalization;
 using Amazon;
 using Amazon.CognitoIdentityProvider;
-using Amazon.DynamoDBv2;
 using Amazon.Runtime;
 using expense_tracker_backend.Filters;
 using expense_tracker_backend.Infrastructure.AWS.Cognito.Interfaces;
@@ -66,9 +65,6 @@ var credentials = new BasicAWSCredentials(awsSettings.AccessKey, awsSettings.Sec
 
 builder.Services.AddSingleton<IAmazonCognitoIdentityProvider>(sp =>
     new AmazonCognitoIdentityProviderClient(credentials, RegionEndpoint.GetBySystemName(awsSettings.Region)));
-
-builder.Services.AddSingleton<IAmazonDynamoDB>(sp =>
-    new AmazonDynamoDBClient(credentials, RegionEndpoint.GetBySystemName(awsSettings.Region)));
 
 // Authentication
 var cognitoAuthority = $"https://cognito-idp.{awsSettings.Cognito.Region}.amazonaws.com/{awsSettings.Cognito.UserPoolId}";

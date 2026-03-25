@@ -1,6 +1,7 @@
 using expense_tracker_backend.Application.DTOs;
 using expense_tracker_backend.Application.Interfaces;
 using expense_tracker_backend.Domain.Interfaces;
+using expense_tracker_backend.Domain.Shared.Constants;
 
 namespace expense_tracker_backend.Application.Services;
 
@@ -77,8 +78,10 @@ public class TranactionService : ITranactionService
         };
         var created = await _repository.CreateAsync(tranaction);
 
-        // Fire-and-forget: don't block API response for DynamoDB
-        _ = _aggregationRepository.UpdateAggregationsAsync(created);
+        if (created.Status == AppConstants.PaymentStatus.Completed)
+        {
+            _ = _aggregationRepository.UpdateAggregationsAsync(created);
+        }
 
         return MapToDto(created);
     }
@@ -88,8 +91,7 @@ public class TranactionService : ITranactionService
         var existing = await _repository.GetByIdAsync(userId, tranactionId);
         if (existing is null) return null;
 
-        // Reverse old aggregations (fire-and-forget)
-        _ = _aggregationRepository.ReverseAggregationsAsync(existing);
+        var wasCompleted = existing.Status == AppConstants.PaymentStatus.Completed;
 
         existing.Type = dto.type;
         existing.CategoryId = dto.CategoryId;
@@ -105,8 +107,21 @@ public class TranactionService : ITranactionService
         var updated = await _repository.UpdateAsync(existing);
         if (updated is null) return null;
 
-        // Apply new aggregations (fire-and-forget)
-        _ = _aggregationRepository.UpdateAggregationsAsync(updated);
+        var isNowCompleted = updated.Status == AppConstants.PaymentStatus.Completed;
+
+        if (wasCompleted && isNowCompleted)
+        {
+            _ = _aggregationRepository.ReverseAggregationsAsync(existing);
+            _ = _aggregationRepository.UpdateAggregationsAsync(updated);
+        }
+        else if (wasCompleted && !isNowCompleted)
+        {
+            _ = _aggregationRepository.ReverseAggregationsAsync(existing);
+        }
+        else if (!wasCompleted && isNowCompleted)
+        {
+            _ = _aggregationRepository.UpdateAggregationsAsync(updated);
+        }
 
         return MapToDto(updated);
     }
@@ -116,8 +131,10 @@ public class TranactionService : ITranactionService
         var existing = await _repository.GetByIdAsync(userId, tranactionId);
         if (existing is null) return false;
 
-        // Reverse aggregations (fire-and-forget)
-        _ = _aggregationRepository.ReverseAggregationsAsync(existing);
+        if (existing.Status == AppConstants.PaymentStatus.Completed)
+        {
+            _ = _aggregationRepository.ReverseAggregationsAsync(existing);
+        }
 
         return await _repository.DeleteAsync(userId, tranactionId);
     }
@@ -129,7 +146,7 @@ public class TranactionService : ITranactionService
             Guid.Parse(expense.UserId),
             expense.Type,
             expense.CategoryId,
-            string.Empty, // CategoryName - removed from entity
+            string.Empty,
             expense.Amount,
             expense.Description,
             expense.Merchant,

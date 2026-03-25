@@ -66,7 +66,10 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
 
         builder.Property(t => t.TransactionDate)
             .HasColumnName("transaction_date")
-            .HasMaxLength(20);
+            .HasColumnType("date")
+            .HasConversion(
+                v => DateOnly.ParseExact(v, "yyyy-MM-dd"),
+                v => v.ToString("yyyy-MM-dd"));
 
         builder.Property(t => t.ImageUrl)
             .HasColumnName("image_url")
