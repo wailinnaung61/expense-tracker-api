@@ -7,7 +7,7 @@ public static class DefaultCategorySeeder
 {
     public static List<ExpenseCategory> GetDefaultCategories(string userId, DateTime now) =>
     [
-        // EXPENSE CATEGORIES (12)
+        // EXPENSE CATEGORIES (5)
         new()
         {
             CategoryId = Guid.NewGuid().ToString(),
@@ -60,18 +60,6 @@ public static class DefaultCategorySeeder
         {
             CategoryId = Guid.NewGuid().ToString(),
             UserId = userId,
-            DisplayName = "Healthcare",
-            Type = AppConstants.TransactionType.Expense,
-            Icon = "🏥",
-            Color = "#059669",
-            IsActive = true,
-            CreatedAt = now,
-            UpdatedAt = now
-        },
-        new()
-        {
-            CategoryId = Guid.NewGuid().ToString(),
-            UserId = userId,
             DisplayName = "Bills & Utilities",
             Type = AppConstants.TransactionType.Expense,
             Icon = "💡",
@@ -80,80 +68,8 @@ public static class DefaultCategorySeeder
             CreatedAt = now,
             UpdatedAt = now
         },
-        new()
-        {
-            CategoryId = Guid.NewGuid().ToString(),
-            UserId = userId,
-            DisplayName = "Education",
-            Type = AppConstants.TransactionType.Expense,
-            Icon = "📚",
-            Color = "#2563eb",
-            IsActive = true,
-            CreatedAt = now,
-            UpdatedAt = now
-        },
-        new()
-        {
-            CategoryId = Guid.NewGuid().ToString(),
-            UserId = userId,
-            DisplayName = "Groceries",
-            Type = AppConstants.TransactionType.Expense,
-            Icon = "🛒",
-            Color = "#db2777",
-            IsActive = true,
-            CreatedAt = now,
-            UpdatedAt = now
-        },
-        new()
-        {
-            CategoryId = Guid.NewGuid().ToString(),
-            UserId = userId,
-            DisplayName = "Personal Care",
-            Type = AppConstants.TransactionType.Expense,
-            Icon = "💅",
-            Color = "#c026d3",
-            IsActive = true,
-            CreatedAt = now,
-            UpdatedAt = now
-        },
-        new()
-        {
-            CategoryId = Guid.NewGuid().ToString(),
-            UserId = userId,
-            DisplayName = "Travel",
-            Type = AppConstants.TransactionType.Expense,
-            Icon = "✈️",
-            Color = "#0284c7",
-            IsActive = true,
-            CreatedAt = now,
-            UpdatedAt = now
-        },
-        new()
-        {
-            CategoryId = Guid.NewGuid().ToString(),
-            UserId = userId,
-            DisplayName = "Housing",
-            Type = AppConstants.TransactionType.Expense,
-            Icon = "🏠",
-            Color = "#4f46e5",
-            IsActive = true,
-            CreatedAt = now,
-            UpdatedAt = now
-        },
-        new()
-        {
-            CategoryId = Guid.NewGuid().ToString(),
-            UserId = userId,
-            DisplayName = "Other Expenses",
-            Type = AppConstants.TransactionType.Expense,
-            Icon = "📌",
-            Color = "#7c3aed",
-            IsActive = true,
-            CreatedAt = now,
-            UpdatedAt = now
-        },
 
-        // INCOME CATEGORIES (6)
+        // INCOME CATEGORIES (5)
         new()
         {
             CategoryId = Guid.NewGuid().ToString(),
@@ -210,18 +126,6 @@ public static class DefaultCategorySeeder
             Type = AppConstants.TransactionType.Income,
             Icon = "🎉",
             Color = "#ea580c",
-            IsActive = true,
-            CreatedAt = now,
-            UpdatedAt = now
-        },
-        new()
-        {
-            CategoryId = Guid.NewGuid().ToString(),
-            UserId = userId,
-            DisplayName = "Other Income",
-            Type = AppConstants.TransactionType.Income,
-            Icon = "💵",
-            Color = "#059669",
             IsActive = true,
             CreatedAt = now,
             UpdatedAt = now

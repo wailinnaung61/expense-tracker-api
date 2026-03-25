@@ -7,7 +7,7 @@ public static class DefaultTransactionSeeder
 {
     public static List<Transaction> GetDefaultTransactions(string userId, List<ExpenseCategory> categories, DateTime now) =>
     [
-        // EXPENSE TRANSACTIONS
+        // EXPENSE TRANSACTIONS (5)
         new()
         {
             TransactionId = Guid.NewGuid().ToString(),
@@ -45,14 +45,14 @@ public static class DefaultTransactionSeeder
             TransactionId = Guid.NewGuid().ToString(),
             UserId = userId,
             Type = AppConstants.TransactionType.Expense,
-            CategoryId = FindCategoryId(categories, "Groceries"),
-            Amount = 82.30m,
-            Description = "Weekly groceries",
-            Merchant = "Supermarket",
+            CategoryId = FindCategoryId(categories, "Shopping"),
+            Amount = 59.99m,
+            Description = "New shoes",
+            Merchant = "Shoe Store",
             PaymentMethod = "Credit Card",
             Status = AppConstants.PaymentStatus.Completed,
             TransactionDate = now.AddDays(-3).ToString("yyyy-MM-dd"),
-            Notes = "Weekly shopping",
+            Notes = "",
             CreatedAt = now,
             UpdatedAt = now
         },
@@ -88,88 +88,8 @@ public static class DefaultTransactionSeeder
             CreatedAt = now,
             UpdatedAt = now
         },
-        new()
-        {
-            TransactionId = Guid.NewGuid().ToString(),
-            UserId = userId,
-            Type = AppConstants.TransactionType.Expense,
-            CategoryId = FindCategoryId(categories, "Healthcare"),
-            Amount = 45.00m,
-            Description = "Pharmacy",
-            Merchant = "Pharmacy Store",
-            PaymentMethod = "Cash",
-            Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-6).ToString("yyyy-MM-dd"),
-            Notes = "",
-            CreatedAt = now,
-            UpdatedAt = now
-        },
-        new()
-        {
-            TransactionId = Guid.NewGuid().ToString(),
-            UserId = userId,
-            Type = AppConstants.TransactionType.Expense,
-            CategoryId = FindCategoryId(categories, "Shopping"),
-            Amount = 59.99m,
-            Description = "New shoes",
-            Merchant = "Shoe Store",
-            PaymentMethod = "Credit Card",
-            Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-7).ToString("yyyy-MM-dd"),
-            Notes = "",
-            CreatedAt = now,
-            UpdatedAt = now
-        },
-        new()
-        {
-            TransactionId = Guid.NewGuid().ToString(),
-            UserId = userId,
-            Type = AppConstants.TransactionType.Expense,
-            CategoryId = FindCategoryId(categories, "Education"),
-            Amount = 29.99m,
-            Description = "Online course",
-            Merchant = "Udemy",
-            PaymentMethod = "Credit Card",
-            Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-8).ToString("yyyy-MM-dd"),
-            Notes = "Programming course",
-            CreatedAt = now,
-            UpdatedAt = now
-        },
-        new()
-        {
-            TransactionId = Guid.NewGuid().ToString(),
-            UserId = userId,
-            Type = AppConstants.TransactionType.Expense,
-            CategoryId = FindCategoryId(categories, "Housing"),
-            Amount = 850.00m,
-            Description = "Monthly rent",
-            Merchant = "Landlord",
-            PaymentMethod = "Bank Transfer",
-            Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-10).ToString("yyyy-MM-dd"),
-            Notes = "March rent",
-            CreatedAt = now,
-            UpdatedAt = now
-        },
-        new()
-        {
-            TransactionId = Guid.NewGuid().ToString(),
-            UserId = userId,
-            Type = AppConstants.TransactionType.Expense,
-            CategoryId = FindCategoryId(categories, "Personal Care"),
-            Amount = 25.00m,
-            Description = "Haircut",
-            Merchant = "Barber Shop",
-            PaymentMethod = "Cash",
-            Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-12).ToString("yyyy-MM-dd"),
-            Notes = "",
-            CreatedAt = now,
-            UpdatedAt = now
-        },
 
-        // INCOME TRANSACTIONS
+        // INCOME TRANSACTIONS (5)
         new()
         {
             TransactionId = Guid.NewGuid().ToString(),
@@ -197,7 +117,7 @@ public static class DefaultTransactionSeeder
             Merchant = "Client",
             PaymentMethod = "Bank Transfer",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-5).ToString("yyyy-MM-dd"),
+            TransactionDate = now.AddDays(-3).ToString("yyyy-MM-dd"),
             Notes = "Frontend project",
             CreatedAt = now,
             UpdatedAt = now
@@ -213,7 +133,7 @@ public static class DefaultTransactionSeeder
             Merchant = "Broker",
             PaymentMethod = "Bank Transfer",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-10).ToString("yyyy-MM-dd"),
+            TransactionDate = now.AddDays(-5).ToString("yyyy-MM-dd"),
             Notes = "Quarterly dividends",
             CreatedAt = now,
             UpdatedAt = now
@@ -229,7 +149,7 @@ public static class DefaultTransactionSeeder
             Merchant = "",
             PaymentMethod = "Cash",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-15).ToString("yyyy-MM-dd"),
+            TransactionDate = now.AddDays(-7).ToString("yyyy-MM-dd"),
             Notes = "From family",
             CreatedAt = now,
             UpdatedAt = now
@@ -245,7 +165,7 @@ public static class DefaultTransactionSeeder
             Merchant = "Company",
             PaymentMethod = "Bank Transfer",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-20).ToString("yyyy-MM-dd"),
+            TransactionDate = now.AddDays(-10).ToString("yyyy-MM-dd"),
             Notes = "Q1 bonus",
             CreatedAt = now,
             UpdatedAt = now
