@@ -1,24 +1,16 @@
 using expense_tracker_backend.Application.DTOs;
 using expense_tracker_backend.Application.Interfaces;
 using expense_tracker_backend.Domain.Interfaces;
-using expense_tracker_backend.Domain.Shared.Constants;
 
 namespace expense_tracker_backend.Application.Services;
 
 public class TranactionService : ITranactionService
 {
     private readonly ITranactionRepository _repository;
-    private readonly IExpenseCategoryRepository _categoryRepository;
-    private readonly IAggregationRepository _aggregationRepository;
 
-    public TranactionService(
-        ITranactionRepository repository,
-        IExpenseCategoryRepository categoryRepository,
-        IAggregationRepository aggregationRepository)
+    public TranactionService(ITranactionRepository repository)
     {
         _repository = repository;
-        _categoryRepository = categoryRepository;
-        _aggregationRepository = aggregationRepository;
     }
 
     public async Task<PagedResult<DTOs.Tranaction>> GetTransactionsAsync(Guid userId, TransactionFilterRequest filter)
@@ -78,11 +70,6 @@ public class TranactionService : ITranactionService
         };
         var created = await _repository.CreateAsync(tranaction);
 
-        if (created.Status == AppConstants.PaymentStatus.Completed)
-        {
-            _ = _aggregationRepository.UpdateAggregationsAsync(created);
-        }
-
         return MapToDto(created);
     }
 
@@ -90,8 +77,6 @@ public class TranactionService : ITranactionService
     {
         var existing = await _repository.GetByIdAsync(userId, tranactionId);
         if (existing is null) return null;
-
-        var wasCompleted = existing.Status == AppConstants.PaymentStatus.Completed;
 
         existing.Type = dto.type;
         existing.CategoryId = dto.CategoryId;
@@ -107,22 +92,6 @@ public class TranactionService : ITranactionService
         var updated = await _repository.UpdateAsync(existing);
         if (updated is null) return null;
 
-        var isNowCompleted = updated.Status == AppConstants.PaymentStatus.Completed;
-
-        if (wasCompleted && isNowCompleted)
-        {
-            _ = _aggregationRepository.ReverseAggregationsAsync(existing);
-            _ = _aggregationRepository.UpdateAggregationsAsync(updated);
-        }
-        else if (wasCompleted && !isNowCompleted)
-        {
-            _ = _aggregationRepository.ReverseAggregationsAsync(existing);
-        }
-        else if (!wasCompleted && isNowCompleted)
-        {
-            _ = _aggregationRepository.UpdateAggregationsAsync(updated);
-        }
-
         return MapToDto(updated);
     }
 
@@ -130,11 +99,6 @@ public class TranactionService : ITranactionService
     {
         var existing = await _repository.GetByIdAsync(userId, tranactionId);
         if (existing is null) return false;
-
-        if (existing.Status == AppConstants.PaymentStatus.Completed)
-        {
-            _ = _aggregationRepository.ReverseAggregationsAsync(existing);
-        }
 
         return await _repository.DeleteAsync(userId, tranactionId);
     }

@@ -19,15 +19,9 @@ public class AggregationRepository : IAggregationRepository
         _logger = logger;
     }
 
-    public async Task UpdateAggregationsAsync(Transaction transaction)
-    {
-        await RefreshMaterializedViewsAsync();
-    }
+    public Task UpdateAggregationsAsync(Transaction transaction) => Task.CompletedTask;
 
-    public async Task ReverseAggregationsAsync(Transaction transaction)
-    {
-        await RefreshMaterializedViewsAsync();
-    }
+    public Task ReverseAggregationsAsync(Transaction transaction) => Task.CompletedTask;
 
     // ============================================================================
     // DAILY AGGREGATIONS
@@ -35,6 +29,7 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<Aggregation?> GetDailyAggregationAsync(Guid userId, string date)
     {
+        await RefreshMaterializedViewsAsync();
         var userIdStr = userId.ToString();
         var dateParam = DateOnly.Parse(date);
 
@@ -55,6 +50,7 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<List<Aggregation>> GetDailyAggregationsRangeAsync(Guid userId, string startDate, string endDate)
     {
+        await RefreshMaterializedViewsAsync();
         var userIdStr = userId.ToString();
         var startParam = DateOnly.Parse(startDate);
         var endParam = DateOnly.Parse(endDate);
@@ -82,6 +78,7 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<Aggregation?> GetWeeklyAggregationAsync(Guid userId, string week)
     {
+        await RefreshMaterializedViewsAsync();
         var userIdStr = userId.ToString();
 
         var row = await _context.Database
@@ -101,6 +98,7 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<List<Aggregation>> GetWeeklyAggregationsRangeAsync(Guid userId, string startWeek, string endWeek)
     {
+        await RefreshMaterializedViewsAsync();
         var userIdStr = userId.ToString();
 
         var rows = await _context.Database
@@ -126,6 +124,7 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<Aggregation?> GetMonthlyAggregationAsync(Guid userId, string month)
     {
+        await RefreshMaterializedViewsAsync();
         var userIdStr = userId.ToString();
 
         var row = await _context.Database
@@ -145,6 +144,7 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<List<Aggregation>> GetMonthlyAggregationsRangeAsync(Guid userId, string startMonth, string endMonth)
     {
+        await RefreshMaterializedViewsAsync();
         var userIdStr = userId.ToString();
 
         var rows = await _context.Database
@@ -170,6 +170,7 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<Aggregation?> GetYearlyAggregationAsync(Guid userId, string year)
     {
+        await RefreshMaterializedViewsAsync();
         var userIdStr = userId.ToString();
 
         var row = await _context.Database
@@ -189,6 +190,7 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<List<Aggregation>> GetYearlyAggregationsRangeAsync(Guid userId, string startYear, string endYear)
     {
+        await RefreshMaterializedViewsAsync();
         var userIdStr = userId.ToString();
 
         var rows = await _context.Database
@@ -214,6 +216,7 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<List<CategoryAggregation>> GetCategoryMonthlyAggregationsAsync(Guid userId, string month)
     {
+        await RefreshMaterializedViewsAsync();
         var userIdStr = userId.ToString();
 
         var rows = await _context.Database
@@ -234,6 +237,7 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<CategoryAggregation?> GetCategoryMonthlyAggregationAsync(Guid userId, Guid categoryId, string month)
     {
+        await RefreshMaterializedViewsAsync();
         var userIdStr = userId.ToString();
         var categoryIdStr = categoryId.ToString();
 
