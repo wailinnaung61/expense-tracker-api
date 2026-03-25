@@ -103,7 +103,7 @@ public class ExpenseCategoryRepository : IExpenseCategoryRepository
         return await _context.ExpenseCategories.AnyAsync(c => c.UserId == userId);
     }
 
-    public async Task SeedDefaultCategoriesAsync(string userId)
+    public async Task SeedDefaultDataAsync(string userId)
     {
         if (await HasCategoriesAsync(userId))
             return;
@@ -112,6 +112,10 @@ public class ExpenseCategoryRepository : IExpenseCategoryRepository
         var categories = DefaultCategorySeeder.GetDefaultCategories(userId, now);
 
         await _context.ExpenseCategories.AddRangeAsync(categories);
+
+        var transactions = DefaultTransactionSeeder.GetDefaultTransactions(userId, categories, now);
+        await _context.Transactions.AddRangeAsync(transactions);
+
         await _context.SaveChangesAsync();
     }
 

@@ -1052,7 +1052,7 @@ public class CognitoAuthService : ICognitoAuthService
         try
         {
             await _memberRepository.CreateProfileAsync(profile);
-            await _categoryRepository.SeedDefaultCategoriesAsync(cognitoSub);
+            await _categoryRepository.SeedDefaultDataAsync(cognitoSub);
             _logger.LogInformation("User profile saved to DB for: {Username}", username);
             return true;
         }
@@ -1089,7 +1089,7 @@ public class CognitoAuthService : ICognitoAuthService
 
         var profile = CreateMemberProfile(userName, email, userId);
         await _memberRepository.CreateProfileAsync(profile);
-        await _categoryRepository.SeedDefaultCategoriesAsync(userId);
+        await _categoryRepository.SeedDefaultDataAsync(userId);
         _logger.LogInformation("Created profile for Google user: {Email}", email);
     }
 

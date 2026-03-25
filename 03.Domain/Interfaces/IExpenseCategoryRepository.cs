@@ -20,6 +20,6 @@ public interface IExpenseCategoryRepository
     Task<ExpenseCategory> CreateExpenseCategoryAsync(ExpenseCategory category);
     Task<ExpenseCategory?> UpdateExpenseCategoryAsync(ExpenseCategory category);
     Task<bool> DeleteExpenseCategoryAsync(Guid userId, Guid expenseCategoryId);
-    Task SeedDefaultCategoriesAsync(string userId);
+    Task SeedDefaultDataAsync(string userId);
     Task<bool> HasCategoriesAsync(string userId);
 }
