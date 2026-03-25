@@ -23,10 +23,13 @@ public static class DependencyInjection
         services.AddScoped<IExpenseCategoryRepository, ExpenseCategoryRepository>();
         services.AddScoped<ITranactionRepository, TranactionRepository>();
         services.AddScoped<IAggregationRepository, AggregationRepository>();
+        services.AddScoped<IRecurringPaymentRepository, RecurringPaymentRepository>();
 
         // Register services
         services.AddScoped<IExpenseCategoryService, ExpenseCategoryService>();
         services.AddScoped<ITranactionService, TranactionService>();
+        services.AddScoped<IAggregationService, AggregationService>();
+        services.AddScoped<IRecurringPaymentService, RecurringPaymentService>();
 
         return services;
     }
