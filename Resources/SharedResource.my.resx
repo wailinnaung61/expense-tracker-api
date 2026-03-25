@@ -137,22 +137,4 @@
   <data name="DailyLimitNegative" xml:space="preserve">
     <value>နေ့စဥ်ကန့်သတ်ချက် အနုတ်လက္ခဏာ မဖြစ်ရပါ။</value>
   </data>
-  <data name="RecurringPaymentNotFound" xml:space="preserve">
-    <value>ပုံမှန်ငွေပေးချေမှု ရှာမတွေ့ပါ</value>
-  </data>
-  <data name="RecurringPaymentCreateFailed" xml:space="preserve">
-    <value>ပုံမှန်ငွေပေးချေမှု ဖန်တီး၍ မရပါ။ ထပ်ကြိုးစားပါ။</value>
-  </data>
-  <data name="RecurringPaymentUpdateFailed" xml:space="preserve">
-    <value>ပုံမှန်ငွေပေးချေမှု အပ်ဒိတ်လုပ်၍ မရပါ။ ထပ်ကြိုးစားပါ။</value>
-  </data>
-  <data name="RecurringPaymentDeleteFailed" xml:space="preserve">
-    <value>ပုံမှန်ငွေပေးချေမှု ဖျက်၍ မရပါ။ ထပ်ကြိုးစားပါ။</value>
-  </data>
-  <data name="RecurringPaymentMarkPaidFailed" xml:space="preserve">
-    <value>ပုံမှန်ငွေပေးချေမှု ပေးချေပြီးဟု မှတ်သား၍ မရပါ။ ထပ်ကြိုးစားပါ။</value>
-  </data>
-  <data name="StartAndEndDateRequired" xml:space="preserve">
-    <value>စတင်ရက်နှင့် ပြီးဆုံးရက် လိုအပ်ပါသည်</value>
-  </data>
 </root>
