@@ -137,4 +137,22 @@
   <data name="DailyLimitNegative" xml:space="preserve">
     <value>日次制限額はマイナスにできません。</value>
   </data>
+  <data name="RecurringPaymentNotFound" xml:space="preserve">
+    <value>定期支払いが見つかりません</value>
+  </data>
+  <data name="RecurringPaymentCreateFailed" xml:space="preserve">
+    <value>定期支払いの作成に失敗しました。もう一度お試しください。</value>
+  </data>
+  <data name="RecurringPaymentUpdateFailed" xml:space="preserve">
+    <value>定期支払いの更新に失敗しました。もう一度お試しください。</value>
+  </data>
+  <data name="RecurringPaymentDeleteFailed" xml:space="preserve">
+    <value>定期支払いの削除に失敗しました。もう一度お試しください。</value>
+  </data>
+  <data name="RecurringPaymentMarkPaidFailed" xml:space="preserve">
+    <value>定期支払いの支払い済みマークに失敗しました。もう一度お試しください。</value>
+  </data>
+  <data name="StartAndEndDateRequired" xml:space="preserve">
+    <value>開始日と終了日が必要です</value>
+  </data>
 </root>

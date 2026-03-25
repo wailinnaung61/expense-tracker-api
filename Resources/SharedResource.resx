@@ -137,4 +137,22 @@
   <data name="DailyLimitNegative" xml:space="preserve">
     <value>Daily limit cannot be negative.</value>
   </data>
+  <data name="RecurringPaymentNotFound" xml:space="preserve">
+    <value>Recurring payment not found</value>
+  </data>
+  <data name="RecurringPaymentCreateFailed" xml:space="preserve">
+    <value>Failed to create recurring payment. Please try again.</value>
+  </data>
+  <data name="RecurringPaymentUpdateFailed" xml:space="preserve">
+    <value>Failed to update recurring payment. Please try again.</value>
+  </data>
+  <data name="RecurringPaymentDeleteFailed" xml:space="preserve">
+    <value>Failed to delete recurring payment. Please try again.</value>
+  </data>
+  <data name="RecurringPaymentMarkPaidFailed" xml:space="preserve">
+    <value>Failed to mark recurring payment as paid. Please try again.</value>
+  </data>
+  <data name="StartAndEndDateRequired" xml:space="preserve">
+    <value>startDate and endDate are required</value>
+  </data>
 </root>
