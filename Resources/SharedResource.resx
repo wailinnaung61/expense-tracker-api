@@ -119,4 +119,22 @@
   <data name="AggregationNotFound" xml:space="preserve">
     <value>No aggregation data found</value>
   </data>
+  <data name="UserNotAuthenticated" xml:space="preserve">
+    <value>User not authenticated.</value>
+  </data>
+  <data name="ProfileNotFound" xml:space="preserve">
+    <value>Profile not found.</value>
+  </data>
+  <data name="ProfileRetrieveFailed" xml:space="preserve">
+    <value>Failed to retrieve profile.</value>
+  </data>
+  <data name="ProfileUpdateFailed" xml:space="preserve">
+    <value>Failed to update profile.</value>
+  </data>
+  <data name="InvalidCurrency" xml:space="preserve">
+    <value>Invalid currency code. Supported: JPY, USD, EUR, GBP, SGD, THB, MMK</value>
+  </data>
+  <data name="DailyLimitNegative" xml:space="preserve">
+    <value>Daily limit cannot be negative.</value>
+  </data>
 </root>

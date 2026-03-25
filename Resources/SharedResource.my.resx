@@ -119,4 +119,22 @@
   <data name="AggregationNotFound" xml:space="preserve">
     <value>စုစည်းထားသော အချက်အလက် ရှာမတွေ့ပါ</value>
   </data>
+  <data name="UserNotAuthenticated" xml:space="preserve">
+    <value>အသုံးပြုသူ အတည်ပြုမထားပါ။</value>
+  </data>
+  <data name="ProfileNotFound" xml:space="preserve">
+    <value>ပရိုဖိုင် ရှာမတွေ့ပါ။</value>
+  </data>
+  <data name="ProfileRetrieveFailed" xml:space="preserve">
+    <value>ပရိုဖိုင် ရယူ၍ မရပါ။</value>
+  </data>
+  <data name="ProfileUpdateFailed" xml:space="preserve">
+    <value>ပရိုဖိုင် အပ်ဒိတ်လုပ်၍ မရပါ။</value>
+  </data>
+  <data name="InvalidCurrency" xml:space="preserve">
+    <value>ငွေကြေးကုဒ် မမှန်ပါ။ ပံ့ပိုးသော: JPY, USD, EUR, GBP, SGD, THB, MMK</value>
+  </data>
+  <data name="DailyLimitNegative" xml:space="preserve">
+    <value>နေ့စဥ်ကန့်သတ်ချက် အနုတ်လက္ခဏာ မဖြစ်ရပါ။</value>
+  </data>
 </root>

@@ -119,4 +119,22 @@
   <data name="AggregationNotFound" xml:space="preserve">
     <value>集計データが見つかりません</value>
   </data>
+  <data name="UserNotAuthenticated" xml:space="preserve">
+    <value>ユーザーが認証されていません。</value>
+  </data>
+  <data name="ProfileNotFound" xml:space="preserve">
+    <value>プロフィールが見つかりません。</value>
+  </data>
+  <data name="ProfileRetrieveFailed" xml:space="preserve">
+    <value>プロフィールの取得に失敗しました。</value>
+  </data>
+  <data name="ProfileUpdateFailed" xml:space="preserve">
+    <value>プロフィールの更新に失敗しました。</value>
+  </data>
+  <data name="InvalidCurrency" xml:space="preserve">
+    <value>無効な通貨コードです。対応通貨: JPY, USD, EUR, GBP, SGD, THB, MMK</value>
+  </data>
+  <data name="DailyLimitNegative" xml:space="preserve">
+    <value>日次制限額はマイナスにできません。</value>
+  </data>
 </root>
