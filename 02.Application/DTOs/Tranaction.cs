@@ -1,4 +1,4 @@
-/*using expense_tracker_backend.Domain.Shared.Constants;
+using expense_tracker_backend.Domain.Shared.Constants;
 using System.Text.Json.Serialization;
 namespace expense_tracker_backend.Application.DTOs;
 
@@ -41,4 +41,16 @@ public record UpdateTranactionDto(
     string Note,
     string ImageUrl
 );
-*/
+
+public record TransactionFilterRequest
+{
+    public DateTime? StartDate { get; init; }
+    public DateTime? EndDate { get; init; }
+    public AppConstants.TransactionType? Type { get; init; }
+    public AppConstants.PaymentStatus? Status { get; init; }
+    public Guid? CategoryId { get; init; }
+    public string? Keyword { get; init; }
+    public int PageSize { get; init; } = 10;
+    public DateTime? Cursor { get; init; }
+    public Guid? CursorId { get; init; }
+}

@@ -104,4 +104,16 @@
   <data name="CategoryDeleteFailed" xml:space="preserve">
     <value>Failed to delete category. Please try again.</value>
   </data>
+  <data name="TransactionNotFound" xml:space="preserve">
+    <value>Transaction not found</value>
+  </data>
+  <data name="TransactionCreateFailed" xml:space="preserve">
+    <value>Failed to create transaction. Please try again.</value>
+  </data>
+  <data name="TransactionUpdateFailed" xml:space="preserve">
+    <value>Failed to update transaction. Please try again.</value>
+  </data>
+  <data name="TransactionDeleteFailed" xml:space="preserve">
+    <value>Failed to delete transaction. Please try again.</value>
+  </data>
 </root>

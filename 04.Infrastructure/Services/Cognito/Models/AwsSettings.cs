@@ -8,6 +8,7 @@ public class AwsSettings
     public string AccessKey { get; set; } = string.Empty;
     public string SecretKey { get; set; } = string.Empty;
     public CognitoSettings Cognito { get; set; } = new();
+    public DynamoDbSettings DynamoDB { get; set; } = new();
 }
 
 public class CognitoSettings
@@ -18,4 +19,9 @@ public class CognitoSettings
     public string Authority { get; set; } = string.Empty;
     public string Domain { get; set; } = string.Empty;
     public string Region { get; set; } = string.Empty;
+}
+
+public class DynamoDbSettings
+{
+    public string AggregationsTableName { get; set; } = "Aggregations";
 }

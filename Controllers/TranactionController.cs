@@ -1,10 +1,8 @@
-/*using expense_tracker_backend.Application.DTOs;
+using expense_tracker_backend.Application.DTOs;
 using expense_tracker_backend.Application.Interfaces;
-using expense_tracker_backend.Domain.Shared.Constants;
-using expense_tracker_backend.Domain.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+using Microsoft.Extensions.Localization;
 
 namespace expense_tracker_backend.API.Controllers;
 
@@ -15,54 +13,29 @@ public class TranactionController : BaseController
 {
     private readonly ITranactionService _expenseService;
     private readonly ILogger<TranactionController> _logger;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
     public TranactionController(
         ITranactionService expenseService,
-        ILogger<TranactionController> logger)
+        ILogger<TranactionController> logger,
+        IStringLocalizer<SharedResource> localizer)
     {
         _expenseService = expenseService;
         _logger = logger;
+        _localizer = localizer;
     }
 
     /// <summary>
-    /// Get transactions with filters and cursor-based pagination
+    /// Get transactions with flexible filtering and pagination
     /// </summary>
     [HttpGet]
-    public async Task<ActionResult<PaginatedResult<Tranaction>>> GetTransactions(
-        [FromQuery] DateTime startDate,
-        [FromQuery] DateTime endDate,
-        [FromQuery] AppConstants.TransactionType? type,
-        [FromQuery] AppConstants.PaymentStatus? status,
-        [FromQuery] Guid? categoryId,
-        [FromQuery] string? keyword,
-        [FromQuery] PaginationRequest pagination)
+    public async Task<ActionResult<PagedResult<Tranaction>>> GetTransactions([FromQuery] TransactionFilterRequest filter)
     {
         if (UserId is null)
             return Unauthorized();
 
-        if (startDate == default || endDate == default)
-            return BadRequest(new { message = "startDate and endDate are required" });
-
-        if (startDate > endDate)
-            return BadRequest(new { message = "startDate cannot be greater than endDate" });
-
-        _logger.LogInformation(
-            "GetTransactions: UserId={UserId}, Date={StartDate}~{EndDate}, Type={Type}, Status={Status}, Category={CategoryId}, Keyword={Keyword}",
-            UserId, startDate.ToString("yyyy-MM-dd"), endDate.ToString("yyyy-MM-dd"), type, status, categoryId, keyword);
-
-        try
-        {
-            var result = await _expenseService.GetByDateRangeWithFiltersAsync(
-                UserId.Value, startDate, endDate, type, status, categoryId, keyword, pagination);
-
-            _logger.LogInformation("Returning {Count} transactions", result.Items.Count());
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get transactions");
-            return StatusCode(500, new { message = "Unable to retrieve transactions" });
-        }
+        var result = await _expenseService.GetTransactionsAsync(UserId.Value, filter);
+        return Ok(result);
     }
 
     /// <summary>
@@ -81,7 +54,7 @@ public class TranactionController : BaseController
         if (tranaction is null)
         {
             _logger.LogWarning("Tranaction not found: {TranactionId}", tranactionId);
-            return NotFound(new { message = $"Tranaction with ID {tranactionId} not found" });
+            return NotFound(new { message = _localizer["TransactionNotFound"].Value });
         }
 
         _logger.LogInformation("Found tranaction: {TranactionId}", tranactionId);
@@ -96,23 +69,23 @@ public class TranactionController : BaseController
     public async Task<ActionResult<Tranaction>> Create([FromBody] CreateTranactionDto dto)
     {
         if (UserId is null)
-            return Unauthorized();  
+            return Unauthorized();
 
-        _logger.LogInformation("Creating new expense: {TranactionType}, Amount: {Amount}, Category: {Category}", 
+        _logger.LogInformation("Creating new expense: {TranactionType}, Amount: {Amount}, Category: {Category}",
             dto.type, dto.Amount, dto.CategoryId);
-        
+
         try
         {
             var tranaction = await _expenseService.CreateTranactionAsync(dto, UserId.Value);
-            
+
             _logger.LogInformation("Tranaction created successfully: {TranactionId}", tranaction.TranactionId);
             return CreatedAtAction(nameof(GetById), new { id = tranaction.TranactionId }, tranaction);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create expense: {TranactionType}, Amount: {Amount}, Category: {Category}", 
+            _logger.LogError(ex, "Failed to create expense: {TranactionType}, Amount: {Amount}, Category: {Category}",
                 dto.type, dto.Amount, dto.CategoryId);
-            throw;
+            return ErrorResponse(_localizer["TransactionCreateFailed"].Value);
         }
     }
 
@@ -120,20 +93,20 @@ public class TranactionController : BaseController
     /// Update an existing expense
     /// </summary>
     [HttpPut("{id:guid}")]
-    public async Task<ActionResult<Tranaction>> Update([FromRoute(Name = "id")] Guid tranactionId,[FromBody] UpdateTranactionDto dto)
+    public async Task<ActionResult<Tranaction>> Update([FromRoute(Name = "id")] Guid tranactionId, [FromBody] UpdateTranactionDto dto)
     {
         if (UserId is null)
             return Unauthorized();
 
-        _logger.LogInformation("Updating tranaction: {TranactionId},",tranactionId);
+        _logger.LogInformation("Updating tranaction: {TranactionId},", tranactionId);
         try
         {
-            var tranaction = await _expenseService.UpdateTranactionAsync(UserId.Value, tranactionId,dto);
+            var tranaction = await _expenseService.UpdateTranactionAsync(UserId.Value, tranactionId, dto);
 
             if (tranaction is null)
             {
                 _logger.LogWarning("Tranaction not found for update: {TranactionId}", tranactionId);
-                return NotFound(new { message = $"Tranaction with ID {tranactionId} not found" });  
+                return NotFound(new { message = _localizer["TransactionNotFound"].Value });
             }
 
             _logger.LogInformation("Tranaction updated successfully: {TranactionId}", tranactionId);
@@ -142,7 +115,7 @@ public class TranactionController : BaseController
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to update tranaction: {TranactionId}", tranactionId);
-            throw;
+            return ErrorResponse(_localizer["TransactionUpdateFailed"].Value);
         }
     }
 
@@ -164,7 +137,7 @@ public class TranactionController : BaseController
             if (!result)
             {
                 _logger.LogWarning("Tranaction not found for deletion: {TranactionId}", tranactionId);
-                return NotFound(new { message = $"Tranaction with ID {tranactionId} not found" });
+                return NotFound(new { message = _localizer["TransactionNotFound"].Value });
             }
 
             _logger.LogInformation("Tranaction deleted successfully: {TranactionId}", tranactionId);
@@ -173,8 +146,7 @@ public class TranactionController : BaseController
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to delete tranaction: {TranactionId}", tranactionId);
-            throw;
+            return ErrorResponse(_localizer["TransactionDeleteFailed"].Value);
         }
     }
 }
-*/

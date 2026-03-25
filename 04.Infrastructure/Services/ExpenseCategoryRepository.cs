@@ -52,7 +52,6 @@ public class ExpenseCategoryRepository : IExpenseCategoryRepository
 
         var totalCount = await query.CountAsync();
 
-        // Keyset pagination: seek past the cursor instead of OFFSET
         if (cursor.HasValue && !string.IsNullOrEmpty(cursorId))
         {
             query = query.Where(c =>
@@ -63,7 +62,7 @@ public class ExpenseCategoryRepository : IExpenseCategoryRepository
         var items = await query
             .OrderByDescending(c => c.CreatedAt)
             .ThenByDescending(c => c.CategoryId)
-            .Take(pageSize + 1) // fetch one extra to determine hasNextPage
+            .Take(pageSize + 1)
             .ToListAsync();
 
         return (items, totalCount);

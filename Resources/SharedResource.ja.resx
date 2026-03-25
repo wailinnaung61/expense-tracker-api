@@ -104,4 +104,16 @@
   <data name="CategoryDeleteFailed" xml:space="preserve">
     <value>カテゴリの削除に失敗しました。もう一度お試しください。</value>
   </data>
+  <data name="TransactionNotFound" xml:space="preserve">
+    <value>取引が見つかりません</value>
+  </data>
+  <data name="TransactionCreateFailed" xml:space="preserve">
+    <value>取引の作成に失敗しました。もう一度お試しください。</value>
+  </data>
+  <data name="TransactionUpdateFailed" xml:space="preserve">
+    <value>取引の更新に失敗しました。もう一度お試しください。</value>
+  </data>
+  <data name="TransactionDeleteFailed" xml:space="preserve">
+    <value>取引の削除に失敗しました。もう一度お試しください。</value>
+  </data>
 </root>

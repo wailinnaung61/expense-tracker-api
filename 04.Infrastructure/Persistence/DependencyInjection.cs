@@ -21,9 +21,12 @@ public static class DependencyInjection
         // Register repositories
         services.AddScoped<IMemberRepository, MemberRepository>();
         services.AddScoped<IExpenseCategoryRepository, ExpenseCategoryRepository>();
+        services.AddScoped<ITranactionRepository, TranactionRepository>();
+        services.AddScoped<IAggregationRepository, AggregationRepository>();
 
         // Register services
         services.AddScoped<IExpenseCategoryService, ExpenseCategoryService>();
+        services.AddScoped<ITranactionService, TranactionService>();
 
         return services;
     }

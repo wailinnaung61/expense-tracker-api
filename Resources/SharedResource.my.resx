@@ -104,4 +104,16 @@
   <data name="CategoryDeleteFailed" xml:space="preserve">
     <value>အမျိုးအစား ဖျက်၍ မရပါ။ ထပ်ကြိုးစားပါ။</value>
   </data>
+  <data name="TransactionNotFound" xml:space="preserve">
+    <value>ငွေကြေးလွဲပြမူ ရှာမတွေ့ပါ</value>
+  </data>
+  <data name="TransactionCreateFailed" xml:space="preserve">
+    <value>ငွေကြေးလွဲပြမူ ဖန်တီး၍ မရပါ။ ထပ်ကြိုးစားပါ။</value>
+  </data>
+  <data name="TransactionUpdateFailed" xml:space="preserve">
+    <value>ငွေကြေးလွဲပြမူ အပ်ဒိတ်လုပ်၍ မရပါ။ ထပ်ကြိုးစားပါ။</value>
+  </data>
+  <data name="TransactionDeleteFailed" xml:space="preserve">
+    <value>ငွေကြေးလွဲပြမူ ဖျက်၍ မရပါ။ ထပ်ကြိုးစားပါ။</value>
+  </data>
 </root>
