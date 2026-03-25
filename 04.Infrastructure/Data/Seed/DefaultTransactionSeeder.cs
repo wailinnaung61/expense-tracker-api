@@ -19,7 +19,7 @@ public static class DefaultTransactionSeeder
             Merchant = "Local Restaurant",
             PaymentMethod = "Credit Card",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-1),
+            TransactionDate = now.AddDays(-1).ToString("yyyy-MM-dd"),
             Notes = "Business lunch",
             CreatedAt = now,
             UpdatedAt = now
@@ -35,7 +35,7 @@ public static class DefaultTransactionSeeder
             Merchant = "Gas Station",
             PaymentMethod = "Debit Card",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-2),
+            TransactionDate = now.AddDays(-2).ToString("yyyy-MM-dd"),
             Notes = "",
             CreatedAt = now,
             UpdatedAt = now
@@ -51,7 +51,7 @@ public static class DefaultTransactionSeeder
             Merchant = "Supermarket",
             PaymentMethod = "Credit Card",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-3),
+            TransactionDate = now.AddDays(-3).ToString("yyyy-MM-dd"),
             Notes = "Weekly shopping",
             CreatedAt = now,
             UpdatedAt = now
@@ -67,7 +67,7 @@ public static class DefaultTransactionSeeder
             Merchant = "Cinema",
             PaymentMethod = "Credit Card",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-4),
+            TransactionDate = now.AddDays(-4).ToString("yyyy-MM-dd"),
             Notes = "",
             CreatedAt = now,
             UpdatedAt = now
@@ -83,7 +83,7 @@ public static class DefaultTransactionSeeder
             Merchant = "Electric Company",
             PaymentMethod = "Bank Transfer",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-5),
+            TransactionDate = now.AddDays(-5).ToString("yyyy-MM-dd"),
             Notes = "Monthly bill",
             CreatedAt = now,
             UpdatedAt = now
@@ -99,7 +99,7 @@ public static class DefaultTransactionSeeder
             Merchant = "Pharmacy Store",
             PaymentMethod = "Cash",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-6),
+            TransactionDate = now.AddDays(-6).ToString("yyyy-MM-dd"),
             Notes = "",
             CreatedAt = now,
             UpdatedAt = now
@@ -115,7 +115,7 @@ public static class DefaultTransactionSeeder
             Merchant = "Shoe Store",
             PaymentMethod = "Credit Card",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-7),
+            TransactionDate = now.AddDays(-7).ToString("yyyy-MM-dd"),
             Notes = "",
             CreatedAt = now,
             UpdatedAt = now
@@ -131,7 +131,7 @@ public static class DefaultTransactionSeeder
             Merchant = "Udemy",
             PaymentMethod = "Credit Card",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-8),
+            TransactionDate = now.AddDays(-8).ToString("yyyy-MM-dd"),
             Notes = "Programming course",
             CreatedAt = now,
             UpdatedAt = now
@@ -147,7 +147,7 @@ public static class DefaultTransactionSeeder
             Merchant = "Landlord",
             PaymentMethod = "Bank Transfer",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-10),
+            TransactionDate = now.AddDays(-10).ToString("yyyy-MM-dd"),
             Notes = "March rent",
             CreatedAt = now,
             UpdatedAt = now
@@ -163,7 +163,7 @@ public static class DefaultTransactionSeeder
             Merchant = "Barber Shop",
             PaymentMethod = "Cash",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-12),
+            TransactionDate = now.AddDays(-12).ToString("yyyy-MM-dd"),
             Notes = "",
             CreatedAt = now,
             UpdatedAt = now
@@ -181,7 +181,7 @@ public static class DefaultTransactionSeeder
             Merchant = "Company",
             PaymentMethod = "Bank Transfer",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-1),
+            TransactionDate = now.AddDays(-1).ToString("yyyy-MM-dd"),
             Notes = "March salary",
             CreatedAt = now,
             UpdatedAt = now
@@ -197,7 +197,7 @@ public static class DefaultTransactionSeeder
             Merchant = "Client",
             PaymentMethod = "Bank Transfer",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-5),
+            TransactionDate = now.AddDays(-5).ToString("yyyy-MM-dd"),
             Notes = "Frontend project",
             CreatedAt = now,
             UpdatedAt = now
@@ -213,7 +213,7 @@ public static class DefaultTransactionSeeder
             Merchant = "Broker",
             PaymentMethod = "Bank Transfer",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-10),
+            TransactionDate = now.AddDays(-10).ToString("yyyy-MM-dd"),
             Notes = "Quarterly dividends",
             CreatedAt = now,
             UpdatedAt = now
@@ -229,7 +229,7 @@ public static class DefaultTransactionSeeder
             Merchant = "",
             PaymentMethod = "Cash",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-15),
+            TransactionDate = now.AddDays(-15).ToString("yyyy-MM-dd"),
             Notes = "From family",
             CreatedAt = now,
             UpdatedAt = now
@@ -245,7 +245,7 @@ public static class DefaultTransactionSeeder
             Merchant = "Company",
             PaymentMethod = "Bank Transfer",
             Status = AppConstants.PaymentStatus.Completed,
-            TransactionDate = now.AddDays(-20),
+            TransactionDate = now.AddDays(-20).ToString("yyyy-MM-dd"),
             Notes = "Q1 bonus",
             CreatedAt = now,
             UpdatedAt = now

@@ -32,10 +32,10 @@ public class TranactionRepository : ITranactionRepository
             .Where(t => t.UserId == userId);
 
         if (startDate.HasValue)
-            query = query.Where(t => t.TransactionDate >= startDate.Value);
+            query = query.Where(t => string.Compare(t.TransactionDate, startDate.Value.ToString("yyyy-MM-dd")) >= 0);
 
         if (endDate.HasValue)
-            query = query.Where(t => t.TransactionDate <= endDate.Value);
+            query = query.Where(t => string.Compare(t.TransactionDate, endDate.Value.ToString("yyyy-MM-dd")) <= 0);
 
         if (type.HasValue)
             query = query.Where(t => t.Type == type.Value);

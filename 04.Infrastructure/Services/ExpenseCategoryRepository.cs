@@ -30,7 +30,7 @@ public class ExpenseCategoryRepository : IExpenseCategoryRepository
     {
         var query = _context.ExpenseCategories
             .AsNoTracking()
-            .Where(c => c.UserId == userId);
+            .Where(c => c.UserId == userId && c.IsActive);
 
         if (startDate.HasValue)
             query = query.Where(c => c.CreatedAt >= startDate.Value);
@@ -68,9 +68,12 @@ public class ExpenseCategoryRepository : IExpenseCategoryRepository
         return (items, totalCount);
     }
 
-    public Task<ExpenseCategory> CreateExpenseCategoryAsync(ExpenseCategory category)
+    public async Task<ExpenseCategory> CreateExpenseCategoryAsync(ExpenseCategory category)
     {
-        throw new NotImplementedException();
+        category.CreatedAt = DateTime.UtcNow;
+        await _context.ExpenseCategories.AddAsync(category);
+        await _context.SaveChangesAsync();
+        return category;
     }
 
     public async Task<bool> DeleteExpenseCategoryAsync(Guid userId, Guid expenseCategoryId)
@@ -92,9 +95,13 @@ public class ExpenseCategoryRepository : IExpenseCategoryRepository
         return true;
     }
 
-    public Task<ExpenseCategory?> GetExpenseCategoryByIdAsync(Guid userId, Guid expenseCategoryId)
+    public async Task<ExpenseCategory?> GetExpenseCategoryByIdAsync(Guid userId, Guid expenseCategoryId)
     {
-        throw new NotImplementedException();
+        return await _context.ExpenseCategories
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.CategoryId == expenseCategoryId.ToString()
+                                   && c.UserId == userId.ToString()
+                                   && c.IsActive);
     }
 
     public async Task<bool> HasCategoriesAsync(string userId)
@@ -118,8 +125,24 @@ public class ExpenseCategoryRepository : IExpenseCategoryRepository
         await _context.SaveChangesAsync();
     }
 
-    public Task<ExpenseCategory?> UpdateExpenseCategoryAsync(ExpenseCategory category)
+    public async Task<ExpenseCategory?> UpdateExpenseCategoryAsync(ExpenseCategory category)
     {
-        throw new NotImplementedException();
+        var existing = await _context.ExpenseCategories
+            .FirstOrDefaultAsync(c => c.CategoryId == category.CategoryId
+                                   && c.UserId == category.UserId
+                                   && c.IsActive);
+
+        if (existing == null)
+            return null;
+
+        existing.DisplayName = category.DisplayName;
+        existing.Icon = category.Icon;
+        existing.Color = category.Color;
+        existing.UpdatedAt = DateTime.UtcNow;
+
+        _context.ExpenseCategories.Update(existing);
+        await _context.SaveChangesAsync();
+
+        return existing;
     }
 }

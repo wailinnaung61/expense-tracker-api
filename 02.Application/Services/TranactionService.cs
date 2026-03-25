@@ -59,7 +59,6 @@ public class TranactionService : ITranactionService
 
     public async Task<DTOs.Tranaction> CreateTranactionAsync(CreateTranactionDto dto, Guid userId)
     {
-        var category = await _categoryRepository.GetExpenseCategoryByIdAsync(userId, Guid.Parse(dto.CategoryId));
         var tranaction = new Domain.Entities.Transaction
         {
             TransactionId = Guid.NewGuid().ToString(),
@@ -71,23 +70,27 @@ public class TranactionService : ITranactionService
             Merchant = string.Empty,
             PaymentMethod = string.Empty,
             Status = dto.status,
-            TransactionDate = DateTime.Parse(dto.TranactionDate),
+            TransactionDate = dto.TranactionDate,
             ImageUrl = dto.ImageUrl,
             CreatedAt = DateTime.UtcNow,
             Notes = dto.Note
         };
         var created = await _repository.CreateAsync(tranaction);
-        await _aggregationRepository.UpdateAggregationsAsync(created);
+
+        // Fire-and-forget: don't block API response for DynamoDB
+        _ = _aggregationRepository.UpdateAggregationsAsync(created);
+
         return MapToDto(created);
     }
 
     public async Task<DTOs.Tranaction?> UpdateTranactionAsync(Guid userId, Guid tranactionId, UpdateTranactionDto dto)
     {
         var existing = await _repository.GetByIdAsync(userId, tranactionId);
-        var category = await _categoryRepository.GetExpenseCategoryByIdAsync(userId, Guid.Parse(dto.CategoryId));
         if (existing is null) return null;
-        existing.TransactionId = tranactionId.ToString();
-        existing.UserId = userId.ToString();
+
+        // Reverse old aggregations (fire-and-forget)
+        _ = _aggregationRepository.ReverseAggregationsAsync(existing);
+
         existing.Type = dto.type;
         existing.CategoryId = dto.CategoryId;
         existing.Amount = dto.Amount;
@@ -95,16 +98,27 @@ public class TranactionService : ITranactionService
         existing.Merchant = string.Empty;
         existing.PaymentMethod = string.Empty;
         existing.Status = dto.status;
-        existing.TransactionDate = DateTime.Parse(dto.TranactionDate);
+        existing.TransactionDate = dto.TranactionDate;
         existing.ImageUrl = dto.ImageUrl;
         existing.UpdatedAt = DateTime.UtcNow;
         existing.Notes = dto.Note;
         var updated = await _repository.UpdateAsync(existing);
-        return updated is null ? null : MapToDto(updated);
+        if (updated is null) return null;
+
+        // Apply new aggregations (fire-and-forget)
+        _ = _aggregationRepository.UpdateAggregationsAsync(updated);
+
+        return MapToDto(updated);
     }
 
     public async Task<bool> DeleteTranactionAsync(Guid userId, Guid tranactionId)
     {
+        var existing = await _repository.GetByIdAsync(userId, tranactionId);
+        if (existing is null) return false;
+
+        // Reverse aggregations (fire-and-forget)
+        _ = _aggregationRepository.ReverseAggregationsAsync(existing);
+
         return await _repository.DeleteAsync(userId, tranactionId);
     }
 
@@ -121,7 +135,7 @@ public class TranactionService : ITranactionService
             expense.Merchant,
             expense.PaymentMethod,
             expense.Status,
-            expense.TransactionDate.ToString("yyyy-MM-dd"),
+            expense.TransactionDate,
             expense.ImageUrl,
             expense.CreatedAt,
             expense.UpdatedAt,

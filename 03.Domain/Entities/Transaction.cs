@@ -14,7 +14,7 @@ public class Transaction
     public string Merchant { get; set; } = string.Empty;
     public string PaymentMethod { get; set; } = string.Empty;
     public AppConstants.PaymentStatus Status { get; set; } = AppConstants.PaymentStatus.Completed;
-    public DateTime TransactionDate { get; set; } = DateTime.UtcNow;
+    public string TransactionDate { get; set; } = string.Empty;
     public string ImageUrl { get; set; } = string.Empty;
     public string Notes { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

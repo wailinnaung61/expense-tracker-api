@@ -116,4 +116,7 @@
   <data name="TransactionDeleteFailed" xml:space="preserve">
     <value>取引の削除に失敗しました。もう一度お試しください。</value>
   </data>
+  <data name="AggregationNotFound" xml:space="preserve">
+    <value>集計データが見つかりません</value>
+  </data>
 </root>

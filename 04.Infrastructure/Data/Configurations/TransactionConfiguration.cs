@@ -65,7 +65,8 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
                 v => Enum.Parse<AppConstants.PaymentStatus>(v, true));
 
         builder.Property(t => t.TransactionDate)
-            .HasColumnName("transaction_date");
+            .HasColumnName("transaction_date")
+            .HasMaxLength(20);
 
         builder.Property(t => t.ImageUrl)
             .HasColumnName("image_url")

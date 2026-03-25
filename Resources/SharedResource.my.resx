@@ -116,4 +116,7 @@
   <data name="TransactionDeleteFailed" xml:space="preserve">
     <value>ငွေကြေးလွဲပြမူ ဖျက်၍ မရပါ။ ထပ်ကြိုးစားပါ။</value>
   </data>
+  <data name="AggregationNotFound" xml:space="preserve">
+    <value>စုစည်းထားသော အချက်အလက် ရှာမတွေ့ပါ</value>
+  </data>
 </root>
