@@ -4,8 +4,7 @@ namespace expense_tracker_backend.Domain.Interfaces;
 
 public interface IAggregationRepository
 {
-    Task UpdateAggregationsAsync(Transaction transaction);
-    Task ReverseAggregationsAsync(Transaction transaction);
+    Task UpdateRedisCacheAsync(Transaction transaction);
     Task<Aggregation?> GetDailyAggregationAsync(Guid userId, string date);
     Task<List<Aggregation>> GetDailyAggregationsRangeAsync(Guid userId, string startDate, string endDate);
     Task<Aggregation?> GetWeeklyAggregationAsync(Guid userId, string week);

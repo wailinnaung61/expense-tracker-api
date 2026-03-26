@@ -74,7 +74,7 @@ public class TranactionService : ITranactionService
         };
         var created = await _repository.CreateAsync(tranaction);
 
-        _ = _aggregationRepository.UpdateAggregationsAsync(created);
+        _ = _aggregationRepository.UpdateRedisCacheAsync(created);
 
         return MapToDto(created);
     }
@@ -98,7 +98,7 @@ public class TranactionService : ITranactionService
         var updated = await _repository.UpdateAsync(existing);
         if (updated is null) return null;
 
-        _ = _aggregationRepository.UpdateAggregationsAsync(updated);
+        _ = _aggregationRepository.UpdateRedisCacheAsync(updated);
 
         return MapToDto(updated);
     }
@@ -109,7 +109,7 @@ public class TranactionService : ITranactionService
         if (existing is null) return false;
 
         var deleted = await _repository.DeleteAsync(userId, tranactionId);
-        if (deleted) _ = _aggregationRepository.ReverseAggregationsAsync(existing);
+        if (deleted) _ = _aggregationRepository.UpdateRedisCacheAsync(existing);
 
         return deleted;
     }

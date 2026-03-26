@@ -31,12 +31,7 @@ public class AggregationRepository : IAggregationRepository
     }
 
     // Called on transaction create/update/delete to invalidate user's cache
-    public async Task UpdateAggregationsAsync(Transaction transaction)
-    {
-        await InvalidateUserCacheAsync(transaction.UserId);
-    }
-
-    public async Task ReverseAggregationsAsync(Transaction transaction)
+    public async Task UpdateRedisCacheAsync(Transaction transaction)
     {
         await InvalidateUserCacheAsync(transaction.UserId);
     }
