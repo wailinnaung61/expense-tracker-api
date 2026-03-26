@@ -5,6 +5,7 @@ using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
+using StackExchange.Redis;
 
 namespace _04.Infrastructure.Services;
 
@@ -12,6 +13,7 @@ public class AggregationRepository : IAggregationRepository
 {
     private readonly ApplicationDbContext _context;
     private readonly IDistributedCache _cache;
+    private readonly IDatabase _redis;
     private readonly ILogger<AggregationRepository> _logger;
 
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(10);
@@ -20,20 +22,27 @@ public class AggregationRepository : IAggregationRepository
         AbsoluteExpirationRelativeToNow = CacheDuration
     };
 
+    // Lock settings
+    private static readonly TimeSpan LockExpiry = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan LockWaitTimeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan LockRetryDelay = TimeSpan.FromMilliseconds(200);
+
     public AggregationRepository(
         ApplicationDbContext context,
         IDistributedCache cache,
+        IConnectionMultiplexer connectionMultiplexer,
         ILogger<AggregationRepository> logger)
     {
         _context = context;
         _cache = cache;
+        _redis = connectionMultiplexer.GetDatabase();
         _logger = logger;
     }
 
     // Called on transaction create/update/delete to invalidate user's cache
     public async Task UpdateRedisCacheAsync(Transaction transaction)
     {
-        await InvalidateUserCacheAsync(transaction.UserId);
+        await InvalidateUserCacheAsync(transaction.UserId, transaction.TransactionDate);
     }
 
     // ============================================================================
@@ -46,7 +55,7 @@ public class AggregationRepository : IAggregationRepository
         var cached = await GetFromCacheAsync<Aggregation>(cacheKey);
         if (cached is not null) return cached;
 
-        await RefreshMaterializedViewAsync("mv_daily_aggregations");
+        await RefreshWithLockAsync("mv_daily_aggregations");
         var userIdStr = userId.ToString();
         var dateParam = DateOnly.Parse(date);
 
@@ -73,7 +82,7 @@ public class AggregationRepository : IAggregationRepository
         var cached = await GetFromCacheAsync<List<Aggregation>>(cacheKey);
         if (cached is not null) return cached;
 
-        await RefreshMaterializedViewAsync("mv_daily_aggregations");
+        await RefreshWithLockAsync("mv_daily_aggregations");
         var userIdStr = userId.ToString();
         var startParam = DateOnly.Parse(startDate);
         var endParam = DateOnly.Parse(endDate);
@@ -107,7 +116,7 @@ public class AggregationRepository : IAggregationRepository
         var cached = await GetFromCacheAsync<Aggregation>(cacheKey);
         if (cached is not null) return cached;
 
-        await RefreshMaterializedViewAsync("mv_weekly_aggregations");
+        await RefreshWithLockAsync("mv_weekly_aggregations");
         var userIdStr = userId.ToString();
 
         var row = await _context.Database
@@ -133,7 +142,7 @@ public class AggregationRepository : IAggregationRepository
         var cached = await GetFromCacheAsync<List<Aggregation>>(cacheKey);
         if (cached is not null) return cached;
 
-        await RefreshMaterializedViewAsync("mv_weekly_aggregations");
+        await RefreshWithLockAsync("mv_weekly_aggregations");
         var userIdStr = userId.ToString();
 
         var rows = await _context.Database
@@ -165,7 +174,7 @@ public class AggregationRepository : IAggregationRepository
         var cached = await GetFromCacheAsync<Aggregation>(cacheKey);
         if (cached is not null) return cached;
 
-        await RefreshMaterializedViewAsync("mv_monthly_aggregations");
+        await RefreshWithLockAsync("mv_monthly_aggregations");
         var userIdStr = userId.ToString();
 
         var row = await _context.Database
@@ -191,7 +200,7 @@ public class AggregationRepository : IAggregationRepository
         var cached = await GetFromCacheAsync<List<Aggregation>>(cacheKey);
         if (cached is not null) return cached;
 
-        await RefreshMaterializedViewAsync("mv_monthly_aggregations");
+        await RefreshWithLockAsync("mv_monthly_aggregations");
         var userIdStr = userId.ToString();
 
         var rows = await _context.Database
@@ -223,7 +232,7 @@ public class AggregationRepository : IAggregationRepository
         var cached = await GetFromCacheAsync<Aggregation>(cacheKey);
         if (cached is not null) return cached;
 
-        await RefreshMaterializedViewAsync("mv_yearly_aggregations");
+        await RefreshWithLockAsync("mv_yearly_aggregations");
         var userIdStr = userId.ToString();
 
         var row = await _context.Database
@@ -249,7 +258,7 @@ public class AggregationRepository : IAggregationRepository
         var cached = await GetFromCacheAsync<List<Aggregation>>(cacheKey);
         if (cached is not null) return cached;
 
-        await RefreshMaterializedViewAsync("mv_yearly_aggregations");
+        await RefreshWithLockAsync("mv_yearly_aggregations");
         var userIdStr = userId.ToString();
 
         var rows = await _context.Database
@@ -281,7 +290,7 @@ public class AggregationRepository : IAggregationRepository
         var cached = await GetFromCacheAsync<List<CategoryAggregation>>(cacheKey);
         if (cached is not null) return cached;
 
-        await RefreshMaterializedViewAsync("mv_category_monthly_aggregations");
+        await RefreshWithLockAsync("mv_category_monthly_aggregations");
         var userIdStr = userId.ToString();
 
         var rows = await _context.Database
@@ -308,7 +317,7 @@ public class AggregationRepository : IAggregationRepository
         var cached = await GetFromCacheAsync<CategoryAggregation>(cacheKey);
         if (cached is not null) return cached;
 
-        await RefreshMaterializedViewAsync("mv_category_monthly_aggregations");
+        await RefreshWithLockAsync("mv_category_monthly_aggregations");
         var userIdStr = userId.ToString();
         var categoryIdStr = categoryId.ToString();
 
@@ -333,18 +342,52 @@ public class AggregationRepository : IAggregationRepository
     }
 
     // ============================================================================
-    // REFRESH (only the view that's needed)
+    // REFRESH WITH DISTRIBUTED LOCK (only ONE request refreshes at a time)
     // ============================================================================
 
-    private async Task RefreshMaterializedViewAsync(string viewName)
+    private async Task RefreshWithLockAsync(string viewName)
     {
+        var lockKey = $"lock:refresh:{viewName}";
+        var lockValue = Guid.NewGuid().ToString();
+
         try
         {
-            await _context.Database.ExecuteSqlRawAsync($"REFRESH MATERIALIZED VIEW CONCURRENTLY {viewName}");
+            // Try to acquire lock: SET lockKey lockValue NX EX 30
+            var acquired = await _redis.StringSetAsync(lockKey, lockValue, LockExpiry, When.NotExists);
+
+            if (acquired)
+            {
+                // Winner: refresh the view, then release lock
+                try
+                {
+                    _logger.LogInformation("Lock acquired — refreshing {ViewName}", viewName);
+                    await _context.Database.ExecuteSqlRawAsync($"REFRESH MATERIALIZED VIEW CONCURRENTLY {viewName}");
+                }
+                finally
+                {
+                    // Release lock only if we still own it (Lua atomic check-and-delete)
+                    var script = @"if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end";
+                    await _redis.ScriptEvaluateAsync(script, new RedisKey[] { lockKey }, new RedisValue[] { lockValue });
+                }
+            }
+            else
+            {
+                // Loser: another request is refreshing — wait for it to finish
+                _logger.LogInformation("Lock busy — waiting for {ViewName} refresh to complete", viewName);
+                var elapsed = TimeSpan.Zero;
+                while (elapsed < LockWaitTimeout)
+                {
+                    await Task.Delay(LockRetryDelay);
+                    elapsed += LockRetryDelay;
+
+                    var stillLocked = await _redis.KeyExistsAsync(lockKey);
+                    if (!stillLocked) break;
+                }
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to refresh materialized view {ViewName}", viewName);
+            _logger.LogError(ex, "Failed to refresh materialized view {ViewName} with lock", viewName);
         }
     }
 
@@ -380,18 +423,19 @@ public class AggregationRepository : IAggregationRepository
         }
     }
 
-    private async Task InvalidateUserCacheAsync(string userId)
+    private async Task InvalidateUserCacheAsync(string userId, string transactionDate)
     {
-        // Remove known cache keys for this user's current period
-        var now = DateTime.UtcNow;
-        var today = now.ToString("yyyy-MM-dd");
-        var month = now.ToString("yyyy-MM");
-        var year = now.ToString("yyyy");
-        var week = $"{System.Globalization.ISOWeek.GetYear(now)}-W{System.Globalization.ISOWeek.GetWeekOfYear(now):D2}";
+        var txDate = DateOnly.Parse(transactionDate);
+        var txDateTime = txDate.ToDateTime(TimeOnly.MinValue);
+
+        var day = txDate.ToString("yyyy-MM-dd");
+        var month = txDate.ToString("yyyy-MM");
+        var year = txDate.ToString("yyyy");
+        var week = $"{System.Globalization.ISOWeek.GetYear(txDateTime)}-W{System.Globalization.ISOWeek.GetWeekOfYear(txDateTime):D2}";
 
         var keysToRemove = new[]
         {
-            $"agg:{userId}:daily:{today}",
+            $"agg:{userId}:daily:{day}",
             $"agg:{userId}:weekly:{week}",
             $"agg:{userId}:monthly:{month}",
             $"agg:{userId}:yearly:{year}",
@@ -408,6 +452,33 @@ public class AggregationRepository : IAggregationRepository
             {
                 _logger.LogWarning(ex, "Redis cache invalidation failed for key {Key}", key);
             }
+        }
+
+        try
+        {
+            var patterns = new[]
+            {
+                $"ExpenseTracker:agg:{userId}:daily-range:*",
+                $"ExpenseTracker:agg:{userId}:weekly-range:*",
+                $"ExpenseTracker:agg:{userId}:monthly-range:*",
+                $"ExpenseTracker:agg:{userId}:yearly-range:*",
+            };
+
+            foreach (var pattern in patterns)
+            {
+                var keys = _redis.Multiplexer.GetServer(_redis.Multiplexer.GetEndPoints().First())
+                    .Keys(pattern: pattern, pageSize: 100);
+
+                var redisKeys = keys.ToArray();
+                if (redisKeys.Length > 0)
+                {
+                    await _redis.KeyDeleteAsync(redisKeys);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to invalidate range keys for user {UserId}", userId);
         }
     }
 
