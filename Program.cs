@@ -1,4 +1,5 @@
 using System.Globalization;
+using _04.Infrastructure.Services;
 using Amazon;
 using Amazon.CognitoIdentityProvider;
 using Amazon.Runtime;
@@ -105,6 +106,9 @@ builder.Services.AddScoped<ICognitoAuthService, CognitoAuthService>();
 
 // Persistence (EF Core + Repositories)
 builder.Services.AddPersistence(builder.Configuration);
+
+// Background services
+builder.Services.AddHostedService<RecurringPaymentBackgroundService>();
 
 var app = builder.Build();
 

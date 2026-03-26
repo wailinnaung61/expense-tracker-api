@@ -2,16 +2,27 @@ using expense_tracker_backend.Application.Interfaces;
 using expense_tracker_backend.Domain.Entities;
 using expense_tracker_backend.Domain.Interfaces;
 using expense_tracker_backend.Domain.Shared.Constants;
+using Microsoft.Extensions.Logging;
 
 namespace expense_tracker_backend.Application.Services;
 
 public class RecurringPaymentService : IRecurringPaymentService
 {
     private readonly IRecurringPaymentRepository _repository;
+    private readonly ITranactionRepository _transactionRepository;
+    private readonly IAggregationRepository _aggregationRepository;
+    private readonly ILogger<RecurringPaymentService> _logger;
 
-    public RecurringPaymentService(IRecurringPaymentRepository repository)
+    public RecurringPaymentService(
+        IRecurringPaymentRepository repository,
+        ITranactionRepository transactionRepository,
+        IAggregationRepository aggregationRepository,
+        ILogger<RecurringPaymentService> logger)
     {
         _repository = repository;
+        _transactionRepository = transactionRepository;
+        _aggregationRepository = aggregationRepository;
+        _logger = logger;
     }
 
     public async Task<RecurringPayment?> GetByIdAsync(Guid userId, string recurringId)
@@ -31,20 +42,17 @@ public class RecurringPaymentService : IRecurringPaymentService
 
     public async Task<RecurringPayment> CreateAsync(Guid userId, RecurringPayment payment)
     {
-        // TODO: Fix after entity migration
-        throw new NotImplementedException("Recurring payment creation temporarily disabled during PostgreSQL migration");
-        // payment.UserId = userId.ToString();
-        // payment.CreatedAt = DateTime.UtcNow;
-        // payment.UpdatedAt = DateTime.UtcNow;
-        // return await _repository.CreateAsync(payment);
+        payment.UserId = userId.ToString();
+        payment.CreatedAt = DateTime.UtcNow;
+        payment.UpdatedAt = DateTime.UtcNow;
+        return await _repository.CreateAsync(payment);
     }
 
     public async Task<RecurringPayment> UpdateAsync(Guid userId, RecurringPayment payment)
     {
-        // TODO: Fix after entity migration
-        throw new NotImplementedException("Recurring payment update temporarily disabled during PostgreSQL migration");
-        // payment.UserId = userId.ToString();
-        // return await _repository.UpdateAsync(payment);
+        payment.UserId = userId.ToString();
+        payment.UpdatedAt = DateTime.UtcNow;
+        return await _repository.UpdateAsync(payment);
     }
 
     public async Task<bool> DeleteAsync(Guid userId, string recurringId)
@@ -54,33 +62,83 @@ public class RecurringPaymentService : IRecurringPaymentService
 
     public async Task<RecurringPayment?> MarkAsPaidAsync(Guid userId, string recurringId)
     {
-        // TODO: Fix after entity migration
-        throw new NotImplementedException("Mark as paid temporarily disabled during PostgreSQL migration");
-        // var payment = await _repository.GetByIdAsync(userId, recurringId);
-        // if (payment == null) return null;
-        // payment.LastPaidDate = DateTime.UtcNow;
-        // payment.MissedCount = 0;
-        // payment.NextDueDate = CalculateNextDueDate(payment.NextDueDate, payment.Frequency);
-        // return await _repository.UpdateAsync(payment);
+        var payment = await _repository.GetByIdAsync(userId, recurringId);
+        if (payment == null) return null;
+
+        payment.LastPaidDate = DateTime.UtcNow;
+        payment.MissedCount = 0;
+        payment.NextDueDate = CalculateNextDueDate(payment.NextDueDate, payment.Frequency);
+        payment.UpdatedAt = DateTime.UtcNow;
+        return await _repository.UpdateAsync(payment);
     }
 
     public async Task<int> ProcessOverduePaymentsAsync()
     {
-        // TODO: Fix after entity migration
-        throw new NotImplementedException("Process overdue temporarily disabled during PostgreSQL migration");
-        // var today = DateTime.UtcNow;
-        // var overduePayments = await _repository.GetOverduePaymentsAsync(today.ToString("yyyy-MM-dd"));
-        // var processedCount = 0;
-        // foreach (var payment in overduePayments)
-        // {
-        //     if (payment.Status == AppConstants.RecurringStatus.Paused)
-        //         continue;
-        //     payment.MissedCount++;
-        //     payment.NextDueDate = CalculateNextDueDate(payment.NextDueDate, payment.Frequency);
-        //     await _repository.UpdateAsync(payment);
-        //     processedCount++;
-        // }
-        // return processedCount;
+        var today = DateTime.UtcNow;
+        var overduePayments = await _repository.GetOverduePaymentsAsync(today.ToString("yyyy-MM-dd"));
+        var processedCount = 0;
+
+        foreach (var payment in overduePayments)
+        {
+            try
+            {
+                if (payment.AutoPay)
+                {
+                    // Auto-pay: create a transaction automatically
+                    var transaction = new Transaction
+                    {
+                        TransactionId = Guid.NewGuid().ToString(),
+                        UserId = payment.UserId,
+                        Type = AppConstants.TransactionType.Expense,
+                        CategoryId = payment.CategoryId,
+                        Amount = payment.Amount,
+                        Description = $"Auto-pay: {payment.Name}",
+                        Merchant = string.Empty,
+                        PaymentMethod = string.Empty,
+                        Status = AppConstants.PaymentStatus.Completed,
+                        TransactionDate = payment.NextDueDate.ToString("yyyy-MM-dd"),
+                        ImageUrl = string.Empty,
+                        Notes = $"Auto-generated from recurring payment: {payment.Name}",
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    await _transactionRepository.CreateAsync(transaction);
+                    _ = _aggregationRepository.UpdateRedisCacheAsync(transaction);
+
+                    payment.LastPaidDate = DateTime.UtcNow;
+                    payment.MissedCount = 0;
+
+                    _logger.LogInformation(
+                        "Auto-paid recurring payment {Name} for user {UserId}, amount {Amount}",
+                        payment.Name, payment.UserId, payment.Amount);
+                }
+                else
+                {
+                    // Not auto-pay: just increment missed count
+                    payment.MissedCount++;
+
+                    _logger.LogInformation(
+                        "Recurring payment {Name} overdue for user {UserId}, missed count: {MissedCount}",
+                        payment.Name, payment.UserId, payment.MissedCount);
+                }
+
+                // Advance to next due date (skip past all missed periods)
+                while (payment.NextDueDate < today)
+                {
+                    payment.NextDueDate = CalculateNextDueDate(payment.NextDueDate, payment.Frequency);
+                }
+
+                payment.UpdatedAt = DateTime.UtcNow;
+                await _repository.UpdateAsync(payment);
+                processedCount++;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to process recurring payment {RecurringId}", payment.RecurringId);
+            }
+        }
+
+        return processedCount;
     }
 
     private static DateTime CalculateNextDueDate(DateTime currentDueDate, AppConstants.RecurringFrequency frequency)
