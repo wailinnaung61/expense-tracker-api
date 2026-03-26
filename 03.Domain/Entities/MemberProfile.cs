@@ -20,7 +20,7 @@ public class MemberProfile
     public string Status { get; set; } = AppConstants.UserStatus.Active;
 
     public decimal DailyLimit { get; set; }
-    public string Currency { get; set; } = "Yen";
+    public string Currency { get; set; } = "JPY";
 
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

@@ -18,6 +18,13 @@ public static class DependencyInjection
                 configuration.GetConnectionString("DefaultConnection"),
                 b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
+        // Redis distributed cache
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = configuration.GetConnectionString("Redis");
+            options.InstanceName = "ExpenseTracker:";
+        });
+
         // Register repositories
         services.AddScoped<IMemberRepository, MemberRepository>();
         services.AddScoped<IExpenseCategoryRepository, ExpenseCategoryRepository>();

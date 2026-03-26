@@ -7,10 +7,14 @@ namespace expense_tracker_backend.Application.Services;
 public class TranactionService : ITranactionService
 {
     private readonly ITranactionRepository _repository;
+    private readonly IAggregationRepository _aggregationRepository;
 
-    public TranactionService(ITranactionRepository repository)
+    public TranactionService(
+        ITranactionRepository repository,
+        IAggregationRepository aggregationRepository)
     {
         _repository = repository;
+        _aggregationRepository = aggregationRepository;
     }
 
     public async Task<PagedResult<DTOs.Tranaction>> GetTransactionsAsync(Guid userId, TransactionFilterRequest filter)
@@ -70,6 +74,8 @@ public class TranactionService : ITranactionService
         };
         var created = await _repository.CreateAsync(tranaction);
 
+        _ = _aggregationRepository.UpdateAggregationsAsync(created);
+
         return MapToDto(created);
     }
 
@@ -92,6 +98,8 @@ public class TranactionService : ITranactionService
         var updated = await _repository.UpdateAsync(existing);
         if (updated is null) return null;
 
+        _ = _aggregationRepository.UpdateAggregationsAsync(updated);
+
         return MapToDto(updated);
     }
 
@@ -100,7 +108,10 @@ public class TranactionService : ITranactionService
         var existing = await _repository.GetByIdAsync(userId, tranactionId);
         if (existing is null) return false;
 
-        return await _repository.DeleteAsync(userId, tranactionId);
+        var deleted = await _repository.DeleteAsync(userId, tranactionId);
+        if (deleted) _ = _aggregationRepository.ReverseAggregationsAsync(existing);
+
+        return deleted;
     }
 
     private static DTOs.Tranaction MapToDto(Domain.Entities.Transaction expense)
