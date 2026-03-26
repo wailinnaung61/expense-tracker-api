@@ -1,52 +1,50 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace expense_tracker_backend.Domain.Shared.Constants;
+﻿namespace expense_tracker_backend.Domain.Shared.Constants;
 
 public static class MenuDefinitions
 {
-    public static IReadOnlyList<MenuItem> ResolveByRole(string role=AppConstants.Roles.User)
+    public static IReadOnlyList<MenuItem> ResolveByRole(string role, Func<string, string> localize)
     {
-        return role switch
+        var keys = role switch
         {
-            AppConstants.Roles.Admin => Admin,
-            AppConstants.Roles.User => User,
-            _ => Guest
+            AppConstants.Roles.Admin => AdminKeys,
+            AppConstants.Roles.User => UserKeys,
+            _ => GuestKeys
         };
+
+        return keys.Select(k => new MenuItem(k.Key, localize($"Menu_{k.Key}"), k.Path)).ToList();
     }
 
-    public static readonly IReadOnlyList<MenuItem> Admin =
+    private static readonly IReadOnlyList<MenuKey> AdminKeys =
     [
-            new MenuItem("dashboard", "Dashboard", "/dashboard"),
-            new MenuItem("categories", "Categories", "/expenseCategory"),
-            new MenuItem("budgets", "Budgets", "/budget"),
-            new MenuItem("expenses", "Expenses", "/tranaction"),
-            new MenuItem("savings", "Savings", "/saving"),
-            new MenuItem("investments", "Investments", "/investment"),
-            new MenuItem("reports", "Reports", "/report"),
-            new MenuItem("users", "Users", "/user"),
-            new MenuItem("settings", "Settings", "/setting")
+        new("dashboard", "/dashboard"),
+        new("categories", "/expenseCategory"),
+        new("budgets", "/budget"),
+        new("expenses", "/tranaction"),
+        new("savings", "/saving"),
+        new("investments", "/investment"),
+        new("reports", "/report"),
+        new("users", "/user"),
+        new("settings", "/setting")
     ];
 
-    public static readonly IReadOnlyList<MenuItem> User =
-       [
-            new MenuItem("dashboard", "Dashboard", "/dashboard"),
-            new MenuItem("categories", "Categories", "/expenseCategory"),
-            new MenuItem("budgets", "Budgets", "/budget"),
-            new MenuItem("expenses", "Expenses", "/tranaction"),
-            new MenuItem("savings", "Savings", "/saving"),
-            new MenuItem("investments", "Investments", "/investment"),
-            new MenuItem("reports", "Reports", "/report"),
-            new MenuItem("settings", "Settings", "/setting")
+    private static readonly IReadOnlyList<MenuKey> UserKeys =
+    [
+        new("dashboard", "/dashboard"),
+        new("categories", "/expenseCategory"),
+        new("budgets", "/budget"),
+        new("expenses", "/tranaction"),
+        new("savings", "/saving"),
+        new("investments", "/investment"),
+        new("reports", "/report"),
+        new("settings", "/setting")
     ];
 
-    public static readonly IReadOnlyList<MenuItem> Guest =
+    private static readonly IReadOnlyList<MenuKey> GuestKeys =
     [
-        new MenuItem("login", "Login", "/login")
+        new("login", "/login")
     ];
+
+    private record MenuKey(string Key, string Path);
 }
 
 public record MenuItem(

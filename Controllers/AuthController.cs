@@ -205,7 +205,7 @@ public class AuthController : BaseController
     [Authorize]
     public async Task<ActionResult<CognitoUser>> UpdateProfile([FromBody] UpdateProfileRequest request)
     {
-        if (UserId is null)
+        if (UserId is null) 
             return Unauthorized();
 
         try

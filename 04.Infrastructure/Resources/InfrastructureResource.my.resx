@@ -187,4 +187,35 @@
   <data name="InvalidGoogleUserData" xml:space="preserve">
     <value>Google အသုံးပြုသူ အချက်အလက် မမှန်ကန်ပါ</value>
   </data>
+  <!-- Menu Labels -->
+  <data name="Menu_dashboard" xml:space="preserve">
+    <value>ဒက်ရှ်ဘုတ်</value>
+  </data>
+  <data name="Menu_categories" xml:space="preserve">
+    <value>အမျိုးအစားများ</value>
+  </data>
+  <data name="Menu_budgets" xml:space="preserve">
+    <value>ဘတ်ဂျက်များ</value>
+  </data>
+  <data name="Menu_expenses" xml:space="preserve">
+    <value>ကုန်ကျစရိတ်များ</value>
+  </data>
+  <data name="Menu_savings" xml:space="preserve">
+    <value>စုဆောင်းငွေများ</value>
+  </data>
+  <data name="Menu_investments" xml:space="preserve">
+    <value>ရင်းနှီးမြှုပ်နှံမှုများ</value>
+  </data>
+  <data name="Menu_reports" xml:space="preserve">
+    <value>အစီရင်ခံစာများ</value>
+  </data>
+  <data name="Menu_users" xml:space="preserve">
+    <value>အသုံးပြုသူများ</value>
+  </data>
+  <data name="Menu_settings" xml:space="preserve">
+    <value>ဆက်တင်များ</value>
+  </data>
+  <data name="Menu_login" xml:space="preserve">
+    <value>ဝင်ရောက်ရန်</value>
+  </data>
 </root>

@@ -838,7 +838,7 @@ public class CognitoAuthService : ICognitoAuthService
 
     private CognitoUser BuildCognitoUser(MemberProfile profile)
     {
-        var menus = MenuDefinitions.ResolveByRole(profile.RoleId);
+        var menus = MenuDefinitions.ResolveByRole(profile.RoleId, key => _localizer[key].Value);
 
         return new CognitoUser(
             profile.UserId,

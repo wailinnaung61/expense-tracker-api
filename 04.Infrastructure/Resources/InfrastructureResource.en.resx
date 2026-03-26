@@ -187,4 +187,35 @@
   <data name="InvalidGoogleUserData" xml:space="preserve">
     <value>Invalid Google user data</value>
   </data>
+  <!-- Menu Labels -->
+  <data name="Menu_dashboard" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+  <data name="Menu_categories" xml:space="preserve">
+    <value>Categories</value>
+  </data>
+  <data name="Menu_budgets" xml:space="preserve">
+    <value>Budgets</value>
+  </data>
+  <data name="Menu_expenses" xml:space="preserve">
+    <value>Expenses</value>
+  </data>
+  <data name="Menu_savings" xml:space="preserve">
+    <value>Savings</value>
+  </data>
+  <data name="Menu_investments" xml:space="preserve">
+    <value>Investments</value>
+  </data>
+  <data name="Menu_reports" xml:space="preserve">
+    <value>Reports</value>
+  </data>
+  <data name="Menu_users" xml:space="preserve">
+    <value>Users</value>
+  </data>
+  <data name="Menu_settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Menu_login" xml:space="preserve">
+    <value>Login</value>
+  </data>
 </root>
