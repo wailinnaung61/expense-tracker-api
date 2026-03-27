@@ -21,3 +21,9 @@ public record FunctionCallResult(
     [property: JsonPropertyName("result")]
     object? Result = null
 );
+
+public record PendingConfirmation(
+    string Action,
+    List<Guid> TransactionIds,
+    string Summary
+);

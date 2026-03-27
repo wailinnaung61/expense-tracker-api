@@ -39,12 +39,15 @@ public class ChatService : IChatService
         3. Only call a function when intent is clear and actionable
         4. If unclear → ask a clarification question
         5. DELETE RULE:
-           Step 1 — When user asks to delete, ALWAYS call find_transaction first to search by amount/description/date/type.
-                    Show the matching records and ask "Do you want to delete this? Reply Yes to confirm."
-           Step 2 — When user confirms (Yes/Confirm), call delete_transaction with the transaction_id from the previous result.
-                    Delete immediately without asking again.
+           Step 1 — When user asks to delete, call find_transaction to search by amount/description/date/type.
+                    The backend shows matching records and asks for confirmation automatically.
+           Step 2 — After find_transaction, do NOT call delete_transaction yourself.
+                    The backend handles the actual deletion when user confirms.
            Never ask the user to provide a transaction ID manually.
-        6. Do NOT guess missing required data
+        6. MULTI-ACTION RULE: If user requests multiple actions in one message,
+           call functions ONE AT A TIME sequentially — one function per response step.
+           Never call more than one function in a single response step.
+        7. Do NOT guess missing required data
 
         DATA EXTRACTION:
         - Amount:
@@ -152,6 +155,20 @@ public class ChatService : IChatService
             ? cached!
             : [];
 
+        // ── FIX 4: Backend-controlled confirmation ────────────────────────────────
+        // Intercept "yes / confirm" BEFORE calling OpenAI.
+        // If there is a pending action stored from a previous find_transaction call,
+        // execute it directly — no OpenAI round-trip, no chance of multi-call JSON issues.
+        var pendingKey = $"chat:pending:{userId}";
+        if (IsConfirmation(message) &&
+            _memoryCache.TryGetValue(pendingKey, out PendingConfirmation? pending) &&
+            pending is not null)
+        {
+            _memoryCache.Remove(pendingKey);
+            return await ExecutePendingConfirmationAsync(userId, message, pending, cacheKey, history, profile);
+        }
+        // ─────────────────────────────────────────────────────────────────────────
+
         // Build messages: fresh system prompt + conversation history + new user message
         var messages = new List<ChatMessage>(history.Count + 2) { new SystemChatMessage(systemMessage) };
         messages.AddRange(history);
@@ -168,50 +185,69 @@ public class ChatService : IChatService
         var choice = response.Value;
 
         ChatResponse chatResponse;
+        var functionsCalled = new List<FunctionCallResult>();
 
-        // If the model wants to call function(s) — could be 1 or many at once
-        if (choice.FinishReason == ChatFinishReason.ToolCalls)
+        // Sequential tool call loop — handles multi-step requests (e.g. "add salary + 2 expenses").
+        // Each iteration: execute ONE function → send result back → AI decides next action.
+        // Stops when AI returns a text response or max iterations reached.
+        const int MaxToolCallIterations = 5;
+        var iterations = 0;
+
+        while (choice.FinishReason == ChatFinishReason.ToolCalls && iterations < MaxToolCallIterations)
         {
-            // Step 1: Add the assistant message with all tool_calls
+            iterations++;
             messages.Add(new AssistantChatMessage(choice));
 
-            // Step 2: Execute ALL tool calls and add a ToolChatMessage for EACH one
-            var functionsCalled = new List<FunctionCallResult>();
-
-            foreach (var toolCall in choice.ToolCalls)
+            // Process only the first tool call per step (safe single-action per round-trip).
+            // If AI sends extras, add placeholder responses so tool_call_id refs are satisfied.
+            var primaryCall = choice.ToolCalls[0];
+            foreach (var extra in choice.ToolCalls.Skip(1))
             {
-                _logger.LogInformation("OpenAI function call: {FunctionName}, args: {Args}",
-                    toolCall.FunctionName, toolCall.FunctionArguments);
-
-                var (result, resultObj) = await ExecuteFunctionAsync(userId, toolCall.FunctionName, toolCall.FunctionArguments.ToString());
-
-                // Each tool_call_id MUST have a matching ToolChatMessage response
-                messages.Add(new ToolChatMessage(toolCall.Id, result));
-                functionsCalled.Add(new FunctionCallResult(toolCall.FunctionName, resultObj));
+                _logger.LogWarning("Ignoring extra parallel tool call: {FunctionName}", extra.FunctionName);
+                messages.Add(new ToolChatMessage(extra.Id, "Only one function per step is allowed."));
             }
 
-            // Step 3: Send all results back to OpenAI for a single natural language summary
-            var followUp = await _chatClient.CompleteChatAsync(messages, options);
-            var followUpChoice = followUp.Value;
-            var followUpText = followUpChoice.Content.FirstOrDefault()?.Text
-                ?? string.Join("\n", functionsCalled.Select(f => f.FunctionName));
+            _logger.LogInformation("Tool call [{Iter}]: {FunctionName}, args: {Args}",
+                iterations, primaryCall.FunctionName, primaryCall.FunctionArguments);
 
-            // Add the final assistant response for history continuity
-            messages.Add(new AssistantChatMessage(followUpChoice));
+            var (result, resultObj) = await ExecuteFunctionAsync(userId, primaryCall.FunctionName, primaryCall.FunctionArguments.ToString());
+
+            messages.Add(new ToolChatMessage(primaryCall.Id, result ?? string.Empty));
+            functionsCalled.Add(new FunctionCallResult(primaryCall.FunctionName, resultObj));
+
+            // Ask OpenAI for the next action (or final text summary)
+            var next = await _chatClient.CompleteChatAsync(messages, options);
+            choice = next.Value;
+        }
+
+        if (functionsCalled.Count > 0)
+        {
+            // AI has finished all tool calls — get final natural language summary
+            var finalText = choice.Content.FirstOrDefault()?.Text
+                ?? string.Join("\n", functionsCalled.Select(f => f.FunctionName));
+            messages.Add(new AssistantChatMessage(choice));
 
             var refreshTarget = ResolveRefreshTarget(functionsCalled);
-            chatResponse = new ChatResponse(followUpText, profile?.UserName, refreshTarget, functionsCalled, DateTime.UtcNow);
+            chatResponse = new ChatResponse(finalText, profile?.UserName, refreshTarget, functionsCalled, DateTime.UtcNow);
         }
         else
         {
-            // Normal text response (no function call) — add to history
+            // Pure text response — no function called
             var text = choice.Content.FirstOrDefault()?.Text ?? "I'm sorry, I couldn't process your request.";
             messages.Add(new AssistantChatMessage(choice));
             chatResponse = new ChatResponse(text, profile?.UserName, null, null, DateTime.UtcNow);
         }
 
-        // Save conversation history (skip system message, cap at MaxHistoryMessages)
-        var newHistory = messages.Skip(1).TakeLast(MaxHistoryMessages).ToList();
+        // Save conversation history — only keep UserChatMessage and text-only AssistantChatMessage.
+        // AssistantChatMessage with tool_calls and ToolChatMessage are stripped because they
+        // accumulate BinaryData / tool_call_id references across turns and cause OpenAI to
+        // reject the request with "invalid JSON body". GPT text summaries retain enough context.
+        var newHistory = messages
+            .Skip(1) // skip system message
+            .Where(m => m is UserChatMessage ||
+                        (m is AssistantChatMessage am && am.ToolCalls.Count == 0))
+            .TakeLast(MaxHistoryMessages)
+            .ToList();
         _memoryCache.Set(cacheKey, newHistory, new MemoryCacheEntryOptions
         {
             SlidingExpiration = TimeSpan.FromMinutes(30)
@@ -239,6 +275,13 @@ public class ChatService : IChatService
     {
         try
         {
+            // FIX 2 — validate JSON before parsing to catch malformed arguments from AI
+            if (!IsValidJson(argsJson))
+            {
+                _logger.LogError("Invalid JSON args from AI for {FunctionName}: {Args}", functionName, argsJson);
+                return ("I couldn't understand that request. Please try again.", null);
+            }
+
             var args = JsonDocument.Parse(argsJson).RootElement;
 
             return functionName switch
@@ -494,7 +537,15 @@ public class ChatService : IChatService
             $"• {tx.Amount:N0} | {tx.TranactionDate} | {tx.Description}");
         var summary = $"Found {matches.Count} matching transaction(s):\n{string.Join("\n", lines)}\n\nDo you want to delete this? Reply Yes to confirm.";
 
-        return (summary, matches);
+        // Store pending confirmation in backend — backend will execute deletion when user says yes
+        var pending = new PendingConfirmation(
+            "delete",
+            matches.Select(tx => tx.TranactionId).ToList(),
+            string.Join(", ", matches.Select(tx => $"{tx.Amount:N0} — {tx.Description} on {tx.TranactionDate}"))
+        );
+        _memoryCache.Set($"chat:pending:{userId}", pending, TimeSpan.FromMinutes(5));
+
+        return (summary, null); // return null data — IDs are stored in backend, not exposed to frontend
     }
 
     private async Task<(string, object?)> FindAndDeleteTransactionAsync(Guid userId, JsonElement args)
@@ -565,6 +616,61 @@ public class ChatService : IChatService
             // Read operations return null — no refresh needed
             _ => null
         };
+    }
+
+    private static bool IsConfirmation(string message)
+    {
+        var m = message.Trim().ToLowerInvariant();
+        return m is "yes" or "y" or "confirm" or "ok" or "sure" or "delete it" or "go ahead" or "proceed";
+    }
+
+    private static bool IsValidJson(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return false;
+        try { JsonDocument.Parse(json); return true; }
+        catch { return false; }
+    }
+
+    private async Task<ChatResponse> ExecutePendingConfirmationAsync(
+        Guid userId, string message, PendingConfirmation pending,
+        string historyCacheKey, List<ChatMessage> history, MemberProfile? profile)
+    {
+        string responseText;
+        List<FunctionCallResult> results = [];
+
+        if (pending.Action == "delete")
+        {
+            var deleted = 0;
+            foreach (var txId in pending.TransactionIds)
+            {
+                if (await _transactionService.DeleteTranactionAsync(userId, txId))
+                {
+                    results.Add(new FunctionCallResult("delete_transaction", txId));
+                    deleted++;
+                }
+            }
+            responseText = deleted > 0
+                ? $"🗑️ Deleted: {pending.Summary}"
+                : "Transaction not found or already deleted.";
+        }
+        else
+        {
+            responseText = "Action cancelled.";
+        }
+
+        // Persist to history
+        var updatedHistory = history
+            .Append(new UserChatMessage(message))
+            .Append(new AssistantChatMessage(responseText))
+            .TakeLast(MaxHistoryMessages)
+            .ToList();
+        _memoryCache.Set(historyCacheKey, updatedHistory, new MemoryCacheEntryOptions
+        {
+            SlidingExpiration = TimeSpan.FromMinutes(30)
+        });
+
+        var refreshTarget = results.Count > 0 ? AppConstants.ChatRefreshTarget.Transactions : null;
+        return new ChatResponse(responseText, profile?.UserName, refreshTarget, results, DateTime.UtcNow);
     }
 
     private static List<ChatTool> BuildToolDefinitions()
