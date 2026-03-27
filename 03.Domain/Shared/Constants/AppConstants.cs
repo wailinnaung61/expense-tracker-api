@@ -56,4 +56,13 @@ public static class AppConstants
         Paused,
         Completed
     }
+
+    // Chat refresh targets — tells the frontend which data to reload after a chat action
+    public static class ChatRefreshTarget
+    {
+        public const string Transactions = "transactions";
+        public const string Summary = "summary";
+        public const string Categories = "categories";
+        public const string RecurringPayments = "recurring_payments";
+    }
 }

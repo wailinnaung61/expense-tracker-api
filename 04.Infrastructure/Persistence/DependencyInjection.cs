@@ -38,11 +38,15 @@ public static class DependencyInjection
         services.AddScoped<IAggregationRepository, AggregationRepository>();
         services.AddScoped<IRecurringPaymentRepository, RecurringPaymentRepository>();
 
+        // In-memory cache for chat conversation history
+        services.AddMemoryCache();
+
         // Register services
         services.AddScoped<IExpenseCategoryService, ExpenseCategoryService>();
         services.AddScoped<ITranactionService, TranactionService>();
         services.AddScoped<IAggregationService, AggregationService>();
         services.AddScoped<IRecurringPaymentService, RecurringPaymentService>();
+        services.AddScoped<IChatService, ChatService>();
 
         return services;
     }
