@@ -11,71 +11,6 @@ using OpenAI.Chat;
 
 namespace expense_tracker_backend.Application.Services;
 
-/// <summary>
-/// AI Chat Service — sends user messages to OpenAI GPT with function calling.
-/// 
-/// Endpoint: POST /api/chat
-/// Headers:  Authorization: Bearer {jwt_token}
-/// 
-/// ─────────────────────────────────────────────────────────────────
-/// REQUEST SAMPLES (POST /api/chat)
-/// ─────────────────────────────────────────────────────────────────
-/// 
-/// 1. Add expense:
-///    { "message": "Add coffee 500 yen" }
-///    → Calls: add_expense({ amount: 500, description: "coffee", category: "Food" })
-///    → Response: { "message": "✅ Added Expense of 500...", "functionCalled": "add_expense", "functionResult": {...} }
-/// 
-/// 2. Add income:
-///    { "message": "Got salary 3000000" }
-///    → Calls: add_income({ amount: 3000000, description: "salary", category: "Salary" })
-/// 
-/// 3. Add investment:
-///    { "message": "Bought Bitcoin 100000" }
-///    → Calls: add_investment({ amount: 100000, description: "Bitcoin" })
-/// 
-/// 4. Add savings:
-///    { "message": "Save 50000 to emergency fund" }
-///    → Calls: add_savings({ amount: 50000, description: "emergency fund" })
-/// 
-/// 5. List transactions:
-///    { "message": "Show my recent expenses" }
-///    → Calls: list_transactions({ type: "Expense", limit: 10 })
-/// 
-/// 6. Monthly summary:
-///    { "message": "Show my monthly summary" }
-///    → Calls: get_monthly_summary({ month: "2026-03" })
-/// 
-/// 7. Yearly summary:
-///    { "message": "How much did I spend this year?" }
-///    → Calls: get_yearly_summary({ year: "2026" })
-/// 
-/// 8. Expense breakdown:
-///    { "message": "Show expense breakdown by category" }
-///    → Calls: get_expense_breakdown({ month: "2026-03" })
-/// 
-/// 9. List categories:
-///    { "message": "What categories do I have?" }
-///    → Calls: list_categories({})
-/// 
-/// 10. List recurring payments:
-///     { "message": "Show my recurring bills" }
-///     → Calls: list_recurring_payments({})
-/// 
-/// 11. Delete transaction:
-///     { "message": "Delete transaction abc12345-..." }
-///     → Calls: delete_transaction({ transaction_id: "abc12345-..." })
-/// 
-/// 12. Non-finance (rejected):
-///     { "message": "How are you?" }
-///     → No function call
-///     → Response: { "message": "I'm here to help manage your finances 😊", "functionCalled": null }
-/// 
-/// 13. Unclear intent (asks clarification):
-///     { "message": "Add 500" }
-///     → No function call
-///     → Response: { "message": "Is this an expense or income?", "functionCalled": null }
-/// </summary>
 public class ChatService : IChatService
 {
     private readonly ITranactionService _transactionService;
@@ -103,7 +38,12 @@ public class ChatService : IChatService
            - Politely redirect to finance features
         3. Only call a function when intent is clear and actionable
         4. If unclear → ask a clarification question
-        5. Never perform delete/update unless explicitly confirmed
+        5. DELETE RULE:
+           Step 1 — When user asks to delete, ALWAYS call find_transaction first to search by amount/description/date/type.
+                    Show the matching records and ask "Do you want to delete this? Reply Yes to confirm."
+           Step 2 — When user confirms (Yes/Confirm), call delete_transaction with the transaction_id from the previous result.
+                    Delete immediately without asking again.
+           Never ask the user to provide a transaction ID manually.
         6. Do NOT guess missing required data
 
         DATA EXTRACTION:
@@ -189,41 +129,6 @@ public class ChatService : IChatService
         _chatClient = new ChatClient(model, apiKey);
     }
 
-    /// <summary>
-    /// Main chat flow:
-    /// 1. Build messages: [SystemPrompt + current date, UserMessage]
-    /// 2. Send to OpenAI with 11 tool definitions
-    /// 3. If OpenAI returns function_call → execute function → send result back to OpenAI → return natural language
-    /// 4. If OpenAI returns text → return directly
-    ///
-    /// Example OpenAI request payload (what we send):
-    /// {
-    ///   "model": "gpt-4o-mini",
-    ///   "messages": [
-    ///     { "role": "system", "content": "You are an AI assistant...\nCurrent date: 2026-03-26" },
-    ///     { "role": "user", "content": "Add coffee 500 yen" }
-    ///   ],
-    ///   "tools": [ ...11 function definitions... ]
-    /// }
-    ///
-    /// Example OpenAI response (function call):
-    /// {
-    ///   "choices": [{
-    ///     "finish_reason": "tool_calls",
-    ///     "message": {
-    ///       "tool_calls": [{
-    ///         "id": "call_abc123",
-    ///         "function": {
-    ///           "name": "add_expense",
-    ///           "arguments": "{\"amount\":500,\"description\":\"coffee\",\"category\":\"Food\"}"
-    ///         }
-    ///       }]
-    ///     }
-    ///   }]
-    /// }
-    ///
-    /// Then we execute the function, send result back, and get final natural language response.
-    /// </summary>
     public async Task<ChatResponse> ChatAsync(Guid userId, string message)
     {
         var tools = BuildToolDefinitions();
@@ -330,14 +235,6 @@ public class ChatService : IChatService
         return profile;
     }
 
-    /// <summary>
-    /// Function Router — maps OpenAI function_call to actual backend services.
-    /// 
-    /// OpenAI sends: { "name": "add_expense", "arguments": "{\"amount\":500}" }
-    /// We parse args → call the right service → return summary string + data object.
-    /// The summary goes back to OpenAI for natural language formatting.
-    /// The data object goes to the frontend as functionResult.
-    /// </summary>
     private async Task<(string Summary, object? Data)> ExecuteFunctionAsync(Guid userId, string functionName, string argsJson)
     {
         try
@@ -356,7 +253,9 @@ public class ChatService : IChatService
                 "get_expense_breakdown" => await GetExpenseBreakdownAsync(userId, args),
                 "list_categories" => await ListCategoriesAsync(userId, args),
                 "list_recurring_payments" => await ListRecurringPaymentsAsync(userId),
+                "find_transaction" => await FindTransactionAsync(userId, args),
                 "delete_transaction" => await DeleteTransactionAsync(userId, args),
+                "find_and_delete_transaction" => await FindAndDeleteTransactionAsync(userId, args),
                 _ => ($"Unknown function: {functionName}", null)
             };
         }
@@ -367,27 +266,6 @@ public class ChatService : IChatService
         }
     }
 
-    // ============================================================================
-    // FUNCTION IMPLEMENTATIONS
-    // ============================================================================
-
-    /// <summary>
-    /// Add a transaction (expense/income/investment/savings).
-    /// 
-    /// Category resolution order:
-    /// 1. If OpenAI provides category_id → use it directly
-    /// 2. If OpenAI provides category name (e.g. "Food") → search by keyword
-    /// 3. Fallback → use first category of matching type
-    /// 4. No categories exist → return error message
-    /// 
-    /// Example: user says "Add coffee 500 yen"
-    ///   → OpenAI args: { amount: 500, description: "coffee", category: "Food" }
-    ///   → Search categories where type=Expense, keyword="Food"
-    ///   → Found "Food & Drink" category → use its ID
-    ///   → Create transaction via TransactionService
-    ///   → Invalidate Redis cache
-    ///   → Return: "✅ Added Expense of 500 on 2026-03-26 — coffee"
-    /// </summary>
     private async Task<(string, object?)> AddTransactionAsync(Guid userId, AppConstants.TransactionType type, JsonElement args)
     {
         var amount = args.GetProperty("amount").GetDecimal();
@@ -576,6 +454,102 @@ public class ChatService : IChatService
             : ("Transaction not found.", false);
     }
 
+    private async Task<(string, object?)> FindTransactionAsync(Guid userId, JsonElement args)
+    {
+        var keyword = args.TryGetProperty("description", out var desc) ? desc.GetString() : null;
+        var amount = args.TryGetProperty("amount", out var amt) ? amt.GetDecimal() : (decimal?)null;
+        var date = args.TryGetProperty("date", out var d) ? d.GetString() : null;
+
+        AppConstants.TransactionType? type = null;
+        if (args.TryGetProperty("type", out var t) && Enum.TryParse<AppConstants.TransactionType>(t.GetString(), true, out var parsedType))
+            type = parsedType;
+
+        DateTime? startDate = null;
+        DateTime? endDate = null;
+        if (!string.IsNullOrEmpty(date) && DateTime.TryParse(date, out var parsedDate))
+        {
+            startDate = parsedDate.Date;
+            endDate = parsedDate.Date.AddDays(1).AddTicks(-1);
+        }
+
+        var filter = new TransactionFilterRequest
+        {
+            Keyword = keyword,
+            Type = type,
+            StartDate = startDate,
+            EndDate = endDate,
+            PageSize = 10
+        };
+
+        var result = await _transactionService.GetTransactionsAsync(userId, filter);
+
+        var matches = amount.HasValue
+            ? result.Items.Where(tx => tx.Amount == amount.Value).ToList()
+            : result.Items;
+
+        if (matches.Count == 0)
+            return ("No matching transaction found. Please check the amount, description, or date.", null);
+
+        var lines = matches.Select(tx =>
+            $"• {tx.Amount:N0} | {tx.TranactionDate} | {tx.Description}");
+        var summary = $"Found {matches.Count} matching transaction(s):\n{string.Join("\n", lines)}\n\nDo you want to delete this? Reply Yes to confirm.";
+
+        return (summary, matches);
+    }
+
+    private async Task<(string, object?)> FindAndDeleteTransactionAsync(Guid userId, JsonElement args)
+    {
+        var keyword = args.TryGetProperty("description", out var desc) ? desc.GetString() : null;
+        var amount = args.TryGetProperty("amount", out var amt) ? amt.GetDecimal() : (decimal?)null;
+        var date = args.TryGetProperty("date", out var d) ? d.GetString() : null;
+
+        AppConstants.TransactionType? type = null;
+        if (args.TryGetProperty("type", out var t) && Enum.TryParse<AppConstants.TransactionType>(t.GetString(), true, out var parsedType))
+            type = parsedType;
+
+        // Build date range for the given date (whole day)
+        DateTime? startDate = null;
+        DateTime? endDate = null;
+        if (!string.IsNullOrEmpty(date) && DateTime.TryParse(date, out var parsedDate))
+        {
+            startDate = parsedDate.Date;
+            endDate = parsedDate.Date.AddDays(1).AddTicks(-1);
+        }
+
+        var filter = new TransactionFilterRequest
+        {
+            Keyword = keyword,
+            Type = type,
+            StartDate = startDate,
+            EndDate = endDate,
+            PageSize = 10
+        };
+
+        var result = await _transactionService.GetTransactionsAsync(userId, filter);
+
+        // Filter by amount if provided
+        var matches = amount.HasValue
+            ? result.Items.Where(tx => tx.Amount == amount.Value).ToList()
+            : result.Items;
+
+        if (matches.Count == 0)
+            return ("No matching transaction found. Please check the amount, description, or date.", null);
+
+        if (matches.Count > 1)
+        {
+            var lines = matches.Select(tx =>
+                $"• {tx.Amount:N0} | {tx.TranactionDate} | {tx.Description} | ID: {tx.TranactionId}");
+            return ($"Found {matches.Count} matching transactions. Please specify which one:\n{string.Join("\n", lines)}", matches);
+        }
+
+        // Exactly one match — delete it
+        var match = matches[0];
+        var deleted = await _transactionService.DeleteTranactionAsync(userId, match.TranactionId);
+        return deleted
+            ? ($"🗑️ Deleted: {match.Amount:N0} — {match.Description} on {match.TranactionDate}", match)
+            : ("Failed to delete transaction.", null);
+    }
+
     // ============================================================================
     // HELPERS
     // ============================================================================
@@ -585,43 +559,14 @@ public class ChatService : IChatService
         var name = functions.FirstOrDefault()?.FunctionName;
         return name switch
         {
+            // Mutating operations only — frontend should refresh after these
             "add_expense" or "add_income" or "add_investment" or "add_savings"
-                or "list_transactions" or "delete_transaction" => AppConstants.ChatRefreshTarget.Transactions,
-            "get_monthly_summary" or "get_yearly_summary"
-                or "get_expense_breakdown" => AppConstants.ChatRefreshTarget.Summary,
-            "list_categories" => AppConstants.ChatRefreshTarget.Categories,
-            "list_recurring_payments" => AppConstants.ChatRefreshTarget.RecurringPayments,
+                or "delete_transaction" or "find_and_delete_transaction" => AppConstants.ChatRefreshTarget.Transactions,
+            // Read operations return null — no refresh needed
             _ => null
         };
     }
 
-    // ============================================================================
-    // OPENAI FUNCTION/TOOL DEFINITIONS
-    // ============================================================================
-
-    /// <summary>
-    /// Defines 11 functions that OpenAI can call.
-    /// These are sent as the "tools" array in the OpenAI API request.
-    /// OpenAI reads these definitions to decide WHEN and HOW to call each function.
-    /// 
-    /// Each tool has:
-    ///   - name: function identifier (e.g. "add_expense")
-    ///   - description: tells GPT when to use it
-    ///   - parameters: JSON Schema defining expected arguments
-    /// 
-    /// Functions available:
-    ///   add_expense        → "Add coffee 500 yen", "Spent 2000 on groceries"
-    ///   add_income         → "Got salary 3000000", "Received freelance payment 500"
-    ///   add_investment     → "Bought Bitcoin 100000", "Invested 50000 in stocks"
-    ///   add_savings        → "Save 50000", "Deposit 10000 to savings"
-    ///   list_transactions  → "Show my expenses", "List recent transactions"
-    ///   get_monthly_summary → "Monthly summary", "How much did I spend this month?"
-    ///   get_yearly_summary  → "Yearly report", "2026 summary"
-    ///   get_expense_breakdown → "Spending by category", "Where does my money go?"
-    ///   list_categories     → "What categories do I have?"
-    ///   list_recurring_payments → "Show my subscriptions", "Recurring bills"
-    ///   delete_transaction  → "Delete transaction {id}" (only when explicitly asked)
-    /// </summary>
     private static List<ChatTool> BuildToolDefinitions()
     {
         return
@@ -768,8 +713,23 @@ public class ChatService : IChatService
                 """)),
 
             ChatTool.CreateFunctionTool(
+                "find_transaction",
+                "Search for transactions by amount, description, date, or type. Use this as Step 1 before deleting — show results to user and ask for confirmation.",
+                BinaryData.FromString("""
+                {
+                    "type": "object",
+                    "properties": {
+                        "amount": { "type": "number", "description": "The transaction amount to match" },
+                        "description": { "type": "string", "description": "Keyword to search in description" },
+                        "date": { "type": "string", "description": "Date in yyyy-MM-dd format. Use today if user says 'today'." },
+                        "type": { "type": "string", "enum": ["Expense", "Income", "Investment", "Savings"], "description": "Transaction type filter" }
+                    }
+                }
+                """)),
+
+            ChatTool.CreateFunctionTool(
                 "delete_transaction",
-                "Delete a transaction by ID. Only use when user explicitly asks to delete and provides an ID.",
+                "Delete a transaction by its exact ID. Use this as Step 2 after user confirms deletion.",
                 BinaryData.FromString("""
                 {
                     "type": "object",
@@ -777,6 +737,21 @@ public class ChatService : IChatService
                         "transaction_id": { "type": "string", "description": "The transaction UUID to delete" }
                     },
                     "required": ["transaction_id"]
+                }
+                """)),
+
+            ChatTool.CreateFunctionTool(
+                "find_and_delete_transaction",
+                "Search for a transaction by amount, description, or date and delete it. Use this when the user wants to delete but does NOT provide a transaction ID.",
+                BinaryData.FromString("""
+                {
+                    "type": "object",
+                    "properties": {
+                        "amount": { "type": "number", "description": "The transaction amount to match" },
+                        "description": { "type": "string", "description": "Keyword to search in description" },
+                        "date": { "type": "string", "description": "Date in yyyy-MM-dd format. Use today if user says 'today'." },
+                        "type": { "type": "string", "enum": ["Expense", "Income", "Investment", "Savings"], "description": "Transaction type filter" }
+                    }
                 }
                 """))
         ];
