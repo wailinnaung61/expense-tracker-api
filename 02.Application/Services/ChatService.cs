@@ -243,7 +243,7 @@ public class ChatService : IChatService
         // accumulate BinaryData / tool_call_id references across turns and cause OpenAI to
         // reject the request with "invalid JSON body". GPT text summaries retain enough context.
         var newHistory = messages
-            .Skip(1) // skip system message
+            .Skip(1)
             .Where(m => m is UserChatMessage ||
                         (m is AssistantChatMessage am && am.ToolCalls.Count == 0))
             .TakeLast(MaxHistoryMessages)

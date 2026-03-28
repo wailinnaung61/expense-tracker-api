@@ -143,7 +143,7 @@ public class RecurringPaymentService : IRecurringPaymentService
 
     private static DateTime CalculateNextDueDate(DateTime currentDueDate, AppConstants.RecurringFrequency frequency)
     {
-        var dueDate = currentDueDate;
+        var dueDate = DateTime.SpecifyKind(currentDueDate, DateTimeKind.Utc);
 
         var nextDate = frequency switch
         {

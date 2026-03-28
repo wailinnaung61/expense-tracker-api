@@ -9,7 +9,7 @@ public class RecurringPaymentBackgroundService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<RecurringPaymentBackgroundService> _logger;
-    private readonly TimeSpan _checkInterval = TimeSpan.FromHours(1);
+    private readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(30);
 
     public RecurringPaymentBackgroundService(
         IServiceProvider serviceProvider,

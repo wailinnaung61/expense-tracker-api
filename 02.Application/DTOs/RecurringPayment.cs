@@ -23,7 +23,8 @@ public record CreateRecurringPaymentRequest(
     decimal Amount,
     Guid CategoryId,
     AppConstants.RecurringFrequency Frequency,
-    string NextDueDate
+    string NextDueDate,
+    bool AutoPay = false
 );
 
 public record UpdateRecurringPaymentRequest(
