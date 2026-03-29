@@ -32,7 +32,8 @@ public static class AppConstants
         Income,
         Expense,
         Investment,
-        Savings
+        Savings,
+        SavingGoal
     }
 
     public enum PaymentStatus

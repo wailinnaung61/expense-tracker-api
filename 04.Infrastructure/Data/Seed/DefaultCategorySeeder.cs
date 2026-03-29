@@ -129,6 +129,80 @@ public static class DefaultCategorySeeder
             IsActive = true,
             CreatedAt = now,
             UpdatedAt = now
+        },
+
+        // SAVING GOAL CATEGORIES (6)
+        new()
+        {
+            CategoryId = Guid.NewGuid().ToString(),
+            UserId = userId,
+            DisplayName = "Emergency Fund",
+            Type = AppConstants.TransactionType.SavingGoal,
+            Icon = "🛟",
+            Color = "#0ea5e9",
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now
+        },
+        new()
+        {
+            CategoryId = Guid.NewGuid().ToString(),
+            UserId = userId,
+            DisplayName = "Vacation",
+            Type = AppConstants.TransactionType.SavingGoal,
+            Icon = "🏖️",
+            Color = "#06b6d4",
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now
+        },
+        new()
+        {
+            CategoryId = Guid.NewGuid().ToString(),
+            UserId = userId,
+            DisplayName = "Vehicle",
+            Type = AppConstants.TransactionType.SavingGoal,
+            Icon = "🚙",
+            Color = "#3b82f6",
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now
+        },
+        new()
+        {
+            CategoryId = Guid.NewGuid().ToString(),
+            UserId = userId,
+            DisplayName = "Home",
+            Type = AppConstants.TransactionType.SavingGoal,
+            Icon = "🏠",
+            Color = "#2563eb",
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now
+        },
+        new()
+        {
+            CategoryId = Guid.NewGuid().ToString(),
+            UserId = userId,
+            DisplayName = "Education",
+            Type = AppConstants.TransactionType.SavingGoal,
+            Icon = "🎓",
+            Color = "#8b5cf6",
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now
+        },
+        new()
+        {
+            CategoryId = Guid.NewGuid().ToString(),
+            UserId = userId,
+            DisplayName = "Retirement",
+            Type = AppConstants.TransactionType.SavingGoal,
+            Icon = "🧓",
+            Color = "#6366f1",
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now
         }
     ];
 }
