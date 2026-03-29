@@ -37,6 +37,7 @@ public static class DependencyInjection
         services.AddScoped<ITranactionRepository, TranactionRepository>();
         services.AddScoped<IAggregationRepository, AggregationRepository>();
         services.AddScoped<IRecurringPaymentRepository, RecurringPaymentRepository>();
+        services.AddScoped<ISavingGoalRepository, SavingGoalRepository>();
 
         // In-memory cache for chat conversation history
         services.AddMemoryCache();
@@ -47,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<IAggregationService, AggregationService>();
         services.AddScoped<IRecurringPaymentService, RecurringPaymentService>();
         services.AddScoped<IChatService, ChatService>();
+        services.AddScoped<ISavingGoalService, SavingGoalService>();
 
         return services;
     }
