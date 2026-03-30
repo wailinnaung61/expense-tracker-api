@@ -170,4 +170,7 @@
   <data name="BudgetCategoryDeleteSuccess" xml:space="preserve">
     <value>ဘတ်ဂျက် ကတဂိုရီ ဖျက်သိမ်းပြီးပါပြီ။</value>
   </data>
+  <data name="MfaSessionExpired" xml:space="preserve">
+    <value>MFA session ကုန်သွားပြီ သို့မဟုတ် အသုံးပြုပြီးဖြစ်သည်။ ထပ်မံ လက်မှတ်ထိုးဝင်ပါ။</value>
+  </data>
 </root>

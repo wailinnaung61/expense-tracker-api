@@ -78,8 +78,11 @@ public class TranactionService : ITranactionService
         var created = await _repository.CreateAsync(tranaction);
 
         _ = _aggregationRepository.UpdateRedisCacheAsync(created);
-        await _budgetRepository.UpdateSnapshotOnTransactionAsync(
-            created.UserId, created.CategoryId, created.TransactionDate, created.Amount, 1);
+
+        // Budget snapshots only track non-income transactions
+        if (created.Type != Domain.Shared.Constants.AppConstants.TransactionType.Income)
+            await _budgetRepository.UpdateSnapshotOnTransactionAsync(
+                created.UserId, created.CategoryId, created.TransactionDate, created.Amount, 1);
 
         return MapToDto(created);
     }
@@ -117,8 +120,10 @@ public class TranactionService : ITranactionService
         if (deleted)
         {
             _ = _aggregationRepository.UpdateRedisCacheAsync(existing);
-            await _budgetRepository.UpdateSnapshotOnTransactionAsync(
-                existing.UserId, existing.CategoryId, existing.TransactionDate, -existing.Amount, -1);
+
+            if (existing.Type != Domain.Shared.Constants.AppConstants.TransactionType.Income)
+                await _budgetRepository.UpdateSnapshotOnTransactionAsync(
+                    existing.UserId, existing.CategoryId, existing.TransactionDate, -existing.Amount, -1);
         }
 
         return deleted;

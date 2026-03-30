@@ -170,4 +170,7 @@
   <data name="BudgetCategoryDeleteSuccess" xml:space="preserve">
     <value>Budget category removed successfully.</value>
   </data>
+  <data name="MfaSessionExpired" xml:space="preserve">
+    <value>MFA session has expired or already been used. Please sign in again.</value>
+  </data>
 </root>

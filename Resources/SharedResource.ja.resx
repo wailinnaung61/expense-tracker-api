@@ -170,4 +170,7 @@
   <data name="BudgetCategoryDeleteSuccess" xml:space="preserve">
     <value>予算カテゴリを削除しました。</value>
   </data>
+  <data name="MfaSessionExpired" xml:space="preserve">
+    <value>MFAセッションの有効期限が切れたか、既に使用されています。もう一度サインインしてください。</value>
+  </data>
 </root>

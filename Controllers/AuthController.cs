@@ -272,6 +272,8 @@ public class AuthController : BaseController
     [AllowAnonymous]
     public async Task<ActionResult<UserSignInResponse>> VerifyMfaCode([FromBody] MfaVerifyRequest request)
     {
+        _logger.LogInformation("MFA verify request: Username={Username} Session={Session} TotpCode={TotpCode}",
+            request.Username, request.Session, request.TotpCode);
         try
         {
             var response = await _authService.VerifyMfaCodeAsync(request);

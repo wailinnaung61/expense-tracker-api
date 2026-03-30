@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using expense_tracker_backend.Domain.Entities;
 using expense_tracker_backend.Domain.Interfaces;
 using Infrastructure.Data;
@@ -18,6 +19,12 @@ public class BudgetRepository : IBudgetRepository
     private static readonly DistributedCacheEntryOptions CacheOptions = new()
     {
         AbsoluteExpirationRelativeToNow = CacheDuration
+    };
+
+    // Handles circular references between Budget ↔ BudgetCategory navigation properties
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        ReferenceHandler = ReferenceHandler.IgnoreCycles
     };
 
     public BudgetRepository(
@@ -235,7 +242,7 @@ public class BudgetRepository : IBudgetRepository
         try
         {
             var json = await _cache.GetStringAsync(key);
-            return json is null ? null : JsonSerializer.Deserialize<T>(json);
+            return json is null ? null : JsonSerializer.Deserialize<T>(json, JsonOptions);
         }
         catch (Exception ex)
         {
@@ -248,7 +255,7 @@ public class BudgetRepository : IBudgetRepository
     {
         try
         {
-            var json = JsonSerializer.Serialize(value);
+            var json = JsonSerializer.Serialize(value, JsonOptions);
             await _cache.SetStringAsync(key, json, CacheOptions);
         }
         catch (Exception ex)

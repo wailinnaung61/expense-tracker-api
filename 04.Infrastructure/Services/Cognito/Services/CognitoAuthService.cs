@@ -573,8 +573,13 @@ public class CognitoAuthService : ICognitoAuthService
                 response.AuthenticationResult.TokenType
             );
         }
-        catch (NotAuthorizedException)
+        catch (NotAuthorizedException ex)
         {
+            if (ex.Message.Contains("session", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("MFA verification failed - session expired or already used for: {Username}", request.Username);
+                throw new InvalidOperationException(_localizer["MfaSessionExpired"]);
+            }
             _logger.LogWarning("MFA verification failed - invalid code for: {Username}", request.Username);
             throw new UnauthorizedAccessException(_localizer["InvalidMfaCode"]);
         }
