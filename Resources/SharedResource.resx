@@ -137,4 +137,37 @@
   <data name="DailyLimitNegative" xml:space="preserve">
     <value>Daily limit cannot be negative.</value>
   </data>
+  <data name="BudgetNotFound" xml:space="preserve">
+    <value>No budget found for this period.</value>
+  </data>
+  <data name="BudgetCreateFailed" xml:space="preserve">
+    <value>Failed to create budget.</value>
+  </data>
+  <data name="BudgetUpdateFailed" xml:space="preserve">
+    <value>Failed to update budget.</value>
+  </data>
+  <data name="BudgetDeleteFailed" xml:space="preserve">
+    <value>Budget not found.</value>
+  </data>
+  <data name="BudgetDeleteSuccess" xml:space="preserve">
+    <value>Budget deleted successfully.</value>
+  </data>
+  <data name="BudgetResetFailed" xml:space="preserve">
+    <value>Budget not found.</value>
+  </data>
+  <data name="BudgetResetSuccess" xml:space="preserve">
+    <value>Budget reset successfully.</value>
+  </data>
+  <data name="BudgetCategoryNotFound" xml:space="preserve">
+    <value>Budget category not found.</value>
+  </data>
+  <data name="BudgetCategoryUpdateFailed" xml:space="preserve">
+    <value>Failed to update budget category.</value>
+  </data>
+  <data name="BudgetCategoryAddFailed" xml:space="preserve">
+    <value>Failed to add category. It may already exist in this budget.</value>
+  </data>
+  <data name="BudgetCategoryDeleteSuccess" xml:space="preserve">
+    <value>Budget category removed successfully.</value>
+  </data>
 </root>

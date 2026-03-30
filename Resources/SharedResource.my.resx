@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -136,5 +136,38 @@
   </data>
   <data name="DailyLimitNegative" xml:space="preserve">
     <value>နေ့စဥ်ကန့်သတ်ချက် အနုတ်လက္ခဏာ မဖြစ်ရပါ။</value>
+  </data>
+  <data name="BudgetNotFound" xml:space="preserve">
+    <value>ဤကာလအတွက် ဘတ်ဂျက် မတွေ့ပါ။</value>
+  </data>
+  <data name="BudgetCreateFailed" xml:space="preserve">
+    <value>ဘတ်ဂျက် ဖန်တီးမှု မအောင်မြင်ပါ။</value>
+  </data>
+  <data name="BudgetUpdateFailed" xml:space="preserve">
+    <value>ဘတ်ဂျက် ပြင်ဆင်မှု မအောင်မြင်ပါ။</value>
+  </data>
+  <data name="BudgetDeleteFailed" xml:space="preserve">
+    <value>ဘတ်ဂျက် မတွေ့ပါ။</value>
+  </data>
+  <data name="BudgetDeleteSuccess" xml:space="preserve">
+    <value>ဘတ်ဂျက် ဖျက်သိမ်းပြီးပါပြီ။</value>
+  </data>
+  <data name="BudgetResetFailed" xml:space="preserve">
+    <value>ဘတ်ဂျက် မတွေ့ပါ။</value>
+  </data>
+  <data name="BudgetResetSuccess" xml:space="preserve">
+    <value>ဘတ်ဂျက် ပြန်လည်သတ်မှတ်ပြီးပါပြီ။</value>
+  </data>
+  <data name="BudgetCategoryNotFound" xml:space="preserve">
+    <value>ဘတ်ဂျက် အမျိုးအစား မတွေ့ပါ။</value>
+  </data>
+  <data name="BudgetCategoryUpdateFailed" xml:space="preserve">
+    <value>ဘတ်ဂျက် အမျိုးအစား ပြင်ဆင်မှု မအောင်မြင်ပါ။</value>
+  </data>
+  <data name="BudgetCategoryAddFailed" xml:space="preserve">
+    <value>ကတဂိုရီ ထည့်သွင်းမှု မအောင်မြင်ပါ။ ဤဘတ်ဂျက်တွင် ရှိပြီးသား ဖြစ်နိုင်သည်။</value>
+  </data>
+  <data name="BudgetCategoryDeleteSuccess" xml:space="preserve">
+    <value>ဘတ်ဂျက် ကတဂိုရီ ဖျက်သိမ်းပြီးပါပြီ။</value>
   </data>
 </root>
