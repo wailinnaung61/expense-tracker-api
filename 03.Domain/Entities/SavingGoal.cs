@@ -21,4 +21,5 @@ public class SavingGoal
     // Navigation properties
     public MemberProfile? User { get; set; }
     public ExpenseCategory? Category { get; set; }
+    public ICollection<SavingGoalContribution> Contributions { get; set; } = new List<SavingGoalContribution>();
 }

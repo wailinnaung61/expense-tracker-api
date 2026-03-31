@@ -22,6 +22,7 @@ public class SavingGoalRepository : ISavingGoalRepository
 
         return await _context.SavingGoals
             .AsNoTracking()
+            .Include(s => s.Contributions)
             .FirstOrDefaultAsync(s => s.UserId == userId && s.SavingGoalId == savingGoalId);
     }
 
@@ -32,6 +33,7 @@ public class SavingGoalRepository : ISavingGoalRepository
 
         return await _context.SavingGoals
             .AsNoTracking()
+            .Include(s => s.Contributions)
             .Where(s => s.UserId == userId)
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
@@ -44,6 +46,7 @@ public class SavingGoalRepository : ISavingGoalRepository
 
         return await _context.SavingGoals
             .AsNoTracking()
+            .Include(s => s.Contributions)
             .Where(s => s.UserId == userId && s.CategoryId == categoryId)
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
@@ -56,6 +59,7 @@ public class SavingGoalRepository : ISavingGoalRepository
 
         return await _context.SavingGoals
             .AsNoTracking()
+            .Include(s => s.Contributions)
             .Where(s => s.UserId == userId && s.Status == status)
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();

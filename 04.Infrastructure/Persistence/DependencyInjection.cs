@@ -38,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<IAggregationRepository, AggregationRepository>();
         services.AddScoped<IRecurringPaymentRepository, RecurringPaymentRepository>();
         services.AddScoped<ISavingGoalRepository, SavingGoalRepository>();
+        services.AddScoped<ISavingGoalContributionRepository, SavingGoalContributionRepository>();
 
         // In-memory cache for chat conversation history
         services.AddMemoryCache();

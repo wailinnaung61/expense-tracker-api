@@ -16,6 +16,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Transaction> Transactions { get; set; }
     public DbSet<RecurringPayment> RecurringPayments { get; set; }
     public DbSet<SavingGoal> SavingGoals { get; set; }
+    public DbSet<SavingGoalContribution> SavingGoalContributions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
