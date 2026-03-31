@@ -303,6 +303,7 @@ public class AggregationRepository : IAggregationRepository
                     total_amount, transaction_count
                 FROM mv_category_monthly_aggregations
                 WHERE user_id = {userIdStr} AND period = {month}
+                  AND category_id IS NOT NULL
                 """)
             .ToListAsync();
 

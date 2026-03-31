@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace _04.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260331013649_AddInvestmentTables")]
+    partial class AddInvestmentTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -314,6 +317,59 @@ namespace _04.Infrastructure.Migrations
                     b.ToTable("investments", (string)null);
                 });
 
+            modelBuilder.Entity("expense_tracker_backend.Domain.Entities.InvestmentGoal", b =>
+                {
+                    b.Property<string>("GoalId")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("goal_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<decimal>("CurrentAmount")
+                        .HasColumnType("decimal(15,2)")
+                        .HasColumnName("current_amount");
+
+                    b.Property<DateOnly?>("Deadline")
+                        .HasColumnType("date")
+                        .HasColumnName("deadline");
+
+                    b.Property<string>("GoalName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("goal_name");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<decimal>("TargetAmount")
+                        .HasColumnType("decimal(15,2)")
+                        .HasColumnName("target_amount");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("GoalId");
+
+                    b.HasIndex("UserId", "Status")
+                        .HasDatabaseName("ix_investment_goals_user_status");
+
+                    b.ToTable("investment_goals", (string)null);
+                });
+
             modelBuilder.Entity("expense_tracker_backend.Domain.Entities.InvestmentPortfolio", b =>
                 {
                     b.Property<string>("PortfolioId")
@@ -552,6 +608,7 @@ namespace _04.Infrastructure.Migrations
                         .HasColumnName("amount");
 
                     b.Property<string>("CategoryId")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("category_id");
@@ -709,6 +766,17 @@ namespace _04.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("expense_tracker_backend.Domain.Entities.InvestmentGoal", b =>
+                {
+                    b.HasOne("expense_tracker_backend.Domain.Entities.MemberProfile", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("expense_tracker_backend.Domain.Entities.InvestmentPortfolio", b =>
                 {
                     b.HasOne("expense_tracker_backend.Domain.Entities.MemberProfile", "User")
@@ -744,7 +812,8 @@ namespace _04.Infrastructure.Migrations
                     b.HasOne("expense_tracker_backend.Domain.Entities.ExpenseCategory", "Category")
                         .WithMany()
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("expense_tracker_backend.Domain.Entities.MemberProfile", "User")
                         .WithMany()

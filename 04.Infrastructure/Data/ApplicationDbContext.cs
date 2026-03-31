@@ -18,6 +18,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<Budget> Budgets { get; set; }
     public DbSet<BudgetCategory> BudgetCategories { get; set; }
     public DbSet<BudgetSnapshot> BudgetSnapshots { get; set; }
+    public DbSet<Investment> Investments { get; set; }
+    public DbSet<InvestmentPortfolio> InvestmentPortfolios { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

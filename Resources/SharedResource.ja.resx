@@ -173,4 +173,28 @@
   <data name="MfaSessionExpired" xml:space="preserve">
     <value>MFAセッションの有効期限が切れたか、既に使用されています。もう一度サインインしてください。</value>
   </data>
+  <data name="InvestmentNotFound" xml:space="preserve">
+    <value>投資が見つかりません。</value>
+  </data>
+  <data name="InvestmentCreateFailed" xml:space="preserve">
+    <value>投資の作成に失敗しました。</value>
+  </data>
+  <data name="InvestmentUpdateFailed" xml:space="preserve">
+    <value>投資の更新に失敗しました。</value>
+  </data>
+  <data name="InvestmentDeleteFailed" xml:space="preserve">
+    <value>投資の削除に失敗しました。</value>
+  </data>
+  <data name="PortfolioNotFound" xml:space="preserve">
+    <value>ポートフォリオが見つかりません。</value>
+  </data>
+  <data name="PortfolioCreateFailed" xml:space="preserve">
+    <value>ポートフォリオの作成に失敗しました。</value>
+  </data>
+  <data name="PortfolioUpdateFailed" xml:space="preserve">
+    <value>ポートフォリオの更新に失敗しました。</value>
+  </data>
+  <data name="PortfolioDeleteFailed" xml:space="preserve">
+    <value>ポートフォリオの削除に失敗しました。</value>
+  </data>
 </root>

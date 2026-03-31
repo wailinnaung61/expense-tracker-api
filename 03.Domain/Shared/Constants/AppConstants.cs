@@ -77,4 +77,22 @@ public static class AppConstants
     {
         Monthly
     }
+
+    public enum AssetType
+    {
+        Stock,
+        Crypto,
+        Bond,
+        MutualFund,
+        RealEstate,
+        Gold,
+        Other
+    }
+
+    public enum InvestmentStatus
+    {
+        Holding,
+        Sold,
+        PartialSold
+    }
 }

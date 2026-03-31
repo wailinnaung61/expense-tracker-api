@@ -173,4 +173,28 @@
   <data name="MfaSessionExpired" xml:space="preserve">
     <value>MFA session ကုန်သွားပြီ သို့မဟုတ် အသုံးပြုပြီးဖြစ်သည်။ ထပ်မံ လက်မှတ်ထိုးဝင်ပါ။</value>
   </data>
+  <data name="InvestmentNotFound" xml:space="preserve">
+    <value>ရင်းနှီးမြှုပ်နှံမှု မတွေ့ပါ။</value>
+  </data>
+  <data name="InvestmentCreateFailed" xml:space="preserve">
+    <value>ရင်းနှီးမြှုပ်နှံမှု ဖန်တီးမှု မအောင်မြင်ပါ။</value>
+  </data>
+  <data name="InvestmentUpdateFailed" xml:space="preserve">
+    <value>ရင်းနှီးမြှုပ်နှံမှု ပြင်ဆင်မှု မအောင်မြင်ပါ။</value>
+  </data>
+  <data name="InvestmentDeleteFailed" xml:space="preserve">
+    <value>ရင်းနှီးမြှုပ်နှံမှု ဖျက်သိမ်းမှု မအောင်မြင်ပါ။</value>
+  </data>
+  <data name="PortfolioNotFound" xml:space="preserve">
+    <value>ပေါ့တ်ဖိုးလိုး မတွေ့ပါ။</value>
+  </data>
+  <data name="PortfolioCreateFailed" xml:space="preserve">
+    <value>ပေါ့တ်ဖိုးလိုး ဖန်တီးမှု မအောင်မြင်ပါ။</value>
+  </data>
+  <data name="PortfolioUpdateFailed" xml:space="preserve">
+    <value>ပေါ့တ်ဖိုးလိုး ပြင်ဆင်မှု မအောင်မြင်ပါ။</value>
+  </data>
+  <data name="PortfolioDeleteFailed" xml:space="preserve">
+    <value>ပေါ့တ်ဖိုးလိုး ဖျက်သိမ်းမှု မအောင်မြင်ပါ။</value>
+  </data>
 </root>
