@@ -5,11 +5,17 @@ namespace expense_tracker_backend.Domain.Interfaces;
 
 public interface ISavingGoalRepository
 {
-    Task<SavingGoal?> GetByIdAsync(string userId, string savingGoalId);
-    Task<List<SavingGoal>> GetByUserIdAsync(string userId);
-    Task<List<SavingGoal>> GetByCategoryIdAsync(string userId, string categoryId);
-    Task<List<SavingGoal>> GetByStatusAsync(string userId, AppConstants.RecurringStatus status);
+    Task<SavingGoal?> GetByIdAsync(Guid userId, Guid savingGoalId);
+    Task<(List<SavingGoal> Items, int TotalCount)> GetByUserIdAsync(
+        Guid userId,
+        AppConstants.SavingGoalStatus? status,
+        string? keyword,
+        int pageSize,
+        DateTime? cursor,
+        Guid? cursorId);
+    Task<List<SavingGoal>> GetAllForDashboardAsync(Guid userId);
     Task<SavingGoal> CreateAsync(SavingGoal savingGoal);
     Task<SavingGoal?> UpdateAsync(SavingGoal savingGoal);
-    Task<bool> DeleteAsync(string userId, string savingGoalId);
+    Task<bool> DeleteAsync(Guid userId, Guid savingGoalId);
+    Task InvalidateCacheAsync(string userId);
 }

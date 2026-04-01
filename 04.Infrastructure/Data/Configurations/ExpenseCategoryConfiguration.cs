@@ -32,12 +32,8 @@ public class ExpenseCategoryConfiguration : IEntityTypeConfiguration<ExpenseCate
             .HasColumnName("type")
             .HasMaxLength(20)
             .HasConversion(
-                v => v == AppConstants.TransactionType.SavingGoal
-                    ? "SAVING_GOAL"
-                    : v.ToString().ToUpperInvariant(),
-                v => v.Equals("SAVING_GOAL", StringComparison.OrdinalIgnoreCase)
-                    ? AppConstants.TransactionType.SavingGoal
-                    : Enum.Parse<AppConstants.TransactionType>(v, true))
+                v => v.ToString().ToUpperInvariant(),
+                v => Enum.Parse<AppConstants.TransactionType>(v, true))
             .IsRequired();
 
         builder.Property(e => e.Icon)

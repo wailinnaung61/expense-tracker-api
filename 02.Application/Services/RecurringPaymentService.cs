@@ -93,8 +93,6 @@ public class RecurringPaymentService : IRecurringPaymentService
                         CategoryId = payment.CategoryId,
                         Amount = payment.Amount,
                         Description = $"Auto-pay: {payment.Name}",
-                        Merchant = string.Empty,
-                        PaymentMethod = string.Empty,
                         Status = AppConstants.PaymentStatus.Completed,
                         TransactionDate = payment.NextDueDate.ToString("yyyy-MM-dd"),
                         ImageUrl = string.Empty,

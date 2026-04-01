@@ -23,52 +23,44 @@ public class SavingGoalConfiguration : IEntityTypeConfiguration<SavingGoal>
             .HasMaxLength(50)
             .IsRequired();
 
-        builder.Property(e => e.CategoryId)
-            .HasColumnName("category_id")
-            .HasMaxLength(50)
-            .IsRequired();
-
         builder.Property(e => e.GoalName)
             .HasColumnName("goal_name")
-            .HasMaxLength(100)
+            .HasMaxLength(200)
             .IsRequired();
+
+        builder.Property(e => e.Description)
+            .HasColumnName("description")
+            .HasMaxLength(1000);
 
         builder.Property(e => e.TargetAmount)
             .HasColumnName("target_amount")
-            .HasPrecision(18, 2)
+            .HasColumnType("decimal(15,2)")
             .IsRequired();
 
-        builder.Property(e => e.InitialDeposit)
-            .HasColumnName("initial_deposit")
-            .HasPrecision(18, 2);
+        builder.Property(e => e.CurrentAmount)
+            .HasColumnName("current_amount")
+            .HasColumnType("decimal(15,2)");
 
         builder.Property(e => e.TargetDate)
             .HasColumnName("target_date")
+            .HasMaxLength(10)
             .IsRequired();
-
-        builder.Property(e => e.RecurringType)
-            .HasColumnName("recurring_type")
-            .HasMaxLength(20)
-            .HasConversion(
-                v => v.ToString().ToUpperInvariant(),
-                v => Enum.Parse<AppConstants.RecurringFrequency>(v, true))
-            .IsRequired();
-
-        builder.Property(e => e.Icon)
-            .HasColumnName("icon")
-            .HasMaxLength(50);
-
-        builder.Property(e => e.Color)
-            .HasColumnName("color")
-            .HasMaxLength(20);
 
         builder.Property(e => e.Status)
             .HasColumnName("status")
             .HasMaxLength(20)
             .HasConversion(
                 v => v.ToString().ToUpperInvariant(),
-                v => Enum.Parse<AppConstants.RecurringStatus>(v, true))
+                v => Enum.Parse<AppConstants.SavingGoalStatus>(v, true))
             .IsRequired();
+
+        builder.Property(e => e.Notes)
+            .HasColumnName("notes")
+            .HasMaxLength(1000);
+
+        builder.Property(e => e.ImageUrl)
+            .HasColumnName("image_url")
+            .HasMaxLength(500);
 
         builder.Property(e => e.CreatedAt)
             .HasColumnName("created_at");
@@ -76,27 +68,20 @@ public class SavingGoalConfiguration : IEntityTypeConfiguration<SavingGoal>
         builder.Property(e => e.UpdatedAt)
             .HasColumnName("updated_at");
 
-        // Foreign keys
         builder.HasOne(e => e.User)
             .WithMany()
             .HasForeignKey(e => e.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(e => e.Category)
-            .WithMany()
-            .HasForeignKey(e => e.CategoryId)
-            .OnDelete(DeleteBehavior.Restrict);
+        builder.HasMany(e => e.Contributions)
+            .WithOne(c => c.SavingGoal)
+            .HasForeignKey(c => c.SavingGoalId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-        // Indexes for performance
         builder.HasIndex(e => new { e.UserId, e.CreatedAt })
-            .HasDatabaseName("ix_saving_goals_user_created")
-            .IsDescending(false, true);
+            .HasDatabaseName("ix_saving_goals_user_created");
 
-        builder.HasIndex(e => new { e.UserId, e.Status, e.TargetDate })
-            .HasDatabaseName("ix_saving_goals_user_status_targetdate")
-            .IsDescending(false, false, false);
-
-        builder.HasIndex(e => new { e.UserId, e.CategoryId })
-            .HasDatabaseName("ix_saving_goals_user_categoryid");
+        builder.HasIndex(e => new { e.UserId, e.Status })
+            .HasDatabaseName("ix_saving_goals_user_status");
     }
 }

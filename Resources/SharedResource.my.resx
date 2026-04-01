@@ -276,4 +276,19 @@
   <data name="PortfolioDeleteFailed" xml:space="preserve">
     <value>ပေါ့ဖိုလီယို ဖျက်သိမ်းမှု မအောင်မြင်ပါ။</value>
   </data>
+  <data name="SavingGoalNotFound" xml:space="preserve">
+    <value>စုဆောင်းရည်မှန်းချက် မတွေ့ပါ။</value>
+  </data>
+  <data name="SavingGoalCreateFailed" xml:space="preserve">
+    <value>စုဆောင်းရည်မှန်းချက် ဖန်တီးမှု မအောင်မြင်ပါ။</value>
+  </data>
+  <data name="SavingGoalUpdateFailed" xml:space="preserve">
+    <value>စုဆောင်းရည်မှန်းချက် ပြင်ဆင်မှု မအောင်မြင်ပါ။</value>
+  </data>
+  <data name="SavingGoalContributionFailed" xml:space="preserve">
+    <value>ငွေထည့်သွင်းမှု လုပ်ဆောင်၍ မရပါ။</value>
+  </data>
+  <data name="SavingGoalContributionNotFound" xml:space="preserve">
+    <value>ငွေထည့်သွင်းမှု မှတ်တမ်း မတွေ့ပါ။</value>
+  </data>
 </root>

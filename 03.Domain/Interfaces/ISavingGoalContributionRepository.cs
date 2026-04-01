@@ -4,8 +4,8 @@ namespace expense_tracker_backend.Domain.Interfaces;
 
 public interface ISavingGoalContributionRepository
 {
-    Task<List<SavingGoalContribution>> GetByGoalIdAsync(string userId, string savingGoalId);
-    Task<SavingGoalContribution?> GetByIdAsync(string userId, string contributionId);
+    Task<(List<SavingGoalContribution> Items, int TotalCount)> GetByGoalIdAsync(Guid userId, Guid savingGoalId, int pageSize, DateTime? cursor, Guid? cursorId);
+    Task<SavingGoalContribution?> GetByIdAsync(Guid userId, Guid contributionId);
     Task<SavingGoalContribution> CreateAsync(SavingGoalContribution contribution);
-    Task<decimal> GetTotalContributionsAsync(string savingGoalId);
+    Task<bool> DeleteAsync(Guid userId, Guid contributionId);
 }

@@ -14,26 +14,38 @@ public class SavingGoalContributionRepository : ISavingGoalContributionRepositor
         _context = context;
     }
 
-    public async Task<List<SavingGoalContribution>> GetByGoalIdAsync(string userId, string savingGoalId)
+    public async Task<(List<SavingGoalContribution> Items, int TotalCount)> GetByGoalIdAsync(
+        Guid userId, Guid savingGoalId, int pageSize, DateTime? cursor, Guid? cursorId)
     {
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(savingGoalId))
-            return new List<SavingGoalContribution>();
-
-        return await _context.SavingGoalContributions
+        var query = _context.SavingGoalContributions
             .AsNoTracking()
-            .Where(c => c.UserId == userId && c.SavingGoalId == savingGoalId)
-            .OrderByDescending(c => c.ContributionDate)
+            .Where(c => c.UserId == userId.ToString()
+                     && c.SavingGoalId == savingGoalId.ToString());
+
+        var totalCount = await query.CountAsync();
+
+        if (cursor.HasValue && cursorId.HasValue)
+        {
+            var cId = cursorId.Value.ToString();
+            query = query.Where(c => c.CreatedAt < cursor.Value
+                || (c.CreatedAt == cursor.Value && string.Compare(c.ContributionId, cId) < 0));
+        }
+
+        var items = await query
+            .OrderByDescending(c => c.CreatedAt)
+            .ThenByDescending(c => c.ContributionId)
+            .Take(pageSize + 1)
             .ToListAsync();
+
+        return (items, totalCount);
     }
 
-    public async Task<SavingGoalContribution?> GetByIdAsync(string userId, string contributionId)
+    public async Task<SavingGoalContribution?> GetByIdAsync(Guid userId, Guid contributionId)
     {
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(contributionId))
-            return null;
-
         return await _context.SavingGoalContributions
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.UserId == userId && c.ContributionId == contributionId);
+            .FirstOrDefaultAsync(c => c.UserId == userId.ToString()
+                                   && c.ContributionId == contributionId.ToString());
     }
 
     public async Task<SavingGoalContribution> CreateAsync(SavingGoalContribution contribution)
@@ -44,13 +56,15 @@ public class SavingGoalContributionRepository : ISavingGoalContributionRepositor
         return contribution;
     }
 
-    public async Task<decimal> GetTotalContributionsAsync(string savingGoalId)
+    public async Task<bool> DeleteAsync(Guid userId, Guid contributionId)
     {
-        if (string.IsNullOrEmpty(savingGoalId))
-            return 0m;
+        var contribution = await _context.SavingGoalContributions
+            .FirstOrDefaultAsync(c => c.UserId == userId.ToString()
+                                   && c.ContributionId == contributionId.ToString());
+        if (contribution is null) return false;
 
-        return await _context.SavingGoalContributions
-            .Where(c => c.SavingGoalId == savingGoalId)
-            .SumAsync(c => c.Amount);
+        _context.SavingGoalContributions.Remove(contribution);
+        await _context.SaveChangesAsync();
+        return true;
     }
 }

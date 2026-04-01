@@ -1,4 +1,5 @@
 using expense_tracker_backend.Domain.Entities;
+using expense_tracker_backend.Domain.Shared.Constants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -27,32 +28,42 @@ public class SavingGoalContributionConfiguration : IEntityTypeConfiguration<Savi
             .HasMaxLength(50)
             .IsRequired();
 
+        builder.Property(e => e.Type)
+            .HasColumnName("type")
+            .HasMaxLength(20)
+            .HasConversion(
+                v => v.ToString().ToUpperInvariant(),
+                v => Enum.Parse<AppConstants.SavingTransactionType>(v, true))
+            .IsRequired();
+
         builder.Property(e => e.Amount)
             .HasColumnName("amount")
-            .HasPrecision(18, 2)
+            .HasColumnType("decimal(15,2)")
             .IsRequired();
 
         builder.Property(e => e.ContributionDate)
             .HasColumnName("contribution_date")
+            .HasMaxLength(10)
             .IsRequired();
 
         builder.Property(e => e.Notes)
             .HasColumnName("notes")
-            .HasMaxLength(500);
+            .HasMaxLength(1000);
+
+        builder.Property(e => e.MirrorTransactionId)
+            .HasColumnName("mirror_transaction_id")
+            .HasMaxLength(50);
 
         builder.Property(e => e.CreatedAt)
             .HasColumnName("created_at");
 
-        // Foreign key to SavingGoal (cascade delete)
         builder.HasOne(e => e.SavingGoal)
             .WithMany(g => g.Contributions)
             .HasForeignKey(e => e.SavingGoalId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Indexes for performance
         builder.HasIndex(e => new { e.SavingGoalId, e.ContributionDate })
-            .HasDatabaseName("ix_saving_goal_contributions_goal_date")
-            .IsDescending(false, true);
+            .HasDatabaseName("ix_saving_goal_contributions_goal_date");
 
         builder.HasIndex(e => new { e.UserId, e.SavingGoalId })
             .HasDatabaseName("ix_saving_goal_contributions_user_goal");

@@ -1,20 +1,18 @@
 using expense_tracker_backend.Application.DTOs;
-using expense_tracker_backend.Domain.Shared.Constants;
 
 namespace expense_tracker_backend.Application.Interfaces;
 
 public interface ISavingGoalService
 {
-    Task<SavingGoalDto?> GetSavingGoalByIdAsync(string userId, string savingGoalId);
-    Task<List<SavingGoalDto>> GetSavingGoalsByUserIdAsync(string userId);
-    Task<List<SavingGoalDto>> GetSavingGoalsByCategoryIdAsync(string userId, string categoryId);
-    Task<List<SavingGoalDto>> GetSavingGoalsByStatusAsync(string userId, AppConstants.RecurringStatus status);
-    Task<SavingGoalDto> CreateSavingGoalAsync(string userId, CreateSavingGoalDto dto);
-    Task<SavingGoalDto?> UpdateSavingGoalAsync(string userId, string savingGoalId, UpdateSavingGoalDto dto);
-    Task<SavingGoalDto?> PatchStatusAsync(string userId, string savingGoalId, AppConstants.RecurringStatus status);
-    Task<bool> DeleteSavingGoalAsync(string userId, string savingGoalId);
+    Task<PagedResult<SavingGoalDto>> GetGoalsAsync(Guid userId, SavingGoalFilterRequest filter);
+    Task<SavingGoalDto?> GetByIdAsync(Guid userId, Guid savingGoalId);
+    Task<SavingGoalDto> CreateAsync(Guid userId, CreateSavingGoalRequest request);
+    Task<SavingGoalDto?> UpdateAsync(Guid userId, Guid savingGoalId, UpdateSavingGoalRequest request);
+    Task<bool> DeleteAsync(Guid userId, Guid savingGoalId);
+    Task<SavingDashboardResponse> GetDashboardAsync(Guid userId);
 
-    // Contributions (Add Funds)
-    Task<SavingGoalContributionDto> AddContributionAsync(string userId, string savingGoalId, AddContributionDto dto);
-    Task<List<SavingGoalContributionDto>> GetContributionsAsync(string userId, string savingGoalId);
+    // Contributions
+    Task<PagedResult<SavingGoalContributionDto>> GetContributionsAsync(Guid userId, Guid savingGoalId, int pageSize, DateTime? cursor, Guid? cursorId);
+    Task<SavingGoalContributionDto> AddContributionAsync(Guid userId, Guid savingGoalId, AddSavingContributionRequest request);
+    Task<bool> DeleteContributionAsync(Guid userId, Guid savingGoalId, Guid contributionId);
 }

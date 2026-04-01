@@ -4,6 +4,7 @@ using Amazon;
 using Amazon.CognitoIdentityProvider;
 using Amazon.Runtime;
 using expense_tracker_backend.Filters;
+using expense_tracker_backend.Middleware;
 using expense_tracker_backend.Infrastructure.AWS.Cognito.Interfaces;
 using expense_tracker_backend.Infrastructure.AWS.Cognito.Services;
 using expense_tracker_backend.Infrastructure.AWS.Configuration;
@@ -113,6 +114,8 @@ builder.Services.AddHostedService<RecurringPaymentBackgroundService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

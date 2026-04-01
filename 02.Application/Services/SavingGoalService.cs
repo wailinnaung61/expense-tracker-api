@@ -10,188 +10,294 @@ public class SavingGoalService : ISavingGoalService
 {
     private readonly ISavingGoalRepository _repository;
     private readonly ISavingGoalContributionRepository _contributionRepository;
+    private readonly ITranactionRepository _transactionRepository;
+    private readonly IAggregationRepository _aggregationRepository;
 
     public SavingGoalService(
         ISavingGoalRepository repository,
-        ISavingGoalContributionRepository contributionRepository)
+        ISavingGoalContributionRepository contributionRepository,
+        ITranactionRepository transactionRepository,
+        IAggregationRepository aggregationRepository)
     {
         _repository = repository;
         _contributionRepository = contributionRepository;
+        _transactionRepository = transactionRepository;
+        _aggregationRepository = aggregationRepository;
     }
 
-    public async Task<SavingGoalDto?> GetSavingGoalByIdAsync(string userId, string savingGoalId)
-    {
-        var savingGoal = await _repository.GetByIdAsync(userId, savingGoalId);
-        if (savingGoal is null) return null;
+    // ── Goals ─────────────────────────────────────────────────────────────────
 
-        var dto = MapToDto(savingGoal);
-        dto.Contributions = savingGoal.Contributions
-            .OrderByDescending(c => c.ContributionDate)
-            .Select(MapContributionToDto)
-            .ToList();
-        return dto;
+    public async Task<PagedResult<SavingGoalDto>> GetGoalsAsync(Guid userId, SavingGoalFilterRequest filter)
+    {
+        var pageSize = Math.Clamp(filter.PageSize, 1, 100);
+
+        var (items, totalCount) = await _repository.GetByUserIdAsync(
+            userId, filter.Status, filter.Keyword, pageSize, filter.Cursor, filter.CursorId);
+
+        var hasNextPage = items.Count > pageSize;
+        var resultItems = hasNextPage ? items.Take(pageSize).ToList() : items;
+        var lastItem = resultItems.LastOrDefault();
+
+        return new PagedResult<SavingGoalDto>
+        {
+            Items = resultItems.Select(MapToDto).ToList(),
+            TotalCount = totalCount,
+            PageSize = pageSize,
+            HasNextPage = hasNextPage,
+            NextCursor = lastItem?.CreatedAt,
+            NextCursorId = lastItem is not null ? Guid.Parse(lastItem.SavingGoalId) : null
+        };
     }
 
-    public async Task<List<SavingGoalDto>> GetSavingGoalsByUserIdAsync(string userId)
+    public async Task<SavingGoalDto?> GetByIdAsync(Guid userId, Guid savingGoalId)
     {
-        var savingGoals = await _repository.GetByUserIdAsync(userId);
-        return savingGoals.Select(MapToDto).ToList();
+        var goal = await _repository.GetByIdAsync(userId, savingGoalId);
+        return goal is null ? null : MapToDto(goal);
     }
 
-    public async Task<List<SavingGoalDto>> GetSavingGoalsByCategoryIdAsync(string userId, string categoryId)
+    public async Task<SavingGoalDto> CreateAsync(Guid userId, CreateSavingGoalRequest request)
     {
-        var savingGoals = await _repository.GetByCategoryIdAsync(userId, categoryId);
-        return savingGoals.Select(MapToDto).ToList();
-    }
-
-    public async Task<List<SavingGoalDto>> GetSavingGoalsByStatusAsync(string userId, AppConstants.RecurringStatus status)
-    {
-        var savingGoals = await _repository.GetByStatusAsync(userId, status);
-        return savingGoals.Select(MapToDto).ToList();
-    }
-
-    public async Task<SavingGoalDto> CreateSavingGoalAsync(string userId, CreateSavingGoalDto dto)
-    {
-        var savingGoal = new SavingGoal
+        var goal = new SavingGoal
         {
             SavingGoalId = Guid.NewGuid().ToString(),
-            UserId = userId,
-            CategoryId = dto.CategoryId,
-            GoalName = dto.GoalName,
-            TargetAmount = dto.TargetAmount,
-            InitialDeposit = dto.InitialDeposit,
-            TargetDate = dto.TargetDate,
-            RecurringType = ParseRecurringType(dto.RecurringType),
-            Icon = dto.Icon,
-            Color = dto.Color,
-            Status = AppConstants.RecurringStatus.Active,
+            UserId = userId.ToString(),
+            GoalName = request.GoalName,
+            Description = request.Description,
+            TargetAmount = request.TargetAmount,
+            CurrentAmount = 0,
+            TargetDate = request.TargetDate,
+            Status = AppConstants.SavingGoalStatus.Active,
+            Notes = request.Notes,
+            ImageUrl = request.ImageUrl,
             CreatedAt = DateTime.UtcNow
         };
 
-        var created = await _repository.CreateAsync(savingGoal);
+        var created = await _repository.CreateAsync(goal);
+        await _repository.InvalidateCacheAsync(userId.ToString());
         return MapToDto(created);
     }
 
-    public async Task<SavingGoalDto?> UpdateSavingGoalAsync(string userId, string savingGoalId, UpdateSavingGoalDto dto)
+    public async Task<SavingGoalDto?> UpdateAsync(Guid userId, Guid savingGoalId, UpdateSavingGoalRequest request)
     {
         var existing = await _repository.GetByIdAsync(userId, savingGoalId);
         if (existing is null) return null;
 
-        existing.CategoryId = dto.CategoryId;
-        existing.GoalName = dto.GoalName;
-        existing.TargetAmount = dto.TargetAmount;
-        existing.TargetDate = dto.TargetDate;
-        existing.RecurringType = ParseRecurringType(dto.RecurringType);
-        existing.Icon = dto.Icon;
-        existing.Color = dto.Color;
-        existing.UpdatedAt = DateTime.UtcNow;
+        existing.GoalName = request.GoalName;
+        existing.Description = request.Description;
+        existing.TargetAmount = request.TargetAmount;
+        existing.TargetDate = request.TargetDate;
+        existing.Status = request.Status;
+        existing.Notes = request.Notes;
+        existing.ImageUrl = request.ImageUrl;
+
+        // Auto-complete if current already meets updated target
+        if (existing.CurrentAmount >= request.TargetAmount && request.Status == AppConstants.SavingGoalStatus.Active)
+            existing.Status = AppConstants.SavingGoalStatus.Completed;
 
         var updated = await _repository.UpdateAsync(existing);
+        if (updated is not null) await _repository.InvalidateCacheAsync(userId.ToString());
         return updated is null ? null : MapToDto(updated);
     }
 
-    public async Task<SavingGoalDto?> PatchStatusAsync(string userId, string savingGoalId, AppConstants.RecurringStatus status)
+    public async Task<bool> DeleteAsync(Guid userId, Guid savingGoalId)
     {
-        var existing = await _repository.GetByIdAsync(userId, savingGoalId);
-        if (existing is null) return null;
+        // Load all contributions to clean up mirror transactions
+        var (contributions, _) = await _contributionRepository.GetByGoalIdAsync(userId, savingGoalId, int.MaxValue, null, null);
 
-        existing.Status = status;
-        existing.UpdatedAt = DateTime.UtcNow;
-
-        var updated = await _repository.UpdateAsync(existing);
-        return updated is null ? null : MapToDto(updated);
-    }
-
-    public async Task<bool> DeleteSavingGoalAsync(string userId, string savingGoalId)
-    {
-        return await _repository.DeleteAsync(userId, savingGoalId);
-    }
-
-    public async Task<SavingGoalContributionDto> AddContributionAsync(string userId, string savingGoalId, AddContributionDto dto)
-    {
-        var contribution = new SavingGoalContribution
+        foreach (var c in contributions.Where(c => c.MirrorTransactionId is not null))
         {
-            ContributionId = Guid.NewGuid().ToString(),
-            SavingGoalId = savingGoalId,
-            UserId = userId,
-            Amount = dto.Amount,
-            ContributionDate = dto.ContributionDate == default ? DateTime.UtcNow : dto.ContributionDate,
-            Notes = dto.Notes ?? string.Empty,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var created = await _contributionRepository.CreateAsync(contribution);
-
-        // Auto-complete goal if current amount reaches target
-        var totalContributions = await _contributionRepository.GetTotalContributionsAsync(savingGoalId);
-        var goal = await _repository.GetByIdAsync(userId, savingGoalId);
-        if (goal is not null && goal.Status == AppConstants.RecurringStatus.Active)
-        {
-            var currentAmount = goal.InitialDeposit + totalContributions;
-            if (currentAmount >= goal.TargetAmount)
+            var mirrorTx = await _transactionRepository.GetByIdAsync(userId, Guid.Parse(c.MirrorTransactionId!));
+            if (mirrorTx is not null)
             {
-                goal.Status = AppConstants.RecurringStatus.Completed;
-                goal.UpdatedAt = DateTime.UtcNow;
-                await _repository.UpdateAsync(goal);
+                await _transactionRepository.DeleteAsync(userId, Guid.Parse(c.MirrorTransactionId!));
+                _ = _aggregationRepository.UpdateRedisCacheAsync(mirrorTx);
             }
         }
 
-        return MapContributionToDto(created);
+        var deleted = await _repository.DeleteAsync(userId, savingGoalId);
+        if (deleted) await _repository.InvalidateCacheAsync(userId.ToString());
+        return deleted;
     }
 
-    public async Task<List<SavingGoalContributionDto>> GetContributionsAsync(string userId, string savingGoalId)
+    public async Task<SavingDashboardResponse> GetDashboardAsync(Guid userId)
     {
-        var contributions = await _contributionRepository.GetByGoalIdAsync(userId, savingGoalId);
-        return contributions.Select(MapContributionToDto).ToList();
+        var goals = await _repository.GetAllForDashboardAsync(userId);
+
+        var totalSaved = goals.Sum(g => g.CurrentAmount);
+        var totalTarget = goals
+            .Where(g => g.Status == AppConstants.SavingGoalStatus.Active)
+            .Sum(g => g.TargetAmount);
+        var overallProgress = totalTarget > 0 ? Math.Round(totalSaved / totalTarget * 100, 2) : 0;
+
+        return new SavingDashboardResponse(
+            totalSaved,
+            totalTarget,
+            overallProgress,
+            goals.Count(g => g.Status == AppConstants.SavingGoalStatus.Active),
+            goals.Count(g => g.Status == AppConstants.SavingGoalStatus.Completed),
+            goals.Select(MapToDto).ToList()
+        );
     }
 
-    private static SavingGoalDto MapToDto(SavingGoal savingGoal)
+    // ── Contributions ─────────────────────────────────────────────────────────
+
+    public async Task<PagedResult<SavingGoalContributionDto>> GetContributionsAsync(
+        Guid userId, Guid savingGoalId, int pageSize, DateTime? cursor, Guid? cursorId)
     {
-        var contributionsTotal = savingGoal.Contributions.Sum(c => c.Amount);
-        return new SavingGoalDto
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        var (items, totalCount) = await _contributionRepository.GetByGoalIdAsync(userId, savingGoalId, pageSize, cursor, cursorId);
+
+        var hasNextPage = items.Count > pageSize;
+        var resultItems = hasNextPage ? items.Take(pageSize).ToList() : items;
+        var lastItem = resultItems.LastOrDefault();
+
+        return new PagedResult<SavingGoalContributionDto>
         {
-            SavingGoalId = savingGoal.SavingGoalId,
-            UserId = savingGoal.UserId,
-            CategoryId = savingGoal.CategoryId,
-            GoalName = savingGoal.GoalName,
-            TargetAmount = savingGoal.TargetAmount,
-            InitialDeposit = savingGoal.InitialDeposit,
-            CurrentAmount = savingGoal.InitialDeposit + contributionsTotal,
-            TargetDate = savingGoal.TargetDate,
-            RecurringType = savingGoal.RecurringType.ToString().ToUpperInvariant(),
-            Icon = savingGoal.Icon,
-            Color = savingGoal.Color,
-            Status = savingGoal.Status.ToString().ToUpperInvariant(),
-            CreatedAt = savingGoal.CreatedAt,
-            UpdatedAt = savingGoal.UpdatedAt
+            Items = resultItems.Select(MapContributionToDto).ToList(),
+            TotalCount = totalCount,
+            PageSize = pageSize,
+            HasNextPage = hasNextPage,
+            NextCursor = lastItem?.CreatedAt,
+            NextCursorId = lastItem is not null ? Guid.Parse(lastItem.ContributionId) : null
         };
     }
 
-    private static SavingGoalContributionDto MapContributionToDto(SavingGoalContribution c)
+    public async Task<SavingGoalContributionDto> AddContributionAsync(
+        Guid userId, Guid savingGoalId, AddSavingContributionRequest request)
     {
-        return new SavingGoalContributionDto
+        var goal = await _repository.GetByIdAsync(userId, savingGoalId)
+            ?? throw new InvalidOperationException("Saving goal not found.");
+
+        if (goal.Status == AppConstants.SavingGoalStatus.Cancelled)
+            throw new InvalidOperationException("Cannot contribute to a cancelled goal.");
+
+        if (request.Type == AppConstants.SavingTransactionType.Withdrawal
+            && request.Amount > goal.CurrentAmount)
+            throw new InvalidOperationException("Withdrawal amount exceeds current saved amount.");
+
+        // Mirror to transactions: deposit = positive amount, withdrawal = negative
+        var mirrorAmount = request.Type == AppConstants.SavingTransactionType.Deposit
+            ? request.Amount
+            : -request.Amount;
+
+        var mirrorTx = new Transaction
         {
-            ContributionId = c.ContributionId,
-            SavingGoalId = c.SavingGoalId,
-            Amount = c.Amount,
-            ContributionDate = c.ContributionDate,
-            Notes = c.Notes,
-            CreatedAt = c.CreatedAt
+            TransactionId = Guid.NewGuid().ToString(),
+            UserId = userId.ToString(),
+            Type = AppConstants.TransactionType.Savings,
+            CategoryId = null,
+            Amount = mirrorAmount,
+            Description = $"Saving: {goal.GoalName} ({request.Type})",
+            Status = AppConstants.PaymentStatus.Completed,
+            TransactionDate = request.ContributionDate,
+            Notes = request.Notes,
+            CreatedAt = DateTime.UtcNow
         };
+        await _transactionRepository.CreateAsync(mirrorTx);
+        _ = _aggregationRepository.UpdateRedisCacheAsync(mirrorTx);
+
+        var contribution = new SavingGoalContribution
+        {
+            ContributionId = Guid.NewGuid().ToString(),
+            SavingGoalId = savingGoalId.ToString(),
+            UserId = userId.ToString(),
+            Type = request.Type,
+            Amount = request.Amount,
+            ContributionDate = request.ContributionDate,
+            Notes = request.Notes,
+            MirrorTransactionId = mirrorTx.TransactionId,
+            CreatedAt = DateTime.UtcNow
+        };
+        await _contributionRepository.CreateAsync(contribution);
+
+        // Update persisted CurrentAmount and auto-complete check
+        goal.CurrentAmount = request.Type == AppConstants.SavingTransactionType.Deposit
+            ? goal.CurrentAmount + request.Amount
+            : goal.CurrentAmount - request.Amount;
+
+        if (goal.CurrentAmount >= goal.TargetAmount && goal.Status == AppConstants.SavingGoalStatus.Active)
+            goal.Status = AppConstants.SavingGoalStatus.Completed;
+
+        await _repository.UpdateAsync(goal);
+        await _repository.InvalidateCacheAsync(userId.ToString());
+
+        return MapContributionToDto(contribution);
     }
 
-    private static AppConstants.RecurringFrequency ParseRecurringType(string recurringType)
+    public async Task<bool> DeleteContributionAsync(Guid userId, Guid savingGoalId, Guid contributionId)
     {
-        return Enum.TryParse<AppConstants.RecurringFrequency>(recurringType, true, out var result)
-            ? result
-            : AppConstants.RecurringFrequency.Monthly;
+        var contribution = await _contributionRepository.GetByIdAsync(userId, contributionId);
+        if (contribution is null || contribution.SavingGoalId != savingGoalId.ToString())
+            return false;
+
+        // Reverse the contribution's effect on CurrentAmount
+        var goal = await _repository.GetByIdAsync(userId, savingGoalId);
+        if (goal is not null)
+        {
+            goal.CurrentAmount = contribution.Type == AppConstants.SavingTransactionType.Deposit
+                ? goal.CurrentAmount - contribution.Amount
+                : goal.CurrentAmount + contribution.Amount;
+
+            // Revert completed status if we pulled back funds below target
+            if (goal.Status == AppConstants.SavingGoalStatus.Completed
+                && goal.CurrentAmount < goal.TargetAmount)
+                goal.Status = AppConstants.SavingGoalStatus.Active;
+
+            await _repository.UpdateAsync(goal);
+        }
+
+        // Delete mirror transaction
+        if (contribution.MirrorTransactionId is not null)
+        {
+            var mirrorTx = await _transactionRepository.GetByIdAsync(userId, Guid.Parse(contribution.MirrorTransactionId));
+            if (mirrorTx is not null)
+            {
+                await _transactionRepository.DeleteAsync(userId, Guid.Parse(contribution.MirrorTransactionId));
+                _ = _aggregationRepository.UpdateRedisCacheAsync(mirrorTx);
+            }
+        }
+
+        var deleted = await _contributionRepository.DeleteAsync(userId, contributionId);
+        if (deleted) await _repository.InvalidateCacheAsync(userId.ToString());
+        return deleted;
     }
 
-    private static AppConstants.RecurringStatus ParseStatus(string status)
+    // ── Mappers ───────────────────────────────────────────────────────────────
+
+    private static SavingGoalDto MapToDto(SavingGoal g)
     {
-        return Enum.TryParse<AppConstants.RecurringStatus>(status, true, out var result)
-            ? result
-            : AppConstants.RecurringStatus.Active;
+        var progress = g.TargetAmount > 0
+            ? Math.Round(g.CurrentAmount / g.TargetAmount * 100, 2)
+            : 0;
+        var remaining = Math.Max(0, g.TargetAmount - g.CurrentAmount);
+
+        return new SavingGoalDto(
+            Guid.Parse(g.SavingGoalId),
+            Guid.Parse(g.UserId),
+            g.GoalName,
+            g.Description,
+            g.TargetAmount,
+            g.CurrentAmount,
+            progress,
+            remaining,
+            g.TargetDate,
+            g.Status.ToString().ToUpperInvariant(),
+            g.Notes,
+            g.ImageUrl,
+            g.CreatedAt,
+            g.UpdatedAt
+        );
     }
+
+    private static SavingGoalContributionDto MapContributionToDto(SavingGoalContribution c) =>
+        new(
+            Guid.Parse(c.ContributionId),
+            Guid.Parse(c.SavingGoalId),
+            c.Type.ToString().ToUpperInvariant(),
+            c.Amount,
+            c.ContributionDate,
+            c.Notes,
+            c.CreatedAt
+        );
 }
 

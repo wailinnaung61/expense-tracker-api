@@ -10,8 +10,6 @@ public record Tranaction(
     string CategoryName,
     decimal Amount,
     string Description,
-    string Merchant,
-    string PaymentMethod,
     AppConstants.PaymentStatus status,
     string TranactionDate,
     string ImageUrl,

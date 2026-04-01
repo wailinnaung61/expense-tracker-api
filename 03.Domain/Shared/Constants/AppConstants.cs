@@ -32,8 +32,7 @@ public static class AppConstants
         Income,
         Expense,
         Investment,
-        Savings,
-        SavingGoal
+        Savings
     }
 
     public enum PaymentStatus
@@ -77,6 +76,19 @@ public static class AppConstants
     public enum BudgetPeriodType
     {
         Monthly
+    }
+
+    public enum SavingGoalStatus
+    {
+        Active,
+        Completed,
+        Cancelled
+    }
+
+    public enum SavingTransactionType
+    {
+        Deposit,
+        Withdrawal
     }
 
     public enum AssetType

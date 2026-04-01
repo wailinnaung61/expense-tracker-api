@@ -197,4 +197,19 @@
   <data name="PortfolioDeleteFailed" xml:space="preserve">
     <value>Failed to delete portfolio.</value>
   </data>
+  <data name="SavingGoalNotFound" xml:space="preserve">
+    <value>Saving goal not found.</value>
+  </data>
+  <data name="SavingGoalCreateFailed" xml:space="preserve">
+    <value>Failed to create saving goal.</value>
+  </data>
+  <data name="SavingGoalUpdateFailed" xml:space="preserve">
+    <value>Failed to update saving goal.</value>
+  </data>
+  <data name="SavingGoalContributionFailed" xml:space="preserve">
+    <value>Failed to process contribution.</value>
+  </data>
+  <data name="SavingGoalContributionNotFound" xml:space="preserve">
+    <value>Contribution not found.</value>
+  </data>
 </root>

@@ -197,4 +197,19 @@
   <data name="PortfolioDeleteFailed" xml:space="preserve">
     <value>ポートフォリオの削除に失敗しました。</value>
   </data>
+  <data name="SavingGoalNotFound" xml:space="preserve">
+    <value>貯蓄目標が見つかりません。</value>
+  </data>
+  <data name="SavingGoalCreateFailed" xml:space="preserve">
+    <value>貯蓄目標の作成に失敗しました。</value>
+  </data>
+  <data name="SavingGoalUpdateFailed" xml:space="preserve">
+    <value>貯蓄目標の更新に失敗しました。</value>
+  </data>
+  <data name="SavingGoalContributionFailed" xml:space="preserve">
+    <value>積立処理に失敗しました。</value>
+  </data>
+  <data name="SavingGoalContributionNotFound" xml:space="preserve">
+    <value>積立記録が見つかりません。</value>
+  </data>
 </root>

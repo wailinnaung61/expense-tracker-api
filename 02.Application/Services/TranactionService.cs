@@ -67,8 +67,6 @@ public class TranactionService : ITranactionService
             CategoryId = dto.CategoryId,
             Amount = dto.Amount,
             Description = dto.Description,
-            Merchant = string.Empty,
-            PaymentMethod = string.Empty,
             Status = dto.status,
             TransactionDate = dto.TranactionDate,
             ImageUrl = dto.ImageUrl,
@@ -79,8 +77,8 @@ public class TranactionService : ITranactionService
 
         _ = _aggregationRepository.UpdateRedisCacheAsync(created);
 
-        // Budget snapshots only track non-income transactions
-        if (created.Type != Domain.Shared.Constants.AppConstants.TransactionType.Income)
+        // Budget snapshots only track expense transactions
+        if (created.Type == Domain.Shared.Constants.AppConstants.TransactionType.Expense)
             await _budgetRepository.UpdateSnapshotOnTransactionAsync(
                 created.UserId, created.CategoryId, created.TransactionDate, created.Amount, 1);
 
@@ -92,12 +90,15 @@ public class TranactionService : ITranactionService
         var existing = await _repository.GetByIdAsync(userId, tranactionId);
         if (existing is null) return null;
 
+        var oldType = existing.Type;
+        var oldCategoryId = existing.CategoryId;
+        var oldAmount = existing.Amount;
+        var oldDate = existing.TransactionDate;
+
         existing.Type = dto.type;
         existing.CategoryId = dto.CategoryId;
         existing.Amount = dto.Amount;
         existing.Description = dto.Description;
-        existing.Merchant = string.Empty;
-        existing.PaymentMethod = string.Empty;
         existing.Status = dto.status;
         existing.TransactionDate = dto.TranactionDate;
         existing.ImageUrl = dto.ImageUrl;
@@ -107,6 +108,16 @@ public class TranactionService : ITranactionService
         if (updated is null) return null;
 
         _ = _aggregationRepository.UpdateRedisCacheAsync(updated);
+
+        // Reverse old snapshot entry, apply new one — only for Expense type
+        var expense = Domain.Shared.Constants.AppConstants.TransactionType.Expense;
+        if (oldType == expense && oldCategoryId is not null)
+            await _budgetRepository.UpdateSnapshotOnTransactionAsync(
+                updated.UserId, oldCategoryId, oldDate, -oldAmount, -1);
+
+        if (updated.Type == expense && updated.CategoryId is not null)
+            await _budgetRepository.UpdateSnapshotOnTransactionAsync(
+                updated.UserId, updated.CategoryId, updated.TransactionDate, updated.Amount, 1);
 
         return MapToDto(updated);
     }
@@ -121,7 +132,7 @@ public class TranactionService : ITranactionService
         {
             _ = _aggregationRepository.UpdateRedisCacheAsync(existing);
 
-            if (existing.Type != Domain.Shared.Constants.AppConstants.TransactionType.Income)
+            if (existing.Type == Domain.Shared.Constants.AppConstants.TransactionType.Expense)
                 await _budgetRepository.UpdateSnapshotOnTransactionAsync(
                     existing.UserId, existing.CategoryId, existing.TransactionDate, -existing.Amount, -1);
         }
@@ -139,8 +150,6 @@ public class TranactionService : ITranactionService
             string.Empty,
             expense.Amount,
             expense.Description,
-            expense.Merchant,
-            expense.PaymentMethod,
             expense.Status,
             expense.TransactionDate,
             expense.ImageUrl,

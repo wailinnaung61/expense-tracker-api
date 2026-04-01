@@ -48,7 +48,6 @@ public class TranactionRepository : ITranactionRepository
 
         if (!string.IsNullOrWhiteSpace(keyword))
             query = query.Where(t => EF.Functions.ILike(t.Description, $"%{keyword}%")
-                                  || EF.Functions.ILike(t.Merchant, $"%{keyword}%")
                                   || EF.Functions.ILike(t.Notes, $"%{keyword}%"));
 
         var totalCount = await query.CountAsync();
@@ -103,10 +102,7 @@ public class TranactionRepository : ITranactionRepository
         existing.Type = tranaction.Type;
         existing.CategoryId = tranaction.CategoryId;
         existing.Amount = tranaction.Amount;
-        existing.CurrentAmount = tranaction.CurrentAmount;
         existing.Description = tranaction.Description;
-        existing.Merchant = tranaction.Merchant;
-        existing.PaymentMethod = tranaction.PaymentMethod;
         existing.Status = tranaction.Status;
         existing.TransactionDate = tranaction.TransactionDate;
         existing.ImageUrl = tranaction.ImageUrl;

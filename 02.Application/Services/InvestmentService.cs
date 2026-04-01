@@ -87,8 +87,6 @@ public class InvestmentService : IInvestmentService
             CategoryId = null,
             Amount = created.Quantity * created.PurchasePrice,
             Description = $"Investment: {created.AssetName}",
-            Merchant = string.Empty,
-            PaymentMethod = string.Empty,
             Status = AppConstants.PaymentStatus.Completed,
             TransactionDate = created.PurchaseDate,
             ImageUrl = created.ImageUrl,

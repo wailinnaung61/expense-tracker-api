@@ -51,6 +51,10 @@ public static class DependencyInjection
         services.AddScoped<ITranactionService, TranactionService>();
         services.AddScoped<IAggregationService, AggregationService>();
         services.AddScoped<IRecurringPaymentService, RecurringPaymentService>();
+        services.AddScoped<IBudgetService, BudgetService>();
+        services.AddScoped<IInvestmentService, InvestmentService>();
+        services.AddScoped<IInvestmentPortfolioService, InvestmentPortfolioService>();
+        services.AddScoped<ISavingGoalService, SavingGoalService>();
         services.AddScoped<IChatService, ChatService>();
 
         return services;

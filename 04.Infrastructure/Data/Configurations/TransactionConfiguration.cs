@@ -40,21 +40,9 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
             .HasColumnType("decimal(15,2)")
             .IsRequired();
 
-        builder.Property(t => t.CurrentAmount)
-            .HasColumnName("current_amount")
-            .HasColumnType("decimal(15,2)");
-
         builder.Property(t => t.Description)
             .HasColumnName("description")
             .HasMaxLength(500);
-
-        builder.Property(t => t.Merchant)
-            .HasColumnName("merchant")
-            .HasMaxLength(200);
-
-        builder.Property(t => t.PaymentMethod)
-            .HasColumnName("payment_method")
-            .HasMaxLength(50);
 
         builder.Property(t => t.Status)
             .HasColumnName("payment_status")

@@ -1,116 +1,159 @@
+using System.Text.Json;
 using expense_tracker_backend.Domain.Entities;
 using expense_tracker_backend.Domain.Interfaces;
 using expense_tracker_backend.Domain.Shared.Constants;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Logging;
 
 namespace _04.Infrastructure.Services;
 
 public class SavingGoalRepository : ISavingGoalRepository
 {
     private readonly ApplicationDbContext _context;
+    private readonly IDistributedCache _cache;
+    private readonly ILogger<SavingGoalRepository> _logger;
 
-    public SavingGoalRepository(ApplicationDbContext context)
+    private static readonly DistributedCacheEntryOptions CacheOptions = new()
+    {
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+    };
+
+    public SavingGoalRepository(
+        ApplicationDbContext context,
+        IDistributedCache cache,
+        ILogger<SavingGoalRepository> logger)
     {
         _context = context;
+        _cache = cache;
+        _logger = logger;
     }
 
-    public async Task<SavingGoal?> GetByIdAsync(string userId, string savingGoalId)
+    public async Task<SavingGoal?> GetByIdAsync(Guid userId, Guid savingGoalId)
     {
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(savingGoalId))
-            return null;
-
         return await _context.SavingGoals
             .AsNoTracking()
-            .Include(s => s.Contributions)
-            .FirstOrDefaultAsync(s => s.UserId == userId && s.SavingGoalId == savingGoalId);
+            .Include(s => s.Contributions.OrderByDescending(c => c.ContributionDate))
+            .FirstOrDefaultAsync(s => s.UserId == userId.ToString()
+                                   && s.SavingGoalId == savingGoalId.ToString());
     }
 
-    public async Task<List<SavingGoal>> GetByUserIdAsync(string userId)
+    public async Task<(List<SavingGoal> Items, int TotalCount)> GetByUserIdAsync(
+        Guid userId,
+        AppConstants.SavingGoalStatus? status,
+        string? keyword,
+        int pageSize,
+        DateTime? cursor,
+        Guid? cursorId)
     {
-        if (string.IsNullOrEmpty(userId))
-            return new List<SavingGoal>();
-
-        return await _context.SavingGoals
+        var query = _context.SavingGoals
             .AsNoTracking()
-            .Include(s => s.Contributions)
-            .Where(s => s.UserId == userId)
+            .Where(s => s.UserId == userId.ToString());
+
+        if (status.HasValue)
+            query = query.Where(s => s.Status == status.Value);
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+            query = query.Where(s => EF.Functions.ILike(s.GoalName, $"%{keyword}%")
+                                  || EF.Functions.ILike(s.Description, $"%{keyword}%"));
+
+        var totalCount = await query.CountAsync();
+
+        if (cursor.HasValue && cursorId.HasValue)
+        {
+            var cId = cursorId.Value.ToString();
+            query = query.Where(s => s.CreatedAt < cursor.Value
+                || (s.CreatedAt == cursor.Value && string.Compare(s.SavingGoalId, cId) < 0));
+        }
+
+        var items = await query
+            .OrderByDescending(s => s.CreatedAt)
+            .ThenByDescending(s => s.SavingGoalId)
+            .Take(pageSize + 1)
+            .ToListAsync();
+
+        return (items, totalCount);
+    }
+
+    public async Task<List<SavingGoal>> GetAllForDashboardAsync(Guid userId)
+    {
+        var cacheKey = $"saving:dashboard:raw:{userId}";
+        try
+        {
+            var bytes = await _cache.GetAsync(cacheKey);
+            if (bytes is not null)
+                return JsonSerializer.Deserialize<List<SavingGoal>>(bytes)!;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Redis read failed for key {Key}", cacheKey);
+        }
+
+        var items = await _context.SavingGoals
+            .AsNoTracking()
+            .Where(s => s.UserId == userId.ToString())
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
-    }
 
-    public async Task<List<SavingGoal>> GetByCategoryIdAsync(string userId, string categoryId)
-    {
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(categoryId))
-            return new List<SavingGoal>();
+        try
+        {
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(items);
+            await _cache.SetAsync(cacheKey, bytes, CacheOptions);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Redis write failed for key {Key}", cacheKey);
+        }
 
-        return await _context.SavingGoals
-            .AsNoTracking()
-            .Include(s => s.Contributions)
-            .Where(s => s.UserId == userId && s.CategoryId == categoryId)
-            .OrderByDescending(s => s.CreatedAt)
-            .ToListAsync();
-    }
-
-    public async Task<List<SavingGoal>> GetByStatusAsync(string userId, AppConstants.RecurringStatus status)
-    {
-        if (string.IsNullOrEmpty(userId))
-            return new List<SavingGoal>();
-
-        return await _context.SavingGoals
-            .AsNoTracking()
-            .Include(s => s.Contributions)
-            .Where(s => s.UserId == userId && s.Status == status)
-            .OrderByDescending(s => s.CreatedAt)
-            .ToListAsync();
+        return items;
     }
 
     public async Task<SavingGoal> CreateAsync(SavingGoal savingGoal)
     {
         savingGoal.CreatedAt = DateTime.UtcNow;
-        savingGoal.UpdatedAt = DateTime.UtcNow;
-
         await _context.SavingGoals.AddAsync(savingGoal);
         await _context.SaveChangesAsync();
-
         return savingGoal;
     }
 
     public async Task<SavingGoal?> UpdateAsync(SavingGoal savingGoal)
     {
         var existing = await _context.SavingGoals
-            .FirstOrDefaultAsync(s => s.UserId == savingGoal.UserId && s.SavingGoalId == savingGoal.SavingGoalId);
-
-        if (existing == null)
-            return null;
+            .FirstOrDefaultAsync(s => s.UserId == savingGoal.UserId
+                                   && s.SavingGoalId == savingGoal.SavingGoalId);
+        if (existing is null) return null;
 
         existing.GoalName = savingGoal.GoalName;
+        existing.Description = savingGoal.Description;
         existing.TargetAmount = savingGoal.TargetAmount;
-        existing.InitialDeposit = savingGoal.InitialDeposit;
+        existing.CurrentAmount = savingGoal.CurrentAmount;
         existing.TargetDate = savingGoal.TargetDate;
-        existing.RecurringType = savingGoal.RecurringType;
-        existing.Icon = savingGoal.Icon;
-        existing.Color = savingGoal.Color;
         existing.Status = savingGoal.Status;
+        existing.Notes = savingGoal.Notes;
+        existing.ImageUrl = savingGoal.ImageUrl;
         existing.UpdatedAt = DateTime.UtcNow;
 
-        _context.SavingGoals.Update(existing);
         await _context.SaveChangesAsync();
-
         return existing;
     }
 
-    public async Task<bool> DeleteAsync(string userId, string savingGoalId)
+    public async Task<bool> DeleteAsync(Guid userId, Guid savingGoalId)
     {
-        var savingGoal = await _context.SavingGoals
-            .FirstOrDefaultAsync(s => s.UserId == userId && s.SavingGoalId == savingGoalId);
+        var goal = await _context.SavingGoals
+            .FirstOrDefaultAsync(s => s.UserId == userId.ToString()
+                                   && s.SavingGoalId == savingGoalId.ToString());
+        if (goal is null) return false;
 
-        if (savingGoal == null)
-            return false;
-
-        _context.SavingGoals.Remove(savingGoal);
+        _context.SavingGoals.Remove(goal);
         await _context.SaveChangesAsync();
-
         return true;
+    }
+
+    public async Task InvalidateCacheAsync(string userId)
+    {
+        var key = $"saving:dashboard:raw:{userId}";
+        try { await _cache.RemoveAsync(key); }
+        catch (Exception ex) { _logger.LogWarning(ex, "Cache invalidation failed for {Key}", key); }
     }
 }

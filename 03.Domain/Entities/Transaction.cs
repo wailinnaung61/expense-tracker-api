@@ -9,10 +9,7 @@ public class Transaction
     public required AppConstants.TransactionType Type { get; set; }
     public string? CategoryId { get; set; }
     public required decimal Amount { get; set; }
-    public decimal? CurrentAmount { get; set; }
     public string Description { get; set; } = string.Empty;
-    public string Merchant { get; set; } = string.Empty;
-    public string PaymentMethod { get; set; } = string.Empty;
     public AppConstants.PaymentStatus Status { get; set; } = AppConstants.PaymentStatus.Completed;
     public string TransactionDate { get; set; } = string.Empty;
     public string ImageUrl { get; set; } = string.Empty;
