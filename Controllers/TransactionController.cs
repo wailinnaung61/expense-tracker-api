@@ -9,15 +9,15 @@ namespace expense_tracker_backend.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class TranactionController : BaseController
+public class TransactionController : BaseController
 {
     private readonly ITranactionService _expenseService;
-    private readonly ILogger<TranactionController> _logger;
+    private readonly ILogger<TransactionController> _logger;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public TranactionController(
+    public TransactionController(
         ITranactionService expenseService,
-        ILogger<TranactionController> logger,
+        ILogger<TransactionController> logger,
         IStringLocalizer<SharedResource> localizer)
     {
         _expenseService = expenseService;

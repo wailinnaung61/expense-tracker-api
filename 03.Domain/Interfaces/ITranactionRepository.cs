@@ -10,7 +10,7 @@ public interface ITranactionRepository
         string userId,
         DateTime? startDate,
         DateTime? endDate,
-        AppConstants.TransactionType? type,
+        IReadOnlyList<AppConstants.TransactionType>? types,
         AppConstants.PaymentStatus? status,
         string? categoryId,
         string? keyword,

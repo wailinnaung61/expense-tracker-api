@@ -24,11 +24,20 @@ public class TranactionService : ITranactionService
     {
         var pageSize = Math.Clamp(filter.PageSize, 1, 100);
 
+        // This endpoint only serves Income and Expense — never Savings or Investment mirror rows
+        var allowed = new[] {
+            Domain.Shared.Constants.AppConstants.TransactionType.Income,
+            Domain.Shared.Constants.AppConstants.TransactionType.Expense
+        };
+        var types = filter.Type.HasValue && allowed.Contains(filter.Type.Value)
+            ? new[] { filter.Type.Value }
+            : allowed;
+
         var (items, totalCount) = await _repository.GetTransactionsAsync(
             userId.ToString(),
             filter.StartDate,
             filter.EndDate,
-            filter.Type,
+            types,
             filter.Status,
             filter.CategoryId?.ToString(),
             filter.Keyword,
@@ -75,7 +84,7 @@ public class TranactionService : ITranactionService
         };
         var created = await _repository.CreateAsync(tranaction);
 
-        _ = _aggregationRepository.UpdateRedisCacheAsync(created);
+        await _aggregationRepository.UpdateRedisCacheAsync(created);
 
         // Budget snapshots only track expense transactions
         if (created.Type == Domain.Shared.Constants.AppConstants.TransactionType.Expense)
@@ -107,9 +116,9 @@ public class TranactionService : ITranactionService
         var updated = await _repository.UpdateAsync(existing);
         if (updated is null) return null;
 
-        _ = _aggregationRepository.UpdateRedisCacheAsync(updated);
+        await _aggregationRepository.UpdateRedisCacheAsync(updated);
 
-        // Reverse old snapshot entry, apply new one — only for Expense type
+        // Reverse old snapshot entry
         var expense = Domain.Shared.Constants.AppConstants.TransactionType.Expense;
         if (oldType == expense && oldCategoryId is not null)
             await _budgetRepository.UpdateSnapshotOnTransactionAsync(
@@ -130,7 +139,7 @@ public class TranactionService : ITranactionService
         var deleted = await _repository.DeleteAsync(userId, tranactionId);
         if (deleted)
         {
-            _ = _aggregationRepository.UpdateRedisCacheAsync(existing);
+            await _aggregationRepository.UpdateRedisCacheAsync(existing);
 
             if (existing.Type == Domain.Shared.Constants.AppConstants.TransactionType.Expense)
                 await _budgetRepository.UpdateSnapshotOnTransactionAsync(

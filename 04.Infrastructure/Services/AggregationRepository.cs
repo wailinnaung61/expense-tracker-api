@@ -445,7 +445,6 @@ public class AggregationRepository : IAggregationRepository
             $"agg:{userId}:yearly:{year}",
             $"agg:{userId}:cat-monthly:{month}",
         };
-
         foreach (var key in keysToRemove)
         {
             try
@@ -466,6 +465,7 @@ public class AggregationRepository : IAggregationRepository
                 $"ExpenseTracker:agg:{userId}:weekly-range:*",
                 $"ExpenseTracker:agg:{userId}:monthly-range:*",
                 $"ExpenseTracker:agg:{userId}:yearly-range:*",
+                $"ExpenseTracker:agg:{userId}:cat-monthly:*:{month}",
             };
 
             foreach (var pattern in patterns)

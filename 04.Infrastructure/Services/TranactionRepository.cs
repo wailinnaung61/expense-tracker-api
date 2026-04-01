@@ -19,7 +19,7 @@ public class TranactionRepository : ITranactionRepository
         string userId,
         DateTime? startDate,
         DateTime? endDate,
-        AppConstants.TransactionType? type,
+        IReadOnlyList<AppConstants.TransactionType>? types,
         AppConstants.PaymentStatus? status,
         string? categoryId,
         string? keyword,
@@ -31,14 +31,14 @@ public class TranactionRepository : ITranactionRepository
             .AsNoTracking()
             .Where(t => t.UserId == userId);
 
+        if (types is not null && types.Count > 0)
+            query = query.Where(t => types.Contains(t.Type));
+
         if (startDate.HasValue)
             query = query.Where(t => string.Compare(t.TransactionDate, startDate.Value.ToString("yyyy-MM-dd")) >= 0);
 
         if (endDate.HasValue)
             query = query.Where(t => string.Compare(t.TransactionDate, endDate.Value.ToString("yyyy-MM-dd")) <= 0);
-
-        if (type.HasValue)
-            query = query.Where(t => t.Type == type.Value);
 
         if (status.HasValue)
             query = query.Where(t => t.Status == status.Value);
