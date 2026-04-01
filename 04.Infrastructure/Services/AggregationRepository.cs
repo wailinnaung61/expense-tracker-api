@@ -297,12 +297,14 @@ public class AggregationRepository : IAggregationRepository
             .SqlQuery<CategoryAggregationRow>($"""
                 SELECT
                     category_id,
+                    type,
                     period,
                     TO_CHAR(period_start, 'YYYY/MM/DD') AS period_start,
                     TO_CHAR(period_end, 'YYYY/MM/DD') AS period_end,
                     total_amount, transaction_count
                 FROM mv_category_monthly_aggregations
                 WHERE user_id = {userIdStr} AND period = {month}
+                  AND type = 'EXPENSE'
                 """)
             .ToListAsync();
 
@@ -325,6 +327,7 @@ public class AggregationRepository : IAggregationRepository
             .SqlQuery<CategoryAggregationRow>($"""
                 SELECT
                     category_id,
+                    type,
                     period,
                     TO_CHAR(period_start, 'YYYY/MM/DD') AS period_start,
                     TO_CHAR(period_end, 'YYYY/MM/DD') AS period_end,
@@ -333,6 +336,7 @@ public class AggregationRepository : IAggregationRepository
                 WHERE user_id = {userIdStr}
                     AND category_id = {categoryIdStr}
                     AND period = {month}
+                    AND type = 'EXPENSE'
                 """)
             .FirstOrDefaultAsync();
 
@@ -523,6 +527,7 @@ public class AggregationRepository : IAggregationRepository
     private class CategoryAggregationRow
     {
         public string category_id { get; set; } = string.Empty;
+        public string type { get; set; } = string.Empty;
         public string period { get; set; } = string.Empty;
         public string period_start { get; set; } = string.Empty;
         public string period_end { get; set; } = string.Empty;

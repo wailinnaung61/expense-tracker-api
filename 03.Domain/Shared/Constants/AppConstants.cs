@@ -65,5 +65,35 @@ public static class AppConstants
         public const string Summary = "summary";
         public const string Categories = "categories";
         public const string RecurringPayments = "recurring_payments";
+        public const string Budget = "budget";
+    }
+
+    public enum BudgetStatus
+    {
+        Active,
+        Inactive
+    }
+
+    public enum BudgetPeriodType
+    {
+        Monthly
+    }
+
+    public enum AssetType
+    {
+        Stock,
+        Crypto,
+        Bond,
+        MutualFund,
+        RealEstate,
+        Gold,
+        Other
+    }
+
+    public enum InvestmentStatus
+    {
+        Holding,
+        Sold,
+        PartialSold
     }
 }

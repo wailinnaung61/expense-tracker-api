@@ -15,6 +15,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<ExpenseCategory> ExpenseCategories { get; set; }
     public DbSet<Transaction> Transactions { get; set; }
     public DbSet<RecurringPayment> RecurringPayments { get; set; }
+    public DbSet<Budget> Budgets { get; set; }
+    public DbSet<BudgetCategory> BudgetCategories { get; set; }
+    public DbSet<BudgetSnapshot> BudgetSnapshots { get; set; }
+    public DbSet<Investment> Investments { get; set; }
+    public DbSet<InvestmentPortfolio> InvestmentPortfolios { get; set; }
     public DbSet<SavingGoal> SavingGoals { get; set; }
     public DbSet<SavingGoalContribution> SavingGoalContributions { get; set; }
 

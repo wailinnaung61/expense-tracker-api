@@ -7,7 +7,7 @@ public class Transaction
     public required string TransactionId { get; set; }
     public required string UserId { get; set; }
     public required AppConstants.TransactionType Type { get; set; }
-    public required string CategoryId { get; set; }
+    public string? CategoryId { get; set; }
     public required decimal Amount { get; set; }
     public decimal? CurrentAmount { get; set; }
     public string Description { get; set; } = string.Empty;

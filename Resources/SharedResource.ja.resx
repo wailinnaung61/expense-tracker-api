@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -136,5 +136,65 @@
   </data>
   <data name="DailyLimitNegative" xml:space="preserve">
     <value>日次制限額はマイナスにできません。</value>
+  </data>
+  <data name="BudgetNotFound" xml:space="preserve">
+    <value>この期間の予算が見つかりません。</value>
+  </data>
+  <data name="BudgetCreateFailed" xml:space="preserve">
+    <value>予算の作成に失敗しました。</value>
+  </data>
+  <data name="BudgetUpdateFailed" xml:space="preserve">
+    <value>予算の更新に失敗しました。</value>
+  </data>
+  <data name="BudgetDeleteFailed" xml:space="preserve">
+    <value>予算が見つかりません。</value>
+  </data>
+  <data name="BudgetDeleteSuccess" xml:space="preserve">
+    <value>予算を削除しました。</value>
+  </data>
+  <data name="BudgetResetFailed" xml:space="preserve">
+    <value>予算が見つかりません。</value>
+  </data>
+  <data name="BudgetResetSuccess" xml:space="preserve">
+    <value>予算をリセットしました。</value>
+  </data>
+  <data name="BudgetCategoryNotFound" xml:space="preserve">
+    <value>予算カテゴリが見つかりません。</value>
+  </data>
+  <data name="BudgetCategoryUpdateFailed" xml:space="preserve">
+    <value>予算カテゴリの更新に失敗しました。</value>
+  </data>
+  <data name="BudgetCategoryAddFailed" xml:space="preserve">
+    <value>カテゴリの追加に失敗しました。既にこの予算に存在する可能性があります。</value>
+  </data>
+  <data name="BudgetCategoryDeleteSuccess" xml:space="preserve">
+    <value>予算カテゴリを削除しました。</value>
+  </data>
+  <data name="MfaSessionExpired" xml:space="preserve">
+    <value>MFAセッションの有効期限が切れたか、既に使用されています。もう一度サインインしてください。</value>
+  </data>
+  <data name="InvestmentNotFound" xml:space="preserve">
+    <value>投資が見つかりません。</value>
+  </data>
+  <data name="InvestmentCreateFailed" xml:space="preserve">
+    <value>投資の作成に失敗しました。</value>
+  </data>
+  <data name="InvestmentUpdateFailed" xml:space="preserve">
+    <value>投資の更新に失敗しました。</value>
+  </data>
+  <data name="InvestmentDeleteFailed" xml:space="preserve">
+    <value>投資の削除に失敗しました。</value>
+  </data>
+  <data name="PortfolioNotFound" xml:space="preserve">
+    <value>ポートフォリオが見つかりません。</value>
+  </data>
+  <data name="PortfolioCreateFailed" xml:space="preserve">
+    <value>ポートフォリオの作成に失敗しました。</value>
+  </data>
+  <data name="PortfolioUpdateFailed" xml:space="preserve">
+    <value>ポートフォリオの更新に失敗しました。</value>
+  </data>
+  <data name="PortfolioDeleteFailed" xml:space="preserve">
+    <value>ポートフォリオの削除に失敗しました。</value>
   </data>
 </root>

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace _04.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260329063153_AddBudgetTables")]
+    partial class AddBudgetTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -30,6 +33,12 @@ namespace _04.Infrastructure.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("budget_id");
 
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("color");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -37,6 +46,12 @@ namespace _04.Infrastructure.Migrations
                     b.Property<DateOnly>("EndDate")
                         .HasColumnType("date")
                         .HasColumnName("end_date");
+
+                    b.Property<string>("Icon")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("icon");
 
                     b.Property<string>("PeriodType")
                         .IsRequired()
@@ -215,153 +230,6 @@ namespace _04.Infrastructure.Migrations
                         .HasDatabaseName("ix_categories_user_type_active_created");
 
                     b.ToTable("categories", (string)null);
-                });
-
-            modelBuilder.Entity("expense_tracker_backend.Domain.Entities.Investment", b =>
-                {
-                    b.Property<string>("InvestmentId")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("investment_id");
-
-                    b.Property<string>("AssetName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("asset_name");
-
-                    b.Property<string>("AssetType")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("asset_type");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<decimal>("CurrentPrice")
-                        .HasColumnType("decimal(15,2)")
-                        .HasColumnName("current_price");
-
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("image_url");
-
-                    b.Property<string>("MirrorTransactionId")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("mirror_transaction_id");
-
-                    b.Property<string>("Notes")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("notes");
-
-                    b.Property<string>("PortfolioId")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("portfolio_id");
-
-                    b.Property<DateOnly>("PurchaseDate")
-                        .HasColumnType("date")
-                        .HasColumnName("purchase_date");
-
-                    b.Property<decimal>("PurchasePrice")
-                        .HasColumnType("decimal(15,2)")
-                        .HasColumnName("purchase_price");
-
-                    b.Property<decimal>("Quantity")
-                        .HasColumnType("decimal(18,8)")
-                        .HasColumnName("quantity");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("status");
-
-                    b.Property<string>("Symbol")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("symbol");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("InvestmentId");
-
-                    b.HasIndex("PortfolioId");
-
-                    b.HasIndex("UserId", "AssetType")
-                        .HasDatabaseName("ix_investments_user_asset_type");
-
-                    b.HasIndex("UserId", "PortfolioId")
-                        .HasDatabaseName("ix_investments_user_portfolio");
-
-                    b.HasIndex("UserId", "PurchaseDate")
-                        .HasDatabaseName("ix_investments_user_purchase_date");
-
-                    b.HasIndex("UserId", "Status")
-                        .HasDatabaseName("ix_investments_user_status");
-
-                    b.ToTable("investments", (string)null);
-                });
-
-            modelBuilder.Entity("expense_tracker_backend.Domain.Entities.InvestmentPortfolio", b =>
-                {
-                    b.Property<string>("PortfolioId")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("portfolio_id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("description");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("name");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("PortfolioId");
-
-                    b.HasIndex("UserId", "IsActive")
-                        .HasDatabaseName("ix_investment_portfolios_user_active");
-
-                    b.ToTable("investment_portfolios", (string)null);
                 });
 
             modelBuilder.Entity("expense_tracker_backend.Domain.Entities.MemberProfile", b =>
@@ -557,6 +425,7 @@ namespace _04.Infrastructure.Migrations
                         .HasColumnName("amount");
 
                     b.Property<string>("CategoryId")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("category_id");
@@ -696,35 +565,6 @@ namespace _04.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("expense_tracker_backend.Domain.Entities.Investment", b =>
-                {
-                    b.HasOne("expense_tracker_backend.Domain.Entities.InvestmentPortfolio", "Portfolio")
-                        .WithMany("Investments")
-                        .HasForeignKey("PortfolioId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("expense_tracker_backend.Domain.Entities.MemberProfile", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Portfolio");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("expense_tracker_backend.Domain.Entities.InvestmentPortfolio", b =>
-                {
-                    b.HasOne("expense_tracker_backend.Domain.Entities.MemberProfile", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("expense_tracker_backend.Domain.Entities.RecurringPayment", b =>
                 {
                     b.HasOne("expense_tracker_backend.Domain.Entities.ExpenseCategory", "Category")
@@ -749,7 +589,8 @@ namespace _04.Infrastructure.Migrations
                     b.HasOne("expense_tracker_backend.Domain.Entities.ExpenseCategory", "Category")
                         .WithMany()
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("expense_tracker_backend.Domain.Entities.MemberProfile", "User")
                         .WithMany()
@@ -770,11 +611,6 @@ namespace _04.Infrastructure.Migrations
             modelBuilder.Entity("expense_tracker_backend.Domain.Entities.BudgetCategory", b =>
                 {
                     b.Navigation("Snapshot");
-                });
-
-            modelBuilder.Entity("expense_tracker_backend.Domain.Entities.InvestmentPortfolio", b =>
-                {
-                    b.Navigation("Investments");
                 });
 #pragma warning restore 612, 618
         }

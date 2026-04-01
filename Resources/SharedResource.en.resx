@@ -137,4 +137,64 @@
   <data name="DailyLimitNegative" xml:space="preserve">
     <value>Daily limit cannot be negative.</value>
   </data>
+  <data name="BudgetNotFound" xml:space="preserve">
+    <value>No budget found for this period.</value>
+  </data>
+  <data name="BudgetCreateFailed" xml:space="preserve">
+    <value>Failed to create budget.</value>
+  </data>
+  <data name="BudgetUpdateFailed" xml:space="preserve">
+    <value>Failed to update budget.</value>
+  </data>
+  <data name="BudgetDeleteFailed" xml:space="preserve">
+    <value>Budget not found.</value>
+  </data>
+  <data name="BudgetDeleteSuccess" xml:space="preserve">
+    <value>Budget deleted successfully.</value>
+  </data>
+  <data name="BudgetResetFailed" xml:space="preserve">
+    <value>Budget not found.</value>
+  </data>
+  <data name="BudgetResetSuccess" xml:space="preserve">
+    <value>Budget reset successfully.</value>
+  </data>
+  <data name="BudgetCategoryNotFound" xml:space="preserve">
+    <value>Budget category not found.</value>
+  </data>
+  <data name="BudgetCategoryUpdateFailed" xml:space="preserve">
+    <value>Failed to update budget category.</value>
+  </data>
+  <data name="BudgetCategoryAddFailed" xml:space="preserve">
+    <value>Failed to add category. It may already exist in this budget.</value>
+  </data>
+  <data name="BudgetCategoryDeleteSuccess" xml:space="preserve">
+    <value>Budget category removed successfully.</value>
+  </data>
+  <data name="MfaSessionExpired" xml:space="preserve">
+    <value>MFA session has expired or already been used. Please sign in again.</value>
+  </data>
+  <data name="InvestmentNotFound" xml:space="preserve">
+    <value>Investment not found.</value>
+  </data>
+  <data name="InvestmentCreateFailed" xml:space="preserve">
+    <value>Failed to create investment.</value>
+  </data>
+  <data name="InvestmentUpdateFailed" xml:space="preserve">
+    <value>Failed to update investment.</value>
+  </data>
+  <data name="InvestmentDeleteFailed" xml:space="preserve">
+    <value>Failed to delete investment.</value>
+  </data>
+  <data name="PortfolioNotFound" xml:space="preserve">
+    <value>Portfolio not found.</value>
+  </data>
+  <data name="PortfolioCreateFailed" xml:space="preserve">
+    <value>Failed to create portfolio.</value>
+  </data>
+  <data name="PortfolioUpdateFailed" xml:space="preserve">
+    <value>Failed to update portfolio.</value>
+  </data>
+  <data name="PortfolioDeleteFailed" xml:space="preserve">
+    <value>Failed to delete portfolio.</value>
+  </data>
 </root>

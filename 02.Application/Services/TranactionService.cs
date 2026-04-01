@@ -8,13 +8,16 @@ public class TranactionService : ITranactionService
 {
     private readonly ITranactionRepository _repository;
     private readonly IAggregationRepository _aggregationRepository;
+    private readonly IBudgetRepository _budgetRepository;
 
     public TranactionService(
         ITranactionRepository repository,
-        IAggregationRepository aggregationRepository)
+        IAggregationRepository aggregationRepository,
+        IBudgetRepository budgetRepository)
     {
         _repository = repository;
         _aggregationRepository = aggregationRepository;
+        _budgetRepository = budgetRepository;
     }
 
     public async Task<PagedResult<DTOs.Tranaction>> GetTransactionsAsync(Guid userId, TransactionFilterRequest filter)
@@ -76,6 +79,11 @@ public class TranactionService : ITranactionService
 
         _ = _aggregationRepository.UpdateRedisCacheAsync(created);
 
+        // Budget snapshots only track non-income transactions
+        if (created.Type != Domain.Shared.Constants.AppConstants.TransactionType.Income)
+            await _budgetRepository.UpdateSnapshotOnTransactionAsync(
+                created.UserId, created.CategoryId, created.TransactionDate, created.Amount, 1);
+
         return MapToDto(created);
     }
 
@@ -109,7 +117,14 @@ public class TranactionService : ITranactionService
         if (existing is null) return false;
 
         var deleted = await _repository.DeleteAsync(userId, tranactionId);
-        if (deleted) _ = _aggregationRepository.UpdateRedisCacheAsync(existing);
+        if (deleted)
+        {
+            _ = _aggregationRepository.UpdateRedisCacheAsync(existing);
+
+            if (existing.Type != Domain.Shared.Constants.AppConstants.TransactionType.Income)
+                await _budgetRepository.UpdateSnapshotOnTransactionAsync(
+                    existing.UserId, existing.CategoryId, existing.TransactionDate, -existing.Amount, -1);
+        }
 
         return deleted;
     }

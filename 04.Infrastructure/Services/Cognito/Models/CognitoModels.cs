@@ -118,11 +118,12 @@ public record MfaChallengeResponse(
     string Message
 );
 
-public record MfaVerifyRequest(
-    string Session,
-    string Username,
-    string TotpCode
-);
+public record MfaVerifyRequest
+{
+    public string Session { get; init; } = string.Empty;
+    public string Username { get; init; } = string.Empty;
+    public string TotpCode { get; init; } = string.Empty;
+}
 
 public record MfaStatusResponse(
     bool MfaEnabled,

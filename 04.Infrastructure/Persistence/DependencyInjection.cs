@@ -37,6 +37,9 @@ public static class DependencyInjection
         services.AddScoped<ITranactionRepository, TranactionRepository>();
         services.AddScoped<IAggregationRepository, AggregationRepository>();
         services.AddScoped<IRecurringPaymentRepository, RecurringPaymentRepository>();
+        services.AddScoped<IBudgetRepository, BudgetRepository>();
+        services.AddScoped<IInvestmentRepository, InvestmentRepository>();
+        services.AddScoped<IInvestmentPortfolioRepository, InvestmentPortfolioRepository>();
         services.AddScoped<ISavingGoalRepository, SavingGoalRepository>();
         services.AddScoped<ISavingGoalContributionRepository, SavingGoalContributionRepository>();
 
@@ -49,7 +52,6 @@ public static class DependencyInjection
         services.AddScoped<IAggregationService, AggregationService>();
         services.AddScoped<IRecurringPaymentService, RecurringPaymentService>();
         services.AddScoped<IChatService, ChatService>();
-        services.AddScoped<ISavingGoalService, SavingGoalService>();
 
         return services;
     }

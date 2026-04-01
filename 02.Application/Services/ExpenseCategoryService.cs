@@ -1,6 +1,7 @@
 ﻿using expense_tracker_backend.Application.DTOs;
 using expense_tracker_backend.Application.Interfaces;
 using expense_tracker_backend.Domain.Interfaces;
+using expense_tracker_backend.Domain.Shared.Constants;
 
 namespace expense_tracker_backend.Application.Services;
 
@@ -52,6 +53,9 @@ public class ExpenseCategoryService : IExpenseCategoryService
 
     public async Task<DTOs.ExpenseCategory> CreateExpenseCategoryAsync(Guid userId, CreateExpenseCategoryDto category)
     {
+        if (category.Type is AppConstants.TransactionType.Investment or AppConstants.TransactionType.Savings)
+            throw new InvalidOperationException("Categories can only be created for Income or Expense types.");
+
         var expenseCategory = new Domain.Entities.ExpenseCategory
         {
             CategoryId = Guid.NewGuid().ToString(),

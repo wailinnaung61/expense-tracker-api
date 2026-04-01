@@ -33,8 +33,7 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
 
         builder.Property(t => t.CategoryId)
             .HasColumnName("category_id")
-            .HasMaxLength(50)
-            .IsRequired();
+            .HasMaxLength(50);
 
         builder.Property(t => t.Amount)
             .HasColumnName("amount")
@@ -94,6 +93,7 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.HasOne(t => t.Category)
             .WithMany()
             .HasForeignKey(t => t.CategoryId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Performance indexes
