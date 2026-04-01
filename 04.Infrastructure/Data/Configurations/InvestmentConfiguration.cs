@@ -82,6 +82,10 @@ public class InvestmentConfiguration : IEntityTypeConfiguration<Investment>
             .HasColumnName("image_url")
             .HasMaxLength(500);
 
+        builder.Property(i => i.MirrorTransactionId)
+            .HasColumnName("mirror_transaction_id")
+            .HasMaxLength(50);
+
         builder.Property(i => i.CreatedAt)
             .HasColumnName("created_at");
 

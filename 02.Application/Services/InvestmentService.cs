@@ -97,6 +97,11 @@ public class InvestmentService : IInvestmentService
         };
         await _transactionRepository.CreateAsync(transaction);
         _ = _aggregationRepository.UpdateRedisCacheAsync(transaction);
+
+        // Store the mirror transaction ID on the investment so we can update/delete it later
+        created.MirrorTransactionId = transaction.TransactionId;
+        await _repository.UpdateAsync(created);
+
         await _repository.InvalidateCacheAsync(userId.ToString());
 
         return MapToDto(created);
@@ -122,16 +127,47 @@ public class InvestmentService : IInvestmentService
         });
 
         if (updated is not null)
+        {
             await _repository.InvalidateCacheAsync(userId.ToString());
+
+            if (updated.MirrorTransactionId is not null)
+            {
+                var mirrorTx = await _transactionRepository.GetByIdAsync(userId, Guid.Parse(updated.MirrorTransactionId));
+                if (mirrorTx is not null)
+                {
+                    mirrorTx.Amount = updated.Quantity * updated.PurchasePrice;
+                    mirrorTx.TransactionDate = updated.PurchaseDate;
+                    mirrorTx.Description = $"Investment: {updated.AssetName}";
+                    mirrorTx.Notes = updated.Notes;
+                    mirrorTx.ImageUrl = updated.ImageUrl;
+                    await _transactionRepository.UpdateAsync(mirrorTx);
+                    _ = _aggregationRepository.UpdateRedisCacheAsync(mirrorTx);
+                }
+            }
+        }
 
         return updated is null ? null : MapToDto(updated);
     }
 
     public async Task<bool> DeleteAsync(Guid userId, Guid investmentId)
     {
+        var investment = await _repository.GetByIdAsync(userId, investmentId);
+
         var deleted = await _repository.DeleteAsync(userId, investmentId);
         if (deleted)
+        {
             await _repository.InvalidateCacheAsync(userId.ToString());
+
+            if (investment?.MirrorTransactionId is not null)
+            {
+                var mirrorTx = await _transactionRepository.GetByIdAsync(userId, Guid.Parse(investment.MirrorTransactionId));
+                if (mirrorTx is not null)
+                {
+                    await _transactionRepository.DeleteAsync(userId, Guid.Parse(investment.MirrorTransactionId));
+                    _ = _aggregationRepository.UpdateRedisCacheAsync(mirrorTx);
+                }
+            }
+        }
         return deleted;
     }
 
@@ -159,10 +195,12 @@ public class InvestmentService : IInvestmentService
 
         var dtos = items.Select(MapToDto).ToList();
         var topPerformers = dtos
+            .Where(d => d.ReturnPercentage > 0)
             .OrderByDescending(d => d.ReturnPercentage)
             .Take(5)
             .ToList();
         var worstPerformers = dtos
+            .Where(d => d.ReturnPercentage < 0)
             .OrderBy(d => d.ReturnPercentage)
             .Take(5)
             .ToList();

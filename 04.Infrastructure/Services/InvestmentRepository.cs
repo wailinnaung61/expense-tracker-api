@@ -123,6 +123,8 @@ public class InvestmentRepository : IInvestmentRepository
         existing.Status = investment.Status;
         existing.Notes = investment.Notes;
         existing.ImageUrl = investment.ImageUrl;
+        if (investment.MirrorTransactionId is not null)
+            existing.MirrorTransactionId = investment.MirrorTransactionId;
         existing.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();

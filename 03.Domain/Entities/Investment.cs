@@ -17,6 +17,7 @@ public class Investment
     public AppConstants.InvestmentStatus Status { get; set; } = AppConstants.InvestmentStatus.Holding;
     public string Notes { get; set; } = string.Empty;
     public string ImageUrl { get; set; } = string.Empty;
+    public string? MirrorTransactionId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 

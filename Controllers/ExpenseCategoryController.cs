@@ -78,6 +78,11 @@ namespace expense_tracker_backend.API.Controllers
                 _logger.LogInformation("Expense category created successfully: {CategoryId}", category.CategoryId);
                 return CreatedAtAction(nameof(GetById), new { id = category.CategoryId }, category);
             }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning("Invalid category type: {CategoryName} - {Message}", dto.DisplayName, ex.Message);
+                return BadRequest(new { message = ex.Message });
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to create expense category: {CategoryName}", dto.DisplayName);
