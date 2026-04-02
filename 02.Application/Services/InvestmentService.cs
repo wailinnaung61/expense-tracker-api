@@ -94,7 +94,7 @@ public class InvestmentService : IInvestmentService
             CreatedAt = DateTime.UtcNow
         };
         await _transactionRepository.CreateAsync(transaction);
-        _ = _aggregationRepository.UpdateRedisCacheAsync(transaction);
+        await _aggregationRepository.UpdateRedisCacheAsync(transaction);
 
         // Store the mirror transaction ID on the investment so we can update/delete it later
         created.MirrorTransactionId = transaction.TransactionId;
@@ -133,13 +133,14 @@ public class InvestmentService : IInvestmentService
                 var mirrorTx = await _transactionRepository.GetByIdAsync(userId, Guid.Parse(updated.MirrorTransactionId));
                 if (mirrorTx is not null)
                 {
+                    var oldMirrorDate = mirrorTx.TransactionDate;
                     mirrorTx.Amount = updated.Quantity * updated.PurchasePrice;
                     mirrorTx.TransactionDate = updated.PurchaseDate;
                     mirrorTx.Description = $"Investment: {updated.AssetName}";
                     mirrorTx.Notes = updated.Notes;
                     mirrorTx.ImageUrl = updated.ImageUrl;
                     await _transactionRepository.UpdateAsync(mirrorTx);
-                    _ = _aggregationRepository.UpdateRedisCacheAsync(mirrorTx);
+                    await _aggregationRepository.UpdateRedisCacheAsync(mirrorTx, oldMirrorDate != mirrorTx.TransactionDate ? oldMirrorDate : null);
                 }
             }
         }
@@ -162,7 +163,7 @@ public class InvestmentService : IInvestmentService
                 if (mirrorTx is not null)
                 {
                     await _transactionRepository.DeleteAsync(userId, Guid.Parse(investment.MirrorTransactionId));
-                    _ = _aggregationRepository.UpdateRedisCacheAsync(mirrorTx);
+                    await _aggregationRepository.UpdateRedisCacheAsync(mirrorTx);
                 }
             }
         }

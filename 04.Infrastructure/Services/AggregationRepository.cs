@@ -40,9 +40,11 @@ public class AggregationRepository : IAggregationRepository
     }
 
     // Called on transaction create/update/delete to invalidate user's cache
-    public async Task UpdateRedisCacheAsync(Transaction transaction)
+    public async Task UpdateRedisCacheAsync(Transaction transaction, string? previousDate = null)
     {
         await InvalidateUserCacheAsync(transaction.UserId, transaction.TransactionDate);
+        if (previousDate is not null && previousDate != transaction.TransactionDate)
+            await InvalidateUserCacheAsync(transaction.UserId, previousDate);
     }
 
     // ============================================================================

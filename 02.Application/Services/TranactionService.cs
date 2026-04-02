@@ -116,7 +116,7 @@ public class TranactionService : ITranactionService
         var updated = await _repository.UpdateAsync(existing);
         if (updated is null) return null;
 
-        await _aggregationRepository.UpdateRedisCacheAsync(updated);
+        await _aggregationRepository.UpdateRedisCacheAsync(updated, oldDate != updated.TransactionDate ? oldDate : null);
 
         // Reverse old snapshot entry
         var expense = Domain.Shared.Constants.AppConstants.TransactionType.Expense;

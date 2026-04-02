@@ -131,7 +131,8 @@ public class SavingGoalRepository : ISavingGoalRepository
         existing.TargetDate = savingGoal.TargetDate;
         existing.Status = savingGoal.Status;
         existing.Notes = savingGoal.Notes;
-        existing.ImageUrl = savingGoal.ImageUrl;
+        existing.Icon = savingGoal.Icon;
+        existing.Color = savingGoal.Color;
         existing.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();

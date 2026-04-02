@@ -58,9 +58,13 @@ public class SavingGoalConfiguration : IEntityTypeConfiguration<SavingGoal>
             .HasColumnName("notes")
             .HasMaxLength(1000);
 
-        builder.Property(e => e.ImageUrl)
-            .HasColumnName("image_url")
-            .HasMaxLength(500);
+        builder.Property(e => e.Icon)
+            .HasColumnName("icon")
+            .HasMaxLength(50);
+
+        builder.Property(e => e.Color)
+            .HasColumnName("color")
+            .HasMaxLength(20);
 
         builder.Property(e => e.CreatedAt)
             .HasColumnName("created_at");

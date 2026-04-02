@@ -68,7 +68,8 @@ public class SavingGoalService : ISavingGoalService
             TargetDate = request.TargetDate,
             Status = AppConstants.SavingGoalStatus.Active,
             Notes = request.Notes,
-            ImageUrl = request.ImageUrl,
+            Icon = request.Icon,
+            Color = request.Color,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -88,9 +89,10 @@ public class SavingGoalService : ISavingGoalService
         existing.TargetDate = request.TargetDate;
         existing.Status = request.Status;
         existing.Notes = request.Notes;
-        existing.ImageUrl = request.ImageUrl;
+        existing.Icon = request.Icon;
+        existing.Color = request.Color;
 
-        // Auto-complete if current already meets updated target
+        // Auto-complete
         if (existing.CurrentAmount >= request.TargetAmount && request.Status == AppConstants.SavingGoalStatus.Active)
             existing.Status = AppConstants.SavingGoalStatus.Completed;
 
@@ -129,13 +131,21 @@ public class SavingGoalService : ISavingGoalService
             .Sum(g => g.TargetAmount);
         var overallProgress = totalTarget > 0 ? Math.Round(totalSaved / totalTarget * 100, 2) : 0;
 
+        var goalDtos = goals.Select(MapToDto).ToList();
+        var top5Goals = goalDtos
+            .Where(g => g.Status == AppConstants.SavingGoalStatus.Active.ToString().ToUpperInvariant())
+            .OrderByDescending(g => g.ProgressPercentage)
+            .Take(5)
+            .ToList();
+
         return new SavingDashboardResponse(
             totalSaved,
             totalTarget,
             overallProgress,
             goals.Count(g => g.Status == AppConstants.SavingGoalStatus.Active),
             goals.Count(g => g.Status == AppConstants.SavingGoalStatus.Completed),
-            goals.Select(MapToDto).ToList()
+            goalDtos,
+            top5Goals
         );
     }
 
@@ -283,7 +293,8 @@ public class SavingGoalService : ISavingGoalService
             g.TargetDate,
             g.Status.ToString().ToUpperInvariant(),
             g.Notes,
-            g.ImageUrl,
+            g.Icon,
+            g.Color,
             g.CreatedAt,
             g.UpdatedAt
         );

@@ -16,7 +16,8 @@ public record SavingGoalDto(
     string TargetDate,
     string Status,
     string Notes,
-    string ImageUrl,
+    string Icon,
+    string Color,
     DateTime CreatedAt,
     DateTime? UpdatedAt
 );
@@ -37,7 +38,8 @@ public record SavingDashboardResponse(
     decimal OverallProgressPercentage,
     int ActiveGoalsCount,
     int CompletedGoalsCount,
-    List<SavingGoalDto> Goals
+    List<SavingGoalDto> Goals,
+    List<SavingGoalDto> Top5Goals
 );
 
 // ── Request DTOs ──────────────────────────────────────────────────────────────
@@ -48,7 +50,8 @@ public record CreateSavingGoalRequest(
     string TargetDate,
     string Description = "",
     string Notes = "",
-    string ImageUrl = ""
+    string Icon = "",
+    string Color = ""
 );
 
 public record UpdateSavingGoalRequest(
@@ -58,7 +61,8 @@ public record UpdateSavingGoalRequest(
     AppConstants.SavingGoalStatus Status = AppConstants.SavingGoalStatus.Active,
     string Description = "",
     string Notes = "",
-    string ImageUrl = ""
+    string Icon = "",
+    string Color = ""
 );
 
 public record AddSavingContributionRequest(

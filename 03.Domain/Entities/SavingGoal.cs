@@ -14,7 +14,8 @@ public class SavingGoal
     public required string TargetDate { get; set; }  // yyyy-MM-dd
     public AppConstants.SavingGoalStatus Status { get; set; } = AppConstants.SavingGoalStatus.Active;
     public string Notes { get; set; } = string.Empty;
-    public string ImageUrl { get; set; } = string.Empty;
+    public string Icon { get; set; } = string.Empty;
+    public string Color { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
