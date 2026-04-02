@@ -104,7 +104,7 @@ public class SavingGoalService : ISavingGoalService
     public async Task<bool> DeleteAsync(Guid userId, Guid savingGoalId)
     {
         // Load all contributions to clean up mirror transactions
-        var (contributions, _) = await _contributionRepository.GetByGoalIdAsync(userId, savingGoalId, int.MaxValue, null, null);
+        var contributions = await _contributionRepository.GetAllByGoalIdAsync(userId, savingGoalId);
 
         foreach (var c in contributions.Where(c => c.MirrorTransactionId is not null))
         {
@@ -112,7 +112,7 @@ public class SavingGoalService : ISavingGoalService
             if (mirrorTx is not null)
             {
                 await _transactionRepository.DeleteAsync(userId, Guid.Parse(c.MirrorTransactionId!));
-                _ = _aggregationRepository.UpdateRedisCacheAsync(mirrorTx);
+                await _aggregationRepository.UpdateRedisCacheAsync(mirrorTx);
             }
         }
 
@@ -131,8 +131,8 @@ public class SavingGoalService : ISavingGoalService
             .Sum(g => g.TargetAmount);
         var overallProgress = totalTarget > 0 ? Math.Round(totalSaved / totalTarget * 100, 2) : 0;
 
-        var goalDtos = goals.Select(MapToDto).ToList();
-        var top5Goals = goalDtos
+        var top5Goals = goals
+            .Select(MapToDto)
             .Where(g => g.Status == AppConstants.SavingGoalStatus.Active.ToString().ToUpperInvariant())
             .OrderByDescending(g => g.ProgressPercentage)
             .Take(5)
@@ -144,7 +144,6 @@ public class SavingGoalService : ISavingGoalService
             overallProgress,
             goals.Count(g => g.Status == AppConstants.SavingGoalStatus.Active),
             goals.Count(g => g.Status == AppConstants.SavingGoalStatus.Completed),
-            goalDtos,
             top5Goals
         );
     }
@@ -263,7 +262,7 @@ public class SavingGoalService : ISavingGoalService
             if (mirrorTx is not null)
             {
                 await _transactionRepository.DeleteAsync(userId, Guid.Parse(contribution.MirrorTransactionId));
-                _ = _aggregationRepository.UpdateRedisCacheAsync(mirrorTx);
+                await _aggregationRepository.UpdateRedisCacheAsync(mirrorTx);
             }
         }
 

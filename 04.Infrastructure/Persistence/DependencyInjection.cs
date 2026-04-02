@@ -56,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<IInvestmentPortfolioService, InvestmentPortfolioService>();
         services.AddScoped<ISavingGoalService, SavingGoalService>();
         services.AddScoped<IChatService, ChatService>();
+        services.AddScoped<IDashboardService, DashboardService>();
 
         return services;
     }

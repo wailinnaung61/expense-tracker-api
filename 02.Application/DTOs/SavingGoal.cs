@@ -38,7 +38,6 @@ public record SavingDashboardResponse(
     decimal OverallProgressPercentage,
     int ActiveGoalsCount,
     int CompletedGoalsCount,
-    List<SavingGoalDto> Goals,
     List<SavingGoalDto> Top5Goals
 );
 

@@ -1,5 +1,6 @@
 using expense_tracker_backend.Application.DTOs;
 using expense_tracker_backend.Application.Interfaces;
+using expense_tracker_backend.Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
@@ -141,9 +142,9 @@ public class SavingGoalController : BaseController
             _logger.LogInformation("Contribution added to saving goal {SavingGoalId}", id);
             return Ok(contribution);
         }
-        catch (InvalidOperationException ex)
+        catch (SavingValidationException ex)
         {
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(new { message = _localizer[ex.ResourceKey].Value });
         }
         catch (Exception ex)
         {

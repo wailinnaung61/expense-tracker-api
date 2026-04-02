@@ -34,10 +34,19 @@ public class SavingGoalContributionRepository : ISavingGoalContributionRepositor
         var items = await query
             .OrderByDescending(c => c.CreatedAt)
             .ThenByDescending(c => c.ContributionId)
-            .Take(pageSize + 1)
+            .Take(pageSize >= int.MaxValue ? int.MaxValue : pageSize + 1)
             .ToListAsync();
 
         return (items, totalCount);
+    }
+
+    public async Task<List<SavingGoalContribution>> GetAllByGoalIdAsync(Guid userId, Guid savingGoalId)
+    {
+        return await _context.SavingGoalContributions
+            .AsNoTracking()
+            .Where(c => c.UserId == userId.ToString()
+                     && c.SavingGoalId == savingGoalId.ToString())
+            .ToListAsync();
     }
 
     public async Task<SavingGoalContribution?> GetByIdAsync(Guid userId, Guid contributionId)
