@@ -347,6 +347,41 @@ public class AggregationRepository : IAggregationRepository
         return result;
     }
 
+    public async Task<List<CategoryAggregation>> GetCategoryAggregationsByDateRangeAsync(Guid userId, string startDate, string endDate)
+    {
+        var cacheKey = $"agg:{userId}:cat-range:{startDate}:{endDate}";
+        var cached = await GetFromCacheAsync<List<CategoryAggregation>>(cacheKey);
+        if (cached is not null) return cached;
+
+        await RefreshWithLockAsync("mv_category_monthly_aggregations");
+        var userIdStr = userId.ToString();
+        var startParam = DateOnly.Parse(startDate);
+        var endParam = DateOnly.Parse(endDate);
+
+        var rows = await _context.Database
+            .SqlQuery<CategoryAggregationRow>($"""
+                SELECT
+                    category_id,
+                    type,
+                    '' AS period,
+                    TO_CHAR(MIN(period_start), 'YYYY/MM/DD') AS period_start,
+                    TO_CHAR(MAX(period_end),   'YYYY/MM/DD') AS period_end,
+                    SUM(total_amount)       AS total_amount,
+                    SUM(transaction_count)  AS transaction_count
+                FROM mv_category_monthly_aggregations
+                WHERE user_id = {userIdStr}
+                    AND period_start <= {endParam}
+                    AND period_end   >= {startParam}
+                    AND type = 'EXPENSE'
+                GROUP BY category_id, type
+                """)
+            .ToListAsync();
+
+        var result = rows.Select(MapToCategoryAggregation).ToList();
+        await SetCacheAsync(cacheKey, result);
+        return result;
+    }
+
     // ============================================================================
     // REFRESH WITH DISTRIBUTED LOCK (only ONE request refreshes at a time)
     // ============================================================================
@@ -468,6 +503,7 @@ public class AggregationRepository : IAggregationRepository
                 $"ExpenseTracker:agg:{userId}:monthly-range:*",
                 $"ExpenseTracker:agg:{userId}:yearly-range:*",
                 $"ExpenseTracker:agg:{userId}:cat-monthly:*:{month}",
+                $"ExpenseTracker:agg:{userId}:cat-range:*",
             };
 
             foreach (var pattern in patterns)

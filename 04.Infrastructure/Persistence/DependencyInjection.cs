@@ -1,11 +1,17 @@
 using _04.Infrastructure.Services;
+using Amazon;
+using Amazon.EventBridge;
+using Amazon.Runtime;
+using Amazon.S3;
 using expense_tracker_backend.Application.Interfaces;
 using expense_tracker_backend.Application.Services;
 using expense_tracker_backend.Domain.Interfaces;
+using expense_tracker_backend.Infrastructure.AWS.Configuration;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 
 namespace Infrastructure.Persistence;
@@ -57,6 +63,28 @@ public static class DependencyInjection
         services.AddScoped<ISavingGoalService, SavingGoalService>();
         services.AddScoped<IChatService, ChatService>();
         services.AddScoped<IDashboardService, DashboardService>();
+
+        // Export
+        services.AddScoped<IExportJobRepository, ExportJobRepository>();
+        services.AddScoped<IExportService, ExportService>();
+        services.AddSingleton<IExportEventPublisher, EventBridgeExportPublisher>();
+        services.AddSingleton<IExportFileService, S3ExportFileService>();
+
+        // AWS EventBridge client
+        services.AddSingleton<IAmazonEventBridge>(sp =>
+        {
+            var settings = sp.GetRequiredService<IOptions<AwsSettings>>().Value;
+            var creds = new BasicAWSCredentials(settings.AccessKey, settings.SecretKey);
+            return new AmazonEventBridgeClient(creds, RegionEndpoint.GetBySystemName(settings.Region));
+        });
+
+        // AWS S3 client (for pre-signed download URLs)
+        services.AddSingleton<IAmazonS3>(sp =>
+        {
+            var settings = sp.GetRequiredService<IOptions<AwsSettings>>().Value;
+            var creds = new BasicAWSCredentials(settings.AccessKey, settings.SecretKey);
+            return new AmazonS3Client(creds, RegionEndpoint.GetBySystemName(settings.Region));
+        });
 
         return services;
     }

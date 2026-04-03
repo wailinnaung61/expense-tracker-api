@@ -14,4 +14,5 @@ public interface IAggregationService
     Task<List<YearlyAggregation>> GetYearlyAggregationsRangeAsync(Guid userId, string startYear, string endYear);
     Task<List<CategoryMonthlyAggregation>> GetCategoryMonthlyAggregationsAsync(Guid userId, string month);
     Task<ExpenseBreakdown> GetExpenseBreakdownAsync(Guid userId, string month);
+    Task<ExpenseBreakdown> GetExpenseBreakdownByRangeAsync(Guid userId, string startDate, string endDate);
 }

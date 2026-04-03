@@ -15,4 +15,5 @@ public interface IAggregationRepository
     Task<List<Aggregation>> GetYearlyAggregationsRangeAsync(Guid userId, string startYear, string endYear);
     Task<List<CategoryAggregation>> GetCategoryMonthlyAggregationsAsync(Guid userId, string month);
     Task<CategoryAggregation?> GetCategoryMonthlyAggregationAsync(Guid userId, Guid categoryId, string month);
+    Task<List<CategoryAggregation>> GetCategoryAggregationsByDateRangeAsync(Guid userId, string startDate, string endDate);
 }

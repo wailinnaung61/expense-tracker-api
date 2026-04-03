@@ -22,6 +22,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<InvestmentPortfolio> InvestmentPortfolios { get; set; }
     public DbSet<SavingGoal> SavingGoals { get; set; }
     public DbSet<SavingGoalContribution> SavingGoalContributions { get; set; }
+    public DbSet<ExportJob> ExportJobs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -34,6 +34,10 @@
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.301" />
     <PackageReference Include="Amazon.Extensions.CognitoAuthentication" Version="2.5.4" />
 
+    <!-- AWS Export Pipeline (EventBridge ¨ SQS ¨ Lambda ¨ S3) -->
+    <PackageReference Include="AWSSDK.EventBridge" Version="3.7.401.22" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.410.3" />
+
     <!-- Authentication & Authorization -->
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9" />

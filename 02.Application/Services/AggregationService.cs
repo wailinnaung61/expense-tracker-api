@@ -135,6 +135,60 @@ public class AggregationService : IAggregationService
         );
     }
 
+    public async Task<ExpenseBreakdown> GetExpenseBreakdownByRangeAsync(Guid userId, string startDate, string endDate)
+    {
+        var categoryDocs = await _repository.GetCategoryAggregationsByDateRangeAsync(userId, startDate, endDate);
+
+        var totalExpenses = categoryDocs.Sum(x => x.TotalAmount);
+
+        var breakdownItems = new List<CategoryBreakdownItem>();
+        foreach (var doc in categoryDocs)
+        {
+            var category = await _categoryRepository.GetExpenseCategoryByIdAsync(userId, Guid.Parse(doc.CategoryId));
+            var percentage = totalExpenses > 0 ? (double)(doc.TotalAmount / totalExpenses * 100) : 0;
+
+            breakdownItems.Add(new CategoryBreakdownItem(
+                doc.CategoryId,
+                category?.DisplayName ?? "Unknown",
+                doc.TotalAmount,
+                Math.Round(percentage, 1)
+            ));
+        }
+
+        MonthlyComparison? comparison = null;
+        if (DateOnly.TryParse(startDate, out var start) && DateOnly.TryParse(endDate, out var end))
+        {
+            var days = end.DayNumber - start.DayNumber + 1;
+            var prevEnd = start.AddDays(-1);
+            var prevStart = prevEnd.AddDays(-(days - 1));
+
+            var prevDocs = await _repository.GetCategoryAggregationsByDateRangeAsync(
+                userId, prevStart.ToString("yyyy-MM-dd"), prevEnd.ToString("yyyy-MM-dd"));
+
+            var prevTotal = prevDocs.Sum(x => x.TotalAmount);
+            if (prevTotal > 0 || totalExpenses > 0)
+            {
+                var difference = totalExpenses - prevTotal;
+                var percentageChange = prevTotal > 0
+                    ? (double)(difference / prevTotal * 100)
+                    : 0;
+
+                comparison = new MonthlyComparison(
+                    prevTotal,
+                    totalExpenses,
+                    difference,
+                    Math.Round(percentageChange, 1)
+                );
+            }
+        }
+
+        return new ExpenseBreakdown(
+            totalExpenses,
+            breakdownItems.OrderByDescending(x => x.Amount).ToList(),
+            comparison
+        );
+    }
+
     private static DailyAggregation MapToDailyAggregation(Aggregation doc) => new(
         doc.Period,
         doc.Income,

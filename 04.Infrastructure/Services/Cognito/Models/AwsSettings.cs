@@ -8,6 +8,8 @@ public class AwsSettings
     public string AccessKey { get; set; } = string.Empty;
     public string SecretKey { get; set; } = string.Empty;
     public CognitoSettings Cognito { get; set; } = new();
+    public EventBridgeSettings EventBridge { get; set; } = new();
+    public S3Settings S3 { get; set; } = new();
 }
 
 public class CognitoSettings
@@ -18,4 +20,16 @@ public class CognitoSettings
     public string Authority { get; set; } = string.Empty;
     public string Domain { get; set; } = string.Empty;
     public string Region { get; set; } = string.Empty;
+}
+
+public class EventBridgeSettings
+{
+    public string EventBusName { get; set; } = "default";
+    public string Source { get; set; } = "expense-tracker.export";
+}
+
+public class S3Settings
+{
+    public string ExportBucketName { get; set; } = string.Empty;
+    public int PresignedUrlExpiryMinutes { get; set; } = 5;
 }
