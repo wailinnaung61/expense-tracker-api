@@ -13,7 +13,7 @@ public class NotificationBackgroundService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<NotificationBackgroundService> _logger;
-    private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(1);
+    private readonly TimeSpan _checkInterval = TimeSpan.FromHours(6);
 
     public NotificationBackgroundService(IServiceProvider serviceProvider, ILogger<NotificationBackgroundService> logger)
     {
