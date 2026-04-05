@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="0" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Notif_BudgetThreshold_Title" xml:space="preserve"><value>⚠️ Budget Alert</value></data>
+  <data name="Notif_BudgetExceeded_Title" xml:space="preserve"><value>🚨 Budget Exceeded</value></data>
+  <data name="Notif_RecurringDue_Title" xml:space="preserve"><value>📅 Payment Due Soon</value></data>
+  <data name="Notif_RecurringOverdue_Title" xml:space="preserve"><value>❗ Overdue Payment</value></data>
+  <data name="Notif_RecurringAutoPaid_Title" xml:space="preserve"><value>✅ Auto-Payment Made</value></data>
+  <data name="Notif_SavingGoalReached_Title" xml:space="preserve"><value>🎉 Goal Reached!</value></data>
+  <data name="Notif_SavingGoalDeadline_Title" xml:space="preserve"><value>⏰ Deadline Approaching</value></data>
+  <data name="Notif_ExportCompleted_Title" xml:space="preserve"><value>📊 Export Ready</value></data>
+  <data name="Notif_ExportFailed_Title" xml:space="preserve"><value>❌ Export Failed</value></data>
+  <data name="Notif_LargeTransaction_Title" xml:space="preserve"><value>💰 Large Transaction</value></data>
+  <data name="Notif_PaymentFailed_Title" xml:space="preserve"><value>❌ Payment Failed</value></data>
+  <data name="Notif_BudgetThreshold_Msg" xml:space="preserve"><value>You've spent {0}% of your {1} budget ({2} / {3})</value></data>
+  <data name="Notif_BudgetExceeded_Msg" xml:space="preserve"><value>{0} budget exceeded! Spent {1} of {2}</value></data>
+  <data name="Notif_RecurringDue_Msg" xml:space="preserve"><value>{0} ({1}) is due on {2}</value></data>
+  <data name="Notif_RecurringOverdue_Msg" xml:space="preserve"><value>{0} payment is overdue (missed {1} time(s))</value></data>
+  <data name="Notif_RecurringAutoPaid_Msg" xml:space="preserve"><value>{0} ({1}) was automatically paid</value></data>
+  <data name="Notif_SavingGoalReached_Msg" xml:space="preserve"><value>You've reached your "{0}" saving goal!</value></data>
+  <data name="Notif_SavingGoalDeadline_Msg" xml:space="preserve"><value>"{0}" goal deadline is in {1} day(s) ({2} / {3})</value></data>
+  <data name="Notif_ExportCompleted_Msg" xml:space="preserve"><value>Your transaction export ({0} – {1}) is ready to download</value></data>
+  <data name="Notif_ExportFailed_Msg" xml:space="preserve"><value>Your transaction export failed. Please try again.</value></data>
+  <data name="Notif_LargeTransaction_Msg" xml:space="preserve"><value>{0} expense recorded for "{1}"</value></data>
+  <data name="Notif_PaymentFailed_Msg" xml:space="preserve"><value>Transaction "{0}" ({1}) failed</value></data>
+</root>

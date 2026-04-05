@@ -11,6 +11,7 @@ using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 
@@ -63,6 +64,10 @@ public static class DependencyInjection
         services.AddScoped<ISavingGoalService, SavingGoalService>();
         services.AddScoped<IChatService, ChatService>();
         services.AddScoped<IDashboardService, DashboardService>();
+
+        // Notifications
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<INotificationService, NotificationService>();
 
         // Export
         services.AddScoped<IExportJobRepository, ExportJobRepository>();

@@ -110,6 +110,7 @@ builder.Services.AddPersistence(builder.Configuration);
 
 // Background services
 builder.Services.AddHostedService<RecurringPaymentBackgroundService>();
+builder.Services.AddHostedService<NotificationBackgroundService>();
 
 var app = builder.Build();
 

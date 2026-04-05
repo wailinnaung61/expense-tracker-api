@@ -13,7 +13,15 @@ public interface IBudgetRepository
     Task<BudgetCategory> AddCategoryAsync(BudgetCategory budgetCategory);
     Task<BudgetCategory> UpdateBudgetCategoryAsync(BudgetCategory budgetCategory);
     Task<bool> RemoveCategoryAsync(string userId, string budgetCategoryId);
-    Task UpdateSnapshotOnTransactionAsync(string userId, string categoryId, string transactionDate, decimal amountDelta, int countDelta);
+    Task<BudgetSnapshotResult?> UpdateSnapshotOnTransactionAsync(string userId, string categoryId, string transactionDate, decimal amountDelta, int countDelta);
     Task ResetSnapshotsAsync(string userId, string budgetId);
     Task InvalidateCacheAsync(string userId, int year, int month);
 }
+
+public record BudgetSnapshotResult(
+    string BudgetCategoryId,
+    string CategoryName,
+    decimal SpentAmount,
+    decimal AllocatedAmount,
+    decimal AlertThreshold
+);

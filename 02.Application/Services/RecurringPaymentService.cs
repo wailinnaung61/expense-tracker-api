@@ -11,17 +11,20 @@ public class RecurringPaymentService : IRecurringPaymentService
     private readonly IRecurringPaymentRepository _repository;
     private readonly ITranactionRepository _transactionRepository;
     private readonly IAggregationRepository _aggregationRepository;
+    private readonly INotificationService _notificationService;
     private readonly ILogger<RecurringPaymentService> _logger;
 
     public RecurringPaymentService(
         IRecurringPaymentRepository repository,
         ITranactionRepository transactionRepository,
         IAggregationRepository aggregationRepository,
+        INotificationService notificationService,
         ILogger<RecurringPaymentService> logger)
     {
         _repository = repository;
         _transactionRepository = transactionRepository;
         _aggregationRepository = aggregationRepository;
+        _notificationService = notificationService;
         _logger = logger;
     }
 
@@ -109,6 +112,10 @@ public class RecurringPaymentService : IRecurringPaymentService
                     _logger.LogInformation(
                         "Auto-paid recurring payment {Name} for user {UserId}, amount {Amount}",
                         payment.Name, payment.UserId, payment.Amount);
+
+                    await _notificationService.NotifyRecurringAutoPaidAsync(
+                        Guid.Parse(payment.UserId), payment.Name,
+                        payment.Amount.ToString("N0"), payment.RecurringId);
                 }
                 else
                 {
@@ -118,6 +125,10 @@ public class RecurringPaymentService : IRecurringPaymentService
                     _logger.LogInformation(
                         "Recurring payment {Name} overdue for user {UserId}, missed count: {MissedCount}",
                         payment.Name, payment.UserId, payment.MissedCount);
+
+                    await _notificationService.NotifyRecurringOverdueAsync(
+                        Guid.Parse(payment.UserId), payment.Name,
+                        payment.MissedCount, payment.RecurringId);
                 }
 
                 // Advance to next due date (skip past all missed periods)

@@ -174,20 +174,22 @@ public class BudgetRepository : IBudgetRepository
     }
 
     // ── Snapshot update — called on every transaction create/delete ─────────────
-    public async Task UpdateSnapshotOnTransactionAsync(
+    public async Task<BudgetSnapshotResult?> UpdateSnapshotOnTransactionAsync(
         string userId, string categoryId, string transactionDate, decimal amountDelta, int countDelta)
     {
         // Find the active budget that covers the transaction date
         var snapshot = await _context.BudgetSnapshots
             .Include(s => s.BudgetCategory)
                 .ThenInclude(bc => bc!.Budget)
+            .Include(s => s.BudgetCategory)
+                .ThenInclude(bc => bc!.Category)
             .FirstOrDefaultAsync(s =>
                 s.BudgetCategory!.CategoryId == categoryId &&
                 s.BudgetCategory.Budget!.UserId == userId &&
                 s.BudgetCategory.Budget.StartDate.CompareTo(transactionDate) <= 0 &&
                 s.BudgetCategory.Budget.EndDate.CompareTo(transactionDate) >= 0);
 
-        if (snapshot is null) return;
+        if (snapshot is null) return null;
 
         snapshot.SpentAmount = Math.Max(0, snapshot.SpentAmount + amountDelta);
         snapshot.TransactionCount = Math.Max(0, snapshot.TransactionCount + countDelta);
@@ -205,6 +207,15 @@ public class BudgetRepository : IBudgetRepository
         _logger.LogInformation(
             "Budget snapshot updated: userId={UserId} categoryId={CategoryId} delta={Delta}",
             userId, categoryId, amountDelta);
+
+        var bc = snapshot.BudgetCategory;
+        return new BudgetSnapshotResult(
+            bc.BudgetCategoryId,
+            bc.Category?.DisplayName ?? "",
+            snapshot.SpentAmount,
+            bc.AllocatedAmount,
+            bc.AlertThreshold
+        );
     }
 
     public async Task ResetSnapshotsAsync(string userId, string budgetId)

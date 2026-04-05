@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="0" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Notif_BudgetThreshold_Title" xml:space="preserve"><value>⚠️ ဘတ်ဂျက် သတိပေးချက်</value></data>
+  <data name="Notif_BudgetExceeded_Title" xml:space="preserve"><value>🚨 ဘတ်ဂျက် ကျော်လွန်</value></data>
+  <data name="Notif_RecurringDue_Title" xml:space="preserve"><value>📅 ပေးချေရန် နီးပြီ</value></data>
+  <data name="Notif_RecurringOverdue_Title" xml:space="preserve"><value>❗ ပေးချေမှု ကျော်လွန်</value></data>
+  <data name="Notif_RecurringAutoPaid_Title" xml:space="preserve"><value>✅ အလိုအလျောက် ပေးချေပြီး</value></data>
+  <data name="Notif_SavingGoalReached_Title" xml:space="preserve"><value>🎉 ပန်းတိုင် ရောက်ပြီ!</value></data>
+  <data name="Notif_SavingGoalDeadline_Title" xml:space="preserve"><value>⏰ သတ်မှတ်ရက် နီးပြီ</value></data>
+  <data name="Notif_ExportCompleted_Title" xml:space="preserve"><value>📊 ထုတ်ယူမှု အဆင်သင့်ဖြစ်ပြီ</value></data>
+  <data name="Notif_ExportFailed_Title" xml:space="preserve"><value>❌ ထုတ်ယူမှု မအောင်မြင်ပါ</value></data>
+  <data name="Notif_LargeTransaction_Title" xml:space="preserve"><value>💰 ပမာဏကြီး ငွေလွှဲမှု</value></data>
+  <data name="Notif_PaymentFailed_Title" xml:space="preserve"><value>❌ ပေးချေမှု မအောင်မြင်ပါ</value></data>
+  <data name="Notif_BudgetThreshold_Msg" xml:space="preserve"><value>{1} ဘတ်ဂျက်၏ {0}% သုံးစွဲပြီးပါပြီ ({2} / {3})</value></data>
+  <data name="Notif_BudgetExceeded_Msg" xml:space="preserve"><value>{0} ဘတ်ဂျက် ကျော်လွန်ပြီ! {2} မှ {1} သုံးစွဲပြီး</value></data>
+  <data name="Notif_RecurringDue_Msg" xml:space="preserve"><value>{0} ({1}) ပေးချေရမည့်ရက် {2} ဖြစ်ပါသည်</value></data>
+  <data name="Notif_RecurringOverdue_Msg" xml:space="preserve"><value>{0} ပေးချေမှု ကျော်လွန်ပါပြီ ({1} ကြိမ် လွတ်သွားပါသည်)</value></data>
+  <data name="Notif_RecurringAutoPaid_Msg" xml:space="preserve"><value>{0} ({1}) အလိုအလျောက် ပေးချေပြီးပါပြီ</value></data>
+  <data name="Notif_SavingGoalReached_Msg" xml:space="preserve"><value>"{0}" စုဆောင်းမှု ပန်းတိုင် ရောက်ပါပြီ!</value></data>
+  <data name="Notif_SavingGoalDeadline_Msg" xml:space="preserve"><value>"{0}" ပန်းတိုင် သတ်မှတ်ရက် {1} ရက် အလိုတွင် ({2} / {3})</value></data>
+  <data name="Notif_ExportCompleted_Msg" xml:space="preserve"><value>ငွေလွှဲမှု ထုတ်ယူမှု ({0} – {1}) ဒေါင်းလုဒ် ရယူနိုင်ပါပြီ</value></data>
+  <data name="Notif_ExportFailed_Msg" xml:space="preserve"><value>ငွေလွှဲမှု ထုတ်ယူမှု မအောင်မြင်ပါ။ ထပ်မံ ကြိုးစားပါ။</value></data>
+  <data name="Notif_LargeTransaction_Msg" xml:space="preserve"><value>"{1}" အတွက် {0} သုံးစွဲမှု မှတ်တမ်းတင်ပြီး</value></data>
+  <data name="Notif_PaymentFailed_Msg" xml:space="preserve"><value>ငွေလွှဲမှု "{0}" ({1}) မအောင်မြင်ပါ</value></data>
+</root>

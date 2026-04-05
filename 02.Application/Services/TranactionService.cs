@@ -9,15 +9,18 @@ public class TranactionService : ITranactionService
     private readonly ITranactionRepository _repository;
     private readonly IAggregationRepository _aggregationRepository;
     private readonly IBudgetRepository _budgetRepository;
+    private readonly INotificationService _notificationService;
 
     public TranactionService(
         ITranactionRepository repository,
         IAggregationRepository aggregationRepository,
-        IBudgetRepository budgetRepository)
+        IBudgetRepository budgetRepository,
+        INotificationService notificationService)
     {
         _repository = repository;
         _aggregationRepository = aggregationRepository;
         _budgetRepository = budgetRepository;
+        _notificationService = notificationService;
     }
 
     public async Task<PagedResult<DTOs.Tranaction>> GetTransactionsAsync(Guid userId, TransactionFilterRequest filter)
@@ -86,10 +89,19 @@ public class TranactionService : ITranactionService
 
         await _aggregationRepository.UpdateRedisCacheAsync(created);
 
-        // Budget snapshots only track expense transactions
-        if (created.Type == Domain.Shared.Constants.AppConstants.TransactionType.Expense)
-            await _budgetRepository.UpdateSnapshotOnTransactionAsync(
+        // Budget snapshots only track completed expense transactions
+        if (created.Type == Domain.Shared.Constants.AppConstants.TransactionType.Expense
+            && created.Status == Domain.Shared.Constants.AppConstants.PaymentStatus.Completed)
+        {
+            var result = await _budgetRepository.UpdateSnapshotOnTransactionAsync(
                 created.UserId, created.CategoryId, created.TransactionDate, created.Amount, 1);
+            await CheckBudgetAlertAsync(userId, result);
+        }
+
+        // Notify on payment failure
+        if (created.Status == Domain.Shared.Constants.AppConstants.PaymentStatus.Failed)
+            await _notificationService.NotifyPaymentFailedAsync(
+                userId, created.Description ?? "", created.Amount.ToString("N0"), created.TransactionId);
 
         return MapToDto(created);
     }
@@ -100,6 +112,7 @@ public class TranactionService : ITranactionService
         if (existing is null) return null;
 
         var oldType = existing.Type;
+        var oldStatus = existing.Status;
         var oldCategoryId = existing.CategoryId;
         var oldAmount = existing.Amount;
         var oldDate = existing.TransactionDate;
@@ -118,15 +131,26 @@ public class TranactionService : ITranactionService
 
         await _aggregationRepository.UpdateRedisCacheAsync(updated, oldDate != updated.TransactionDate ? oldDate : null);
 
-        // Reverse old snapshot entry
+        // Reverse old snapshot entry (only if it was a completed expense)
         var expense = Domain.Shared.Constants.AppConstants.TransactionType.Expense;
-        if (oldType == expense && oldCategoryId is not null)
+        var completed = Domain.Shared.Constants.AppConstants.PaymentStatus.Completed;
+        if (oldType == expense && oldStatus == completed && oldCategoryId is not null)
             await _budgetRepository.UpdateSnapshotOnTransactionAsync(
                 updated.UserId, oldCategoryId, oldDate, -oldAmount, -1);
 
-        if (updated.Type == expense && updated.CategoryId is not null)
-            await _budgetRepository.UpdateSnapshotOnTransactionAsync(
+        // Add new snapshot entry (only if it is a completed expense)
+        if (updated.Type == expense && updated.Status == completed && updated.CategoryId is not null)
+        {
+            var result = await _budgetRepository.UpdateSnapshotOnTransactionAsync(
                 updated.UserId, updated.CategoryId, updated.TransactionDate, updated.Amount, 1);
+            await CheckBudgetAlertAsync(userId, result);
+        }
+
+        // Notify when status changes to Failed
+        var failed = Domain.Shared.Constants.AppConstants.PaymentStatus.Failed;
+        if (oldStatus != failed && updated.Status == failed)
+            await _notificationService.NotifyPaymentFailedAsync(
+                userId, updated.Description ?? "", updated.Amount.ToString("N0"), updated.TransactionId);
 
         return MapToDto(updated);
     }
@@ -141,7 +165,8 @@ public class TranactionService : ITranactionService
         {
             await _aggregationRepository.UpdateRedisCacheAsync(existing);
 
-            if (existing.Type == Domain.Shared.Constants.AppConstants.TransactionType.Expense)
+            if (existing.Type == Domain.Shared.Constants.AppConstants.TransactionType.Expense
+                && existing.Status == Domain.Shared.Constants.AppConstants.PaymentStatus.Completed)
                 await _budgetRepository.UpdateSnapshotOnTransactionAsync(
                     existing.UserId, existing.CategoryId, existing.TransactionDate, -existing.Amount, -1);
         }
@@ -166,5 +191,25 @@ public class TranactionService : ITranactionService
             expense.UpdatedAt,
             expense.Notes
         );
+    }
+
+    private async Task CheckBudgetAlertAsync(Guid userId, Domain.Interfaces.BudgetSnapshotResult? result)
+    {
+        if (result is null || result.AllocatedAmount <= 0) return;
+
+        var percent = (int)(result.SpentAmount / result.AllocatedAmount * 100);
+        var spent = result.SpentAmount.ToString("N0");
+        var allocated = result.AllocatedAmount.ToString("N0");
+
+        if (result.SpentAmount > result.AllocatedAmount)
+        {
+            await _notificationService.NotifyBudgetExceededAsync(
+                userId, result.CategoryName, spent, allocated, result.BudgetCategoryId);
+        }
+        else if (result.SpentAmount >= result.AllocatedAmount * result.AlertThreshold)
+        {
+            await _notificationService.NotifyBudgetThresholdAsync(
+                userId, result.CategoryName, percent, spent, allocated, result.BudgetCategoryId);
+        }
     }
 }

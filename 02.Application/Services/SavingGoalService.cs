@@ -12,17 +12,20 @@ public class SavingGoalService : ISavingGoalService
     private readonly ISavingGoalContributionRepository _contributionRepository;
     private readonly ITranactionRepository _transactionRepository;
     private readonly IAggregationRepository _aggregationRepository;
+    private readonly INotificationService _notificationService;
 
     public SavingGoalService(
         ISavingGoalRepository repository,
         ISavingGoalContributionRepository contributionRepository,
         ITranactionRepository transactionRepository,
-        IAggregationRepository aggregationRepository)
+        IAggregationRepository aggregationRepository,
+        INotificationService notificationService)
     {
         _repository = repository;
         _contributionRepository = contributionRepository;
         _transactionRepository = transactionRepository;
         _aggregationRepository = aggregationRepository;
+        _notificationService = notificationService;
     }
 
     // ── Goals ─────────────────────────────────────────────────────────────────
@@ -225,7 +228,12 @@ public class SavingGoalService : ISavingGoalService
             : goal.CurrentAmount - request.Amount;
 
         if (goal.CurrentAmount >= goal.TargetAmount && goal.Status == AppConstants.SavingGoalStatus.Active)
+        {
             goal.Status = AppConstants.SavingGoalStatus.Completed;
+
+            await _notificationService.NotifySavingGoalReachedAsync(
+                userId, goal.GoalName, goal.SavingGoalId);
+        }
 
         await _repository.UpdateAsync(goal);
         await _repository.InvalidateCacheAsync(userId.ToString());

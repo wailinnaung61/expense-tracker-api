@@ -23,6 +23,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<SavingGoal> SavingGoals { get; set; }
     public DbSet<SavingGoalContribution> SavingGoalContributions { get; set; }
     public DbSet<ExportJob> ExportJobs { get; set; }
+    public DbSet<Notification> Notifications { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
