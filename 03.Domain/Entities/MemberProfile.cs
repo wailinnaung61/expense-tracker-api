@@ -21,6 +21,7 @@ public class MemberProfile
 
     public decimal DailyLimit { get; set; }
     public string Currency { get; set; } = "JPY";
+    public string Locale { get; set; } = "en";
 
     // Notification preferences (all enabled by default)
     public bool NotifyBudgetAlerts { get; set; } = true;

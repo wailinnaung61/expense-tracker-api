@@ -53,6 +53,7 @@ public class ProfileController : BaseController
                 profile.Email,
                 profile.PhoneNumber,
                 profile.Currency,
+                profile.Locale,
                 profile.DailyLimit,
                 profile.RoleId,
                 profile.Status,
@@ -126,6 +127,13 @@ public class ProfileController : BaseController
                 profile.DailyLimit = request.DailyLimit.Value;
             }
 
+            if (request.Locale is not null)
+            {
+                var supported = new[] { "en", "ja", "my" };
+                if (supported.Contains(request.Locale))
+                    profile.Locale = request.Locale;
+            }
+
             if (request.NotificationPreferences is not null)
             {
                 var np = request.NotificationPreferences;
@@ -150,6 +158,7 @@ public class ProfileController : BaseController
                 updatedProfile.Email,
                 updatedProfile.PhoneNumber,
                 updatedProfile.Currency,
+                updatedProfile.Locale,
                 updatedProfile.DailyLimit,
                 updatedProfile.RoleId,
                 updatedProfile.Status,

@@ -2,7 +2,31 @@
 
 ## Overview
 
-The expense tracker sends **in-app notifications** to users via a bell icon in the frontend header. Notifications are localized in **English (en)**, **Japanese (ja)**, and **Myanmar (my)**.
+The expense tracker sends **in-app notifications** to users via a bell icon in the frontend header. Notifications are localized in **English (en)**, **Japanese (ja)**, and **Myanmar (my)** based on the user's `locale` setting in their profile.
+
+---
+
+## Localization
+
+Notifications are stored in the database **already translated** into the user's preferred language. The `Localize()` method explicitly sets `CultureInfo.CurrentUICulture` to the user's saved `locale` (from `member_profiles.locale`) before reading from `SharedResource.{locale}.resx`.
+
+```
+User profile: locale = "my"
+  → Localize("my", "Notif_RecurringDue_Title")
+  → CultureInfo.CurrentUICulture = "my"
+  → _localizer reads SharedResource.my.resx
+  → "📅 ပေးချေရန် နီးပြီ"
+  → saved to notifications table in Myanmar ✅
+```
+
+### Setting locale
+
+```http
+PUT /api/profile
+{ "locale": "ja" }
+```
+
+Supported values: `"en"`, `"ja"`, `"my"`
 
 ---
 
@@ -214,22 +238,43 @@ EVERY 6 HOURS (NotificationBackgroundService):
 
 ---
 
-## Localization
+## Localization (Resource Files)
 
-All notification titles and messages are localized via `.resx` resource files:
+All notification titles and messages are in `SharedResource.{locale}.resx`:
 
 | File | Language |
 |------|----------|
+| `Resources/SharedResource.resx` | Default (English) |
 | `Resources/SharedResource.en.resx` | English |
 | `Resources/SharedResource.ja.resx` | Japanese |
 | `Resources/SharedResource.my.resx` | Myanmar |
-| `02.Application/Resources/ApplicationResource.en.resx` | English (Application layer) |
-| `02.Application/Resources/ApplicationResource.ja.resx` | Japanese (Application layer) |
-| `02.Application/Resources/ApplicationResource.my.resx` | Myanmar (Application layer) |
 
-Resource keys follow the pattern:
+Resource keys:
 - **Titles**: `Notif_{Type}_Title` — e.g. `Notif_BudgetThreshold_Title`
 - **Messages**: `Notif_{Type}_Msg` — e.g. `Notif_BudgetThreshold_Msg` with `{0}`, `{1}` placeholders
+
+### Notification Preferences
+
+Users can toggle individual notification categories on/off in **Profile Settings**:
+
+```http
+PUT /api/profile
+{
+  "notificationPreferences": {
+    "budgetAlerts": true,
+    "recurringPayments": true,
+    "autoPayments": true,
+    "savingGoals": true,
+    "largeTransactions": true,
+    "paymentFailures": true,
+    "exports": true
+  }
+}
+```
+
+### Deduplication
+
+Background service notifications (`RECURRING_PAYMENT_DUE`, `SAVING_GOAL_DEADLINE_NEAR`) check if a notification with the same `type + referenceId` already exists today before creating a new one. This prevents duplicate spam.
 
 ---
 

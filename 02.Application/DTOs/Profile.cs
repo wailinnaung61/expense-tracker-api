@@ -6,6 +6,7 @@ public record ProfileResponse(
     string Email,
     string? PhoneNumber,
     string Currency,
+    string Locale,
     decimal DailyLimit,
     string RoleId,
     string Status,
@@ -20,6 +21,7 @@ public record ProfileResponse(
 public record UpdateProfileSettingsRequest(
     string? PhoneNumber,
     string? Currency,
+    string? Locale,
     decimal? DailyLimit,
     NotificationPreferencesDto? NotificationPreferences
 );

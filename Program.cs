@@ -1,5 +1,10 @@
 using System.Globalization;
 using _04.Infrastructure.Services;
+using expense_tracker_backend;
+using expense_tracker_backend.Application.Interfaces;
+using expense_tracker_backend.Application.Services;
+using expense_tracker_backend.Domain.Interfaces;
+using Microsoft.Extensions.Localization;
 using Amazon;
 using Amazon.CognitoIdentityProvider;
 using Amazon.Runtime;
@@ -107,6 +112,15 @@ builder.Services.AddScoped<ICognitoAuthService, CognitoAuthService>();
 
 // Persistence (EF Core + Repositories)
 builder.Services.AddPersistence(builder.Configuration);
+
+// Notification localizer — register IStringLocalizer for NotificationService
+builder.Services.AddScoped<IStringLocalizer>(sp =>
+    sp.GetRequiredService<IStringLocalizer<SharedResource>>());
+builder.Services.AddScoped<INotificationService>(sp =>
+    new NotificationService(
+        sp.GetRequiredService<INotificationRepository>(),
+        sp.GetRequiredService<IMemberRepository>(),
+        sp.GetRequiredService<IStringLocalizer<SharedResource>>()));
 
 // Background services
 builder.Services.AddHostedService<RecurringPaymentBackgroundService>();

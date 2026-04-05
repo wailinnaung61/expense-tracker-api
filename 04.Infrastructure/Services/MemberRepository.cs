@@ -49,6 +49,14 @@ public class MemberRepository : IMemberRepository
         existing.PhoneNumber = profile.PhoneNumber;
         existing.DailyLimit = profile.DailyLimit;
         existing.Currency = profile.Currency;
+        existing.Locale = profile.Locale;
+        existing.NotifyBudgetAlerts = profile.NotifyBudgetAlerts;
+        existing.NotifyRecurringPayments = profile.NotifyRecurringPayments;
+        existing.NotifyAutoPayments = profile.NotifyAutoPayments;
+        existing.NotifySavingGoals = profile.NotifySavingGoals;
+        existing.NotifyLargeTransactions = profile.NotifyLargeTransactions;
+        existing.NotifyPaymentFailures = profile.NotifyPaymentFailures;
+        existing.NotifyExports = profile.NotifyExports;
         existing.Status = profile.Status;
         existing.UpdatedAt = DateTime.UtcNow;
 

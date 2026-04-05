@@ -77,6 +77,11 @@ public class MemberProfileConfiguration : IEntityTypeConfiguration<MemberProfile
             .HasColumnName("currency")
             .HasMaxLength(10);
 
+        builder.Property(m => m.Locale)
+            .HasColumnName("locale")
+            .HasMaxLength(10)
+            .HasDefaultValue("en");
+
         builder.Property(m => m.NotifyBudgetAlerts)
             .HasColumnName("notify_budget_alerts")
             .HasDefaultValue(true);

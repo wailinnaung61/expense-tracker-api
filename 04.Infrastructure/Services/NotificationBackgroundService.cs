@@ -1,4 +1,5 @@
 using expense_tracker_backend.Application.Interfaces;
+using expense_tracker_backend.Domain.Entities;
 using expense_tracker_backend.Domain.Shared.Constants;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +13,7 @@ public class NotificationBackgroundService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<NotificationBackgroundService> _logger;
-    private readonly TimeSpan _checkInterval = TimeSpan.FromHours(6);
+    private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(1);
 
     public NotificationBackgroundService(IServiceProvider serviceProvider, ILogger<NotificationBackgroundService> logger)
     {
@@ -22,7 +23,7 @@ public class NotificationBackgroundService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Notification background service started");
+        _logger.LogInformation("Notification background service started — checking every {Interval}", _checkInterval);
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -57,6 +58,14 @@ public class NotificationBackgroundService : BackgroundService
         {
             try
             {
+                // Skip if already notified today for this payment
+                var alreadySent = await db.Notifications.AnyAsync(n =>
+                    n.UserId == p.UserId
+                    && n.Type == NotificationType.RecurringPaymentDue
+                    && n.ReferenceId == p.RecurringId
+                    && n.CreatedAt >= today);
+                if (alreadySent) continue;
+
                 await notif.NotifyRecurringDueAsync(
                     Guid.Parse(p.UserId), p.Name, p.Amount.ToString("N0"),
                     p.NextDueDate.ToString("yyyy-MM-dd"), p.RecurringId);
@@ -89,6 +98,14 @@ public class NotificationBackgroundService : BackgroundService
         {
             try
             {
+                // Skip if already notified today for this goal
+                var alreadySent = await db.Notifications.AnyAsync(n =>
+                    n.UserId == g.UserId
+                    && n.Type == NotificationType.SavingGoalDeadlineNear
+                    && n.ReferenceId == g.SavingGoalId
+                    && n.CreatedAt >= today);
+                if (alreadySent) continue;
+
                 var deadline = DateOnly.ParseExact(g.TargetDate, "yyyy-MM-dd");
                 var daysLeft = (deadline.ToDateTime(TimeOnly.MinValue) - today).Days;
                 await notif.NotifySavingGoalDeadlineAsync(

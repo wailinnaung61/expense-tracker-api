@@ -11,7 +11,6 @@ using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 
@@ -67,7 +66,7 @@ public static class DependencyInjection
 
         // Notifications
         services.AddScoped<INotificationRepository, NotificationRepository>();
-        services.AddScoped<INotificationService, NotificationService>();
+        // INotificationService registered in Program.cs (needs SharedResource localizer)
 
         // Export
         services.AddScoped<IExportJobRepository, ExportJobRepository>();

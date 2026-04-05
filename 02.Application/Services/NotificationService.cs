@@ -1,4 +1,4 @@
-using _02.Application;
+using System.Globalization;
 using expense_tracker_backend.Application.DTOs;
 using expense_tracker_backend.Application.Interfaces;
 using expense_tracker_backend.Domain.Entities;
@@ -11,12 +11,12 @@ public class NotificationService : INotificationService
 {
     private readonly INotificationRepository _repository;
     private readonly IMemberRepository _memberRepository;
-    private readonly IStringLocalizer<ApplicationResource> _localizer;
+    private readonly IStringLocalizer _localizer;
 
     public NotificationService(
         INotificationRepository repository,
         IMemberRepository memberRepository,
-        IStringLocalizer<ApplicationResource> localizer)
+        IStringLocalizer localizer)
     {
         _repository = repository;
         _memberRepository = memberRepository;
@@ -82,7 +82,6 @@ public class NotificationService : INotificationService
     public async Task SendAsync(Guid userId, string type, string title, string message,
         string? referenceId = null, string? referenceType = null)
     {
-        // Check user's notification preferences
         if (!await IsNotificationEnabledAsync(userId, type)) return;
 
         var notification = new Notification
@@ -116,7 +115,7 @@ public class NotificationService : INotificationService
     private async Task<bool> IsNotificationEnabledAsync(Guid userId, string type)
     {
         var profile = await _memberRepository.GetProfileByUserIdAsync(userId.ToString());
-        if (profile is null) return true; // no profile = allow all
+        if (profile is null) return true;
 
         return type switch
         {
@@ -146,81 +145,138 @@ public class NotificationService : INotificationService
         new(n.Id, n.Type, n.Title, n.Message, n.ReferenceId, n.ReferenceType,
             n.IsRead, n.CreatedAt, n.ReadAt);
 
+    /// <summary>
+    /// Gets localized string for a key using the user's saved locale.
+    /// </summary>
+    private string Localize(string locale, string key, params object[] args)
+    {
+        var prev = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = new CultureInfo(locale);
+            var value = _localizer[key].Value;
+            return args.Length > 0 ? string.Format(value, args) : value;
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = prev;
+        }
+    }
+
+    private async Task<string> GetUserLocaleAsync(Guid userId)
+    {
+        var profile = await _memberRepository.GetProfileByUserIdAsync(userId.ToString());
+        return profile?.Locale ?? "en";
+    }
+
     // ── Localized notification helpers ──
 
-    public Task NotifyBudgetThresholdAsync(Guid userId, string categoryName, int percent,
-        string spent, string allocated, string? budgetCategoryId = null) =>
-        SendAsync(userId, NotificationType.BudgetThresholdReached,
-            _localizer["Notif_BudgetThreshold_Title"],
-            string.Format(_localizer["Notif_BudgetThreshold_Msg"], percent, categoryName, spent, allocated),
+    public async Task NotifyBudgetThresholdAsync(Guid userId, string categoryName, int percent,
+        string spent, string allocated, string? budgetCategoryId = null)
+    {
+        var loc = await GetUserLocaleAsync(userId);
+        await SendAsync(userId, NotificationType.BudgetThresholdReached,
+            Localize(loc, "Notif_BudgetThreshold_Title"),
+            Localize(loc, "Notif_BudgetThreshold_Msg", percent, categoryName, spent, allocated),
             budgetCategoryId, "budget");
+    }
 
-    public Task NotifyBudgetExceededAsync(Guid userId, string categoryName,
-        string spent, string allocated, string? budgetCategoryId = null) =>
-        SendAsync(userId, NotificationType.BudgetExceeded,
-            _localizer["Notif_BudgetExceeded_Title"],
-            string.Format(_localizer["Notif_BudgetExceeded_Msg"], categoryName, spent, allocated),
+    public async Task NotifyBudgetExceededAsync(Guid userId, string categoryName,
+        string spent, string allocated, string? budgetCategoryId = null)
+    {
+        var loc = await GetUserLocaleAsync(userId);
+        await SendAsync(userId, NotificationType.BudgetExceeded,
+            Localize(loc, "Notif_BudgetExceeded_Title"),
+            Localize(loc, "Notif_BudgetExceeded_Msg", categoryName, spent, allocated),
             budgetCategoryId, "budget");
+    }
 
-    public Task NotifyRecurringDueAsync(Guid userId, string name, string amount,
-        string dueDate, string? recurringId = null) =>
-        SendAsync(userId, NotificationType.RecurringPaymentDue,
-            _localizer["Notif_RecurringDue_Title"],
-            string.Format(_localizer["Notif_RecurringDue_Msg"], name, amount, dueDate),
+    public async Task NotifyRecurringDueAsync(Guid userId, string name, string amount,
+        string dueDate, string? recurringId = null)
+    {
+        var loc = await GetUserLocaleAsync(userId);
+        await SendAsync(userId, NotificationType.RecurringPaymentDue,
+            Localize(loc, "Notif_RecurringDue_Title"),
+            Localize(loc, "Notif_RecurringDue_Msg", name, amount, dueDate),
             recurringId, "recurring_payment");
+    }
 
-    public Task NotifyRecurringOverdueAsync(Guid userId, string name, int missedCount,
-        string? recurringId = null) =>
-        SendAsync(userId, NotificationType.RecurringPaymentOverdue,
-            _localizer["Notif_RecurringOverdue_Title"],
-            string.Format(_localizer["Notif_RecurringOverdue_Msg"], name, missedCount),
+    public async Task NotifyRecurringOverdueAsync(Guid userId, string name, int missedCount,
+        string? recurringId = null)
+    {
+        var loc = await GetUserLocaleAsync(userId);
+        await SendAsync(userId, NotificationType.RecurringPaymentOverdue,
+            Localize(loc, "Notif_RecurringOverdue_Title"),
+            Localize(loc, "Notif_RecurringOverdue_Msg", name, missedCount),
             recurringId, "recurring_payment");
+    }
 
-    public Task NotifyRecurringAutoPaidAsync(Guid userId, string name, string amount,
-        string? recurringId = null) =>
-        SendAsync(userId, NotificationType.RecurringPaymentAutoPaid,
-            _localizer["Notif_RecurringAutoPaid_Title"],
-            string.Format(_localizer["Notif_RecurringAutoPaid_Msg"], name, amount),
+    public async Task NotifyRecurringAutoPaidAsync(Guid userId, string name, string amount,
+        string? recurringId = null)
+    {
+        var loc = await GetUserLocaleAsync(userId);
+        await SendAsync(userId, NotificationType.RecurringPaymentAutoPaid,
+            Localize(loc, "Notif_RecurringAutoPaid_Title"),
+            Localize(loc, "Notif_RecurringAutoPaid_Msg", name, amount),
             recurringId, "recurring_payment");
+    }
 
-    public Task NotifySavingGoalReachedAsync(Guid userId, string goalName,
-        string? savingGoalId = null) =>
-        SendAsync(userId, NotificationType.SavingGoalReached,
-            _localizer["Notif_SavingGoalReached_Title"],
-            string.Format(_localizer["Notif_SavingGoalReached_Msg"], goalName),
+    public async Task NotifySavingGoalReachedAsync(Guid userId, string goalName,
+        string? savingGoalId = null)
+    {
+        var loc = await GetUserLocaleAsync(userId);
+        await SendAsync(userId, NotificationType.SavingGoalReached,
+            Localize(loc, "Notif_SavingGoalReached_Title"),
+            Localize(loc, "Notif_SavingGoalReached_Msg", goalName),
             savingGoalId, "saving_goal");
+    }
 
-    public Task NotifySavingGoalDeadlineAsync(Guid userId, string goalName, int daysLeft,
-        string current, string target, string? savingGoalId = null) =>
-        SendAsync(userId, NotificationType.SavingGoalDeadlineNear,
-            _localizer["Notif_SavingGoalDeadline_Title"],
-            string.Format(_localizer["Notif_SavingGoalDeadline_Msg"], goalName, daysLeft, current, target),
+    public async Task NotifySavingGoalDeadlineAsync(Guid userId, string goalName, int daysLeft,
+        string current, string target, string? savingGoalId = null)
+    {
+        var loc = await GetUserLocaleAsync(userId);
+        await SendAsync(userId, NotificationType.SavingGoalDeadlineNear,
+            Localize(loc, "Notif_SavingGoalDeadline_Title"),
+            Localize(loc, "Notif_SavingGoalDeadline_Msg", goalName, daysLeft, current, target),
             savingGoalId, "saving_goal");
+    }
 
-    public Task NotifyExportCompletedAsync(Guid userId, string startMonth, string endMonth,
-        string? exportJobId = null) =>
-        SendAsync(userId, NotificationType.ExportCompleted,
-            _localizer["Notif_ExportCompleted_Title"],
-            string.Format(_localizer["Notif_ExportCompleted_Msg"], startMonth, endMonth),
+    public async Task NotifyExportCompletedAsync(Guid userId, string startMonth, string endMonth,
+        string? exportJobId = null)
+    {
+        var loc = await GetUserLocaleAsync(userId);
+        await SendAsync(userId, NotificationType.ExportCompleted,
+            Localize(loc, "Notif_ExportCompleted_Title"),
+            Localize(loc, "Notif_ExportCompleted_Msg", startMonth, endMonth),
             exportJobId, "export");
+    }
 
-    public Task NotifyExportFailedAsync(Guid userId, string? exportJobId = null) =>
-        SendAsync(userId, NotificationType.ExportFailed,
-            _localizer["Notif_ExportFailed_Title"],
-            _localizer["Notif_ExportFailed_Msg"],
+    public async Task NotifyExportFailedAsync(Guid userId, string? exportJobId = null)
+    {
+        var loc = await GetUserLocaleAsync(userId);
+        await SendAsync(userId, NotificationType.ExportFailed,
+            Localize(loc, "Notif_ExportFailed_Title"),
+            Localize(loc, "Notif_ExportFailed_Msg"),
             exportJobId, "export");
+    }
 
-    public Task NotifyLargeTransactionAsync(Guid userId, string amount, string description,
-        string? transactionId = null) =>
-        SendAsync(userId, NotificationType.LargeTransaction,
-            _localizer["Notif_LargeTransaction_Title"],
-            string.Format(_localizer["Notif_LargeTransaction_Msg"], amount, description),
+    public async Task NotifyLargeTransactionAsync(Guid userId, string amount, string description,
+        string? transactionId = null)
+    {
+        var loc = await GetUserLocaleAsync(userId);
+        await SendAsync(userId, NotificationType.LargeTransaction,
+            Localize(loc, "Notif_LargeTransaction_Title"),
+            Localize(loc, "Notif_LargeTransaction_Msg", amount, description),
             transactionId, "transaction");
+    }
 
-    public Task NotifyPaymentFailedAsync(Guid userId, string description, string amount,
-        string? transactionId = null) =>
-        SendAsync(userId, NotificationType.PaymentFailed,
-            _localizer["Notif_PaymentFailed_Title"],
-            string.Format(_localizer["Notif_PaymentFailed_Msg"], description, amount),
+    public async Task NotifyPaymentFailedAsync(Guid userId, string description, string amount,
+        string? transactionId = null)
+    {
+        var loc = await GetUserLocaleAsync(userId);
+        await SendAsync(userId, NotificationType.PaymentFailed,
+            Localize(loc, "Notif_PaymentFailed_Title"),
+            Localize(loc, "Notif_PaymentFailed_Msg", description, amount),
             transactionId, "transaction");
+    }
 }
