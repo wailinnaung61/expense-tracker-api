@@ -15,6 +15,7 @@ public record SavingGoalDto(
     decimal RemainingAmount,
     string TargetDate,
     string Status,
+    string SavingGoalType,
     string Notes,
     string Icon,
     string Color,
@@ -32,12 +33,21 @@ public record SavingGoalContributionDto(
     DateTime CreatedAt
 );
 
+public record GoalTypeAllocationDto(
+    string GoalType,
+    decimal TotalSaved,
+    decimal TotalTarget,
+    decimal ProgressPercentage,
+    int GoalCount
+);
+
 public record SavingDashboardResponse(
     decimal TotalSaved,
     decimal TotalTarget,
     decimal OverallProgressPercentage,
     int ActiveGoalsCount,
     int CompletedGoalsCount,
+    List<GoalTypeAllocationDto> GoalTypeAllocation,
     List<SavingGoalDto> Top5Goals
 );
 
@@ -48,6 +58,7 @@ public record CreateSavingGoalRequest(
     decimal TargetAmount,
     string TargetDate,
     string Description = "",
+    AppConstants.SavingGoalType SavingGoalType = AppConstants.SavingGoalType.Other,
     string Notes = "",
     string Icon = "",
     string Color = ""
@@ -59,6 +70,7 @@ public record UpdateSavingGoalRequest(
     string TargetDate,
     AppConstants.SavingGoalStatus Status = AppConstants.SavingGoalStatus.Active,
     string Description = "",
+    AppConstants.SavingGoalType SavingGoalType = AppConstants.SavingGoalType.Other,
     string Notes = "",
     string Icon = "",
     string Color = ""

@@ -130,6 +130,7 @@ public class SavingGoalRepository : ISavingGoalRepository
         existing.CurrentAmount = savingGoal.CurrentAmount;
         existing.TargetDate = savingGoal.TargetDate;
         existing.Status = savingGoal.Status;
+        existing.SavingGoalType = savingGoal.SavingGoalType;
         existing.Notes = savingGoal.Notes;
         existing.Icon = savingGoal.Icon;
         existing.Color = savingGoal.Color;

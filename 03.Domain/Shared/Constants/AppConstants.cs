@@ -1,5 +1,7 @@
 namespace expense_tracker_backend.Domain.Shared.Constants;
 
+using System.Text.Json.Serialization;
+
 /// <summary>
 /// Application-wide constants
 /// </summary>
@@ -83,6 +85,18 @@ public static class AppConstants
         Active,
         Completed,
         Cancelled
+    }
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public enum SavingGoalType
+    {
+        EmergencyFund,
+        Vacation,
+        Vehicle,
+        Home,
+        Education,
+        Retirement,
+        Other
     }
 
     public enum SavingTransactionType

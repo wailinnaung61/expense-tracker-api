@@ -13,6 +13,7 @@ public class SavingGoal
     public decimal CurrentAmount { get; set; } = 0;
     public required string TargetDate { get; set; }  // yyyy-MM-dd
     public AppConstants.SavingGoalStatus Status { get; set; } = AppConstants.SavingGoalStatus.Active;
+    public AppConstants.SavingGoalType SavingGoalType { get; set; } = AppConstants.SavingGoalType.Other;
     public string Notes { get; set; } = string.Empty;
     public string Icon { get; set; } = string.Empty;
     public string Color { get; set; } = string.Empty;
