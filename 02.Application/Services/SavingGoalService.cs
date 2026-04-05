@@ -70,6 +70,7 @@ public class SavingGoalService : ISavingGoalService
             CurrentAmount = 0,
             TargetDate = request.TargetDate,
             Status = AppConstants.SavingGoalStatus.Active,
+            SavingGoalType = request.SavingGoalType,
             Notes = request.Notes,
             Icon = request.Icon,
             Color = request.Color,
@@ -91,6 +92,7 @@ public class SavingGoalService : ISavingGoalService
         existing.TargetAmount = request.TargetAmount;
         existing.TargetDate = request.TargetDate;
         existing.Status = request.Status;
+        existing.SavingGoalType = request.SavingGoalType;
         existing.Notes = request.Notes;
         existing.Icon = request.Icon;
         existing.Color = request.Color;
@@ -134,6 +136,21 @@ public class SavingGoalService : ISavingGoalService
             .Sum(g => g.TargetAmount);
         var overallProgress = totalTarget > 0 ? Math.Round(totalSaved / totalTarget * 100, 2) : 0;
 
+        // Group by SavingGoalType for allocation breakdown
+        var goalTypeAllocation = goals
+            .GroupBy(g => g.SavingGoalType)
+            .Select(grp => new GoalTypeAllocationDto(
+                grp.Key.ToString().ToUpperInvariant(),
+                grp.Sum(g => g.CurrentAmount),
+                grp.Where(g => g.Status == AppConstants.SavingGoalStatus.Active).Sum(g => g.TargetAmount),
+                grp.Select(g => g.TargetAmount).Sum() > 0
+                    ? Math.Round(grp.Sum(g => g.CurrentAmount) / grp.Select(g => g.TargetAmount).Sum() * 100, 2)
+                    : 0,
+                grp.Count()
+            ))
+            .OrderByDescending(a => a.TotalSaved)
+            .ToList();
+
         var top5Goals = goals
             .Select(MapToDto)
             .Where(g => g.Status == AppConstants.SavingGoalStatus.Active.ToString().ToUpperInvariant())
@@ -147,6 +164,7 @@ public class SavingGoalService : ISavingGoalService
             overallProgress,
             goals.Count(g => g.Status == AppConstants.SavingGoalStatus.Active),
             goals.Count(g => g.Status == AppConstants.SavingGoalStatus.Completed),
+            goalTypeAllocation,
             top5Goals
         );
     }
@@ -299,6 +317,7 @@ public class SavingGoalService : ISavingGoalService
             remaining,
             g.TargetDate,
             g.Status.ToString().ToUpperInvariant(),
+            g.SavingGoalType.ToString().ToUpperInvariant(),
             g.Notes,
             g.Icon,
             g.Color,

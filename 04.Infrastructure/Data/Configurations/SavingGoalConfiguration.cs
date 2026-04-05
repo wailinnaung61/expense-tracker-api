@@ -54,6 +54,14 @@ public class SavingGoalConfiguration : IEntityTypeConfiguration<SavingGoal>
                 v => Enum.Parse<AppConstants.SavingGoalStatus>(v, true))
             .IsRequired();
 
+        builder.Property(e => e.SavingGoalType)
+            .HasColumnName("saving_goal_type")
+            .HasMaxLength(50)
+            .HasConversion(
+                v => v.ToString().ToUpperInvariant(),
+                v => Enum.Parse<AppConstants.SavingGoalType>(v, true))
+            .IsRequired();
+
         builder.Property(e => e.Notes)
             .HasColumnName("notes")
             .HasMaxLength(1000);

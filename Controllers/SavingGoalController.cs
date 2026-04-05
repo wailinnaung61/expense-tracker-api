@@ -63,6 +63,9 @@ public class SavingGoalController : BaseController
     {
         if (UserId is null) return Unauthorized();
 
+        _logger.LogInformation("Creating saving goal: {GoalName}, TargetAmount: {TargetAmount}, Type: {SavingGoalType}",
+            request.GoalName, request.TargetAmount, request.SavingGoalType);
+
         try
         {
             var goal = await _service.CreateAsync(UserId.Value, request);
@@ -71,7 +74,7 @@ public class SavingGoalController : BaseController
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create saving goal");
+            _logger.LogError(ex, "Failed to create saving goal: {GoalName}", request.GoalName);
             return ErrorResponse(_localizer["SavingGoalCreateFailed"].Value);
         }
     }
