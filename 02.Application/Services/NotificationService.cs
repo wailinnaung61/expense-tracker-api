@@ -10,13 +10,16 @@ namespace expense_tracker_backend.Application.Services;
 public class NotificationService : INotificationService
 {
     private readonly INotificationRepository _repository;
+    private readonly IMemberRepository _memberRepository;
     private readonly IStringLocalizer<ApplicationResource> _localizer;
 
     public NotificationService(
         INotificationRepository repository,
+        IMemberRepository memberRepository,
         IStringLocalizer<ApplicationResource> localizer)
     {
         _repository = repository;
+        _memberRepository = memberRepository;
         _localizer = localizer;
     }
 
@@ -79,6 +82,9 @@ public class NotificationService : INotificationService
     public async Task SendAsync(Guid userId, string type, string title, string message,
         string? referenceId = null, string? referenceType = null)
     {
+        // Check user's notification preferences
+        if (!await IsNotificationEnabledAsync(userId, type)) return;
+
         var notification = new Notification
         {
             UserId = userId.ToString(),
@@ -105,6 +111,35 @@ public class NotificationService : INotificationService
         }).ToList();
 
         await _repository.CreateBatchAsync(entities);
+    }
+
+    private async Task<bool> IsNotificationEnabledAsync(Guid userId, string type)
+    {
+        var profile = await _memberRepository.GetProfileByUserIdAsync(userId.ToString());
+        if (profile is null) return true; // no profile = allow all
+
+        return type switch
+        {
+            NotificationType.BudgetThresholdReached or
+            NotificationType.BudgetExceeded => profile.NotifyBudgetAlerts,
+
+            NotificationType.RecurringPaymentDue or
+            NotificationType.RecurringPaymentOverdue => profile.NotifyRecurringPayments,
+
+            NotificationType.RecurringPaymentAutoPaid => profile.NotifyAutoPayments,
+
+            NotificationType.SavingGoalReached or
+            NotificationType.SavingGoalDeadlineNear => profile.NotifySavingGoals,
+
+            NotificationType.LargeTransaction => profile.NotifyLargeTransactions,
+
+            NotificationType.PaymentFailed => profile.NotifyPaymentFailures,
+
+            NotificationType.ExportCompleted or
+            NotificationType.ExportFailed => profile.NotifyExports,
+
+            _ => true
+        };
     }
 
     private static NotificationDto MapToDto(Notification n) =>

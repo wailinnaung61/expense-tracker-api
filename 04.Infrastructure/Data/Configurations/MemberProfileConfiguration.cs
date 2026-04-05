@@ -77,6 +77,34 @@ public class MemberProfileConfiguration : IEntityTypeConfiguration<MemberProfile
             .HasColumnName("currency")
             .HasMaxLength(10);
 
+        builder.Property(m => m.NotifyBudgetAlerts)
+            .HasColumnName("notify_budget_alerts")
+            .HasDefaultValue(true);
+
+        builder.Property(m => m.NotifyRecurringPayments)
+            .HasColumnName("notify_recurring_payments")
+            .HasDefaultValue(true);
+
+        builder.Property(m => m.NotifyAutoPayments)
+            .HasColumnName("notify_auto_payments")
+            .HasDefaultValue(true);
+
+        builder.Property(m => m.NotifySavingGoals)
+            .HasColumnName("notify_saving_goals")
+            .HasDefaultValue(true);
+
+        builder.Property(m => m.NotifyLargeTransactions)
+            .HasColumnName("notify_large_transactions")
+            .HasDefaultValue(true);
+
+        builder.Property(m => m.NotifyPaymentFailures)
+            .HasColumnName("notify_payment_failures")
+            .HasDefaultValue(true);
+
+        builder.Property(m => m.NotifyExports)
+            .HasColumnName("notify_exports")
+            .HasDefaultValue(true);
+
         builder.Property(m => m.CreatedAt)
             .HasColumnName("created_at");
 

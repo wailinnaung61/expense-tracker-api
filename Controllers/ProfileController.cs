@@ -58,6 +58,14 @@ public class ProfileController : BaseController
                 profile.Status,
                 profile.MfaEnabled,
                 profile.MfaMethod,
+                new NotificationPreferencesDto(
+                    profile.NotifyBudgetAlerts,
+                    profile.NotifyRecurringPayments,
+                    profile.NotifyAutoPayments,
+                    profile.NotifySavingGoals,
+                    profile.NotifyLargeTransactions,
+                    profile.NotifyPaymentFailures,
+                    profile.NotifyExports),
                 profile.CreatedAt,
                 profile.UpdatedAt,
                 profile.LastLoginAt
@@ -118,6 +126,18 @@ public class ProfileController : BaseController
                 profile.DailyLimit = request.DailyLimit.Value;
             }
 
+            if (request.NotificationPreferences is not null)
+            {
+                var np = request.NotificationPreferences;
+                profile.NotifyBudgetAlerts = np.BudgetAlerts;
+                profile.NotifyRecurringPayments = np.RecurringPayments;
+                profile.NotifyAutoPayments = np.AutoPayments;
+                profile.NotifySavingGoals = np.SavingGoals;
+                profile.NotifyLargeTransactions = np.LargeTransactions;
+                profile.NotifyPaymentFailures = np.PaymentFailures;
+                profile.NotifyExports = np.Exports;
+            }
+
             var updatedProfile = await _memberRepository.UpdateProfileAsync(profile);
             if (updatedProfile is null)
             {
@@ -135,6 +155,14 @@ public class ProfileController : BaseController
                 updatedProfile.Status,
                 updatedProfile.MfaEnabled,
                 updatedProfile.MfaMethod,
+                new NotificationPreferencesDto(
+                    updatedProfile.NotifyBudgetAlerts,
+                    updatedProfile.NotifyRecurringPayments,
+                    updatedProfile.NotifyAutoPayments,
+                    updatedProfile.NotifySavingGoals,
+                    updatedProfile.NotifyLargeTransactions,
+                    updatedProfile.NotifyPaymentFailures,
+                    updatedProfile.NotifyExports),
                 updatedProfile.CreatedAt,
                 updatedProfile.UpdatedAt,
                 updatedProfile.LastLoginAt

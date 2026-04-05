@@ -10,17 +10,20 @@ public class TranactionService : ITranactionService
     private readonly IAggregationRepository _aggregationRepository;
     private readonly IBudgetRepository _budgetRepository;
     private readonly INotificationService _notificationService;
+    private readonly IMemberRepository _memberRepository;
 
     public TranactionService(
         ITranactionRepository repository,
         IAggregationRepository aggregationRepository,
         IBudgetRepository budgetRepository,
-        INotificationService notificationService)
+        INotificationService notificationService,
+        IMemberRepository memberRepository)
     {
         _repository = repository;
         _aggregationRepository = aggregationRepository;
         _budgetRepository = budgetRepository;
         _notificationService = notificationService;
+        _memberRepository = memberRepository;
     }
 
     public async Task<PagedResult<DTOs.Tranaction>> GetTransactionsAsync(Guid userId, TransactionFilterRequest filter)
@@ -102,6 +105,11 @@ public class TranactionService : ITranactionService
         if (created.Status == Domain.Shared.Constants.AppConstants.PaymentStatus.Failed)
             await _notificationService.NotifyPaymentFailedAsync(
                 userId, created.Description ?? "", created.Amount.ToString("N0"), created.TransactionId);
+
+        // Notify if single expense exceeds user's daily spending limit
+        if (created.Type == Domain.Shared.Constants.AppConstants.TransactionType.Expense
+            && created.Status == Domain.Shared.Constants.AppConstants.PaymentStatus.Completed)
+            await CheckDailyLimitAsync(userId, created);
 
         return MapToDto(created);
     }
@@ -210,6 +218,18 @@ public class TranactionService : ITranactionService
         {
             await _notificationService.NotifyBudgetThresholdAsync(
                 userId, result.CategoryName, percent, spent, allocated, result.BudgetCategoryId);
+        }
+    }
+
+    private async Task CheckDailyLimitAsync(Guid userId, Domain.Entities.Transaction tx)
+    {
+        var profile = await _memberRepository.GetProfileByUserIdAsync(userId.ToString());
+        if (profile is null || profile.DailyLimit <= 0) return;
+
+        if (tx.Amount >= profile.DailyLimit)
+        {
+            await _notificationService.NotifyLargeTransactionAsync(
+                userId, tx.Amount.ToString("N0"), tx.Description ?? "", tx.TransactionId);
         }
     }
 }

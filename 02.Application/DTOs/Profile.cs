@@ -11,6 +11,7 @@ public record ProfileResponse(
     string Status,
     bool MfaEnabled,
     string? MfaMethod,
+    NotificationPreferencesDto NotificationPreferences,
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     DateTime? LastLoginAt
@@ -19,5 +20,16 @@ public record ProfileResponse(
 public record UpdateProfileSettingsRequest(
     string? PhoneNumber,
     string? Currency,
-    decimal? DailyLimit
+    decimal? DailyLimit,
+    NotificationPreferencesDto? NotificationPreferences
+);
+
+public record NotificationPreferencesDto(
+    bool BudgetAlerts,
+    bool RecurringPayments,
+    bool AutoPayments,
+    bool SavingGoals,
+    bool LargeTransactions,
+    bool PaymentFailures,
+    bool Exports
 );

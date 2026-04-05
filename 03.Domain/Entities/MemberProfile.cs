@@ -22,6 +22,15 @@ public class MemberProfile
     public decimal DailyLimit { get; set; }
     public string Currency { get; set; } = "JPY";
 
+    // Notification preferences (all enabled by default)
+    public bool NotifyBudgetAlerts { get; set; } = true;
+    public bool NotifyRecurringPayments { get; set; } = true;
+    public bool NotifyAutoPayments { get; set; } = true;
+    public bool NotifySavingGoals { get; set; } = true;
+    public bool NotifyLargeTransactions { get; set; } = true;
+    public bool NotifyPaymentFailures { get; set; } = true;
+    public bool NotifyExports { get; set; } = true;
+
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }
