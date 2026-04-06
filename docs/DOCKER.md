@@ -26,14 +26,123 @@ docker-compose restart
 
 ---
 
-## Deploy New Code Changes
+## Deploy New Code Changes (Local)
 
 ```powershell
 # Rebuild API image and restart (keeps DB data)
 docker-compose up --build -d
 ```
 
-> EF migrations run automatically on startup — no manual migration needed.
+---
+
+## Production Deployment (AWS ECR → EC2)
+
+### Architecture
+
+```
+[Your PC] → deploy-ecr.ps1 → [AWS ECR] → docker pull → [EC2 Instance]
+                                                            ├── API (from ECR)
+                                                            ├── PostgreSQL (Docker Hub)
+                                                            └── Redis (Docker Hub)
+```
+
+> **Never clone source code to EC2.** The Docker image from ECR has everything built inside.
+
+### Step 1 — Build & Push to ECR (on your PC)
+
+**Windows:**
+```powershell
+.\deployment\deploy-ecr.ps1
+```
+
+**Linux/Mac:**
+```sh
+chmod +x deployment/deploy-ecr.sh
+./deployment/deploy-ecr.sh
+```
+
+### Step 2 — Pull & Restart on EC2
+
+```sh
+# SSH into EC2
+ssh -i your-key.pem ec2-user@your-ec2-ip
+
+# Go to project directory
+cd ~/expensetracker
+
+# Login to ECR
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 908027401522.dkr.ecr.us-east-1.amazonaws.com
+
+# Pull latest API image & restart (DB + Redis untouched)
+docker-compose -f docker-compose.prod.yml pull api
+docker-compose -f docker-compose.prod.yml up -d api
+```
+
+### First Time EC2 Setup
+
+```sh
+# 1. Install Docker & Docker Compose
+sudo yum update -y
+sudo yum install -y docker
+sudo service docker start
+sudo usermod -a -G docker ec2-user
+
+sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Re-login for docker group
+exit
+ssh -i your-key.pem ec2-user@your-ec2-ip
+
+# 2. Create project directory
+mkdir -p ~/expensetracker && cd ~/expensetracker
+
+# 3. Copy files from your PC (run on your PC, not EC2)
+scp -i your-key.pem deployment/docker-compose.prod.yml ec2-user@your-ec2-ip:~/expensetracker/
+scp -i your-key.pem deployment/.env ec2-user@your-ec2-ip:~/expensetracker/
+
+# 4. Login to ECR & start everything
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 908027401522.dkr.ecr.us-east-1.amazonaws.com
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### When to Restart What
+
+| Change | Command on EC2 |
+|---|---|
+| API code change | `docker-compose -f docker-compose.prod.yml pull api && docker-compose -f docker-compose.prod.yml up -d api` |
+| `.env` change | `docker-compose -f docker-compose.prod.yml up -d api` |
+| DB password change | `docker-compose -f docker-compose.prod.yml up -d` |
+| First time setup | `docker-compose -f docker-compose.prod.yml up -d` |
+| Nuclear reset | `docker-compose -f docker-compose.prod.yml down -v && docker-compose -f docker-compose.prod.yml up -d` |
+
+### Production Logs (on EC2)
+
+```sh
+# API logs
+docker-compose -f docker-compose.prod.yml logs -f api
+
+# All logs
+docker-compose -f docker-compose.prod.yml logs -f
+
+# Last 100 lines
+docker-compose -f docker-compose.prod.yml logs --tail=100 api
+```
+
+---
+
+## Deployment Files
+
+```
+deployment/
+├── .env.example              # Environment variables template → copy to .env
+├── deploy-ecr.ps1            # Push to ECR (Windows)
+├── deploy-ecr.sh             # Push to ECR (Linux)
+└── docker-compose.prod.yml   # Production compose (pulls from ECR)
+
+docker-compose.yml            # Local development (builds from source)
+Dockerfile                    # Multi-stage build
+```
 
 ---
 
@@ -112,10 +221,14 @@ docker exec -i expense-tracker-db psql -U postgres -d ExpenseTracker < backup.sq
 
 ```powershell
 # Connect to Redis CLI
-docker exec -it expense-tracker-redis redis-cli
+docker exec -it expense-tracker-redis redis-cli -a your_redis_password
+
+#redis command
+AUTH your_redis_password
+KEY *
 
 # Flush all Redis cache
-docker exec expense-tracker-redis redis-cli FLUSHALL
+docker exec expense-tracker-redis redis-cli -a your_redis_password FLUSHALL
 ```
 
 ---
@@ -141,11 +254,12 @@ docker-compose up -d
 
 ## Services
 
-| Service | Container | Port | Internal Host |
-|---------|-----------|------|---------------|
-| API | `expense-tracker-api` | `8080` | `api` |
-| PostgreSQL | `expense-tracker-db` | `5432` | `postgres` |
-| Redis | `expense-tracker-redis` | `6379` | `redis` |
+| Service | Container | Local Port | Prod Port | Internal Host |
+|---------|-----------|-----------|-----------|---------------|
+| API | `expense-tracker-api` | `8080` | `80` | `api:8080` |
+| PostgreSQL | `expense-tracker-db` | `5432` | `5432` | `postgres:5432` |
+| Redis | `expense-tracker-redis` | `6379` | `6379` | `redis:6379` |
+| RedisInsight | `expense-tracker-redisinsight` | — | `5540` | — |
 
 ---
 
