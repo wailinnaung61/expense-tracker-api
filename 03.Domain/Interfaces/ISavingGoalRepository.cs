@@ -9,6 +9,7 @@ public interface ISavingGoalRepository
     Task<(List<SavingGoal> Items, int TotalCount)> GetByUserIdAsync(
         Guid userId,
         AppConstants.SavingGoalStatus? status,
+        AppConstants.SavingGoalType? goalType,
         string? keyword,
         int pageSize,
         DateTime? cursor,

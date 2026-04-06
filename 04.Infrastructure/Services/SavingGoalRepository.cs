@@ -42,6 +42,7 @@ public class SavingGoalRepository : ISavingGoalRepository
     public async Task<(List<SavingGoal> Items, int TotalCount)> GetByUserIdAsync(
         Guid userId,
         AppConstants.SavingGoalStatus? status,
+        AppConstants.SavingGoalType? goalType,
         string? keyword,
         int pageSize,
         DateTime? cursor,
@@ -53,6 +54,9 @@ public class SavingGoalRepository : ISavingGoalRepository
 
         if (status.HasValue)
             query = query.Where(s => s.Status == status.Value);
+
+        if (goalType.HasValue)
+            query = query.Where(s => s.SavingGoalType == goalType.Value);
 
         if (!string.IsNullOrWhiteSpace(keyword))
             query = query.Where(s => EF.Functions.ILike(s.GoalName, $"%{keyword}%")

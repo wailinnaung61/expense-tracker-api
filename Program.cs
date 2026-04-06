@@ -4,6 +4,8 @@ using expense_tracker_backend;
 using expense_tracker_backend.Application.Interfaces;
 using expense_tracker_backend.Application.Services;
 using expense_tracker_backend.Domain.Interfaces;
+using Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Amazon;
 using Amazon.CognitoIdentityProvider;
@@ -128,6 +130,13 @@ builder.Services.AddHostedService<NotificationBackgroundService>();
 
 var app = builder.Build();
 
+// Auto-apply pending EF migrations on startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();
+}
+
 // Configure the HTTP request pipeline.
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
@@ -159,5 +168,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 
 app.Run();

@@ -10,15 +10,15 @@ WORKDIR /src
 # ------------------------------------------------
 # 1️⃣ Copy ALL csproj files (restore cache layer)
 # ------------------------------------------------
-COPY 01_Presentation.csproj ./
-COPY Applications/02_Application.csproj Applications/
-COPY Domains/03_Domain.csproj Domains/
-COPY Infrastructures/04_Infrastructure.csproj Infrastructures/
+COPY 01.Presentation.csproj ./
+COPY 02.Application/02.Application.csproj 02.Application/
+COPY 03.Domain/03.Domain.csproj 03.Domain/
+COPY 04.Infrastructure/04.Infrastructure.csproj 04.Infrastructure/
 
 # ------------------------------------------------
 # 2️⃣ Restore (restores referenced projects)
 # ------------------------------------------------
-RUN dotnet restore 01_Presentation.csproj \
+RUN dotnet restore 01.Presentation.csproj \
     --runtime linux-musl-x64
 
 # ------------------------------------------------
@@ -27,32 +27,22 @@ RUN dotnet restore 01_Presentation.csproj \
 COPY . .
 
 # ------------------------------------------------
-# 4️⃣ Build
+# 4️⃣ Publish (build + publish in one step)
 # ------------------------------------------------
-RUN dotnet build 01_Presentation.csproj \
+RUN dotnet publish 01.Presentation.csproj \
     -c Release \
-    --no-restore \
-    --runtime linux-musl-x64
-
-# ============================================
-# Stage 2: Publish
-# ============================================
-FROM build AS publish
-
-RUN dotnet publish 01_Presentation.csproj \
-    -c Release \
-    --no-build \
     --runtime linux-musl-x64 \
     --self-contained false \
     -o /app/publish \
     /p:UseAppHost=false
 
 # ============================================
-# Stage 3: Runtime
+# Stage 2: Runtime
 # ============================================
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime
 
-RUN apk add --no-cache curl
+# ICU for localization (en, ja, my) — required since DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+RUN apk add --no-cache icu-libs curl
 
 # Non-root user
 RUN addgroup -g 1000 appgroup && \
@@ -60,7 +50,7 @@ RUN addgroup -g 1000 appgroup && \
 
 WORKDIR /app
 
-COPY --from=publish /app/publish .
+COPY --from=build /app/publish .
 
 RUN chown -R appuser:appgroup /app
 USER appuser
@@ -68,12 +58,12 @@ USER appuser
 EXPOSE 8080
 
 ENV ASPNETCORE_URLS=http://+:8080 \
-    ASPNETCORE_ENVIRONMENT=Development \
+    ASPNETCORE_ENVIRONMENT=Production \
     DOTNET_RUNNING_IN_CONTAINER=true \
-    DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true \
+    DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false \
     TZ=UTC
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
 
-ENTRYPOINT ["dotnet", "01_Presentation.dll"]
+ENTRYPOINT ["dotnet", "01.Presentation.dll"]

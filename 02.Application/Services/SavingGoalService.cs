@@ -35,7 +35,7 @@ public class SavingGoalService : ISavingGoalService
         var pageSize = Math.Clamp(filter.PageSize, 1, 100);
 
         var (items, totalCount) = await _repository.GetByUserIdAsync(
-            userId, filter.Status, filter.Keyword, pageSize, filter.Cursor, filter.CursorId);
+            userId, filter.Status, filter.GoalType, filter.Keyword, pageSize, filter.Cursor, filter.CursorId);
 
         var hasNextPage = items.Count > pageSize;
         var resultItems = hasNextPage ? items.Take(pageSize).ToList() : items;
@@ -136,21 +136,6 @@ public class SavingGoalService : ISavingGoalService
             .Sum(g => g.TargetAmount);
         var overallProgress = totalTarget > 0 ? Math.Round(totalSaved / totalTarget * 100, 2) : 0;
 
-        // Group by SavingGoalType for allocation breakdown
-        var goalTypeAllocation = goals
-            .GroupBy(g => g.SavingGoalType)
-            .Select(grp => new GoalTypeAllocationDto(
-                grp.Key.ToString().ToUpperInvariant(),
-                grp.Sum(g => g.CurrentAmount),
-                grp.Where(g => g.Status == AppConstants.SavingGoalStatus.Active).Sum(g => g.TargetAmount),
-                grp.Select(g => g.TargetAmount).Sum() > 0
-                    ? Math.Round(grp.Sum(g => g.CurrentAmount) / grp.Select(g => g.TargetAmount).Sum() * 100, 2)
-                    : 0,
-                grp.Count()
-            ))
-            .OrderByDescending(a => a.TotalSaved)
-            .ToList();
-
         var top5Goals = goals
             .Select(MapToDto)
             .Where(g => g.Status == AppConstants.SavingGoalStatus.Active.ToString().ToUpperInvariant())
@@ -164,7 +149,6 @@ public class SavingGoalService : ISavingGoalService
             overallProgress,
             goals.Count(g => g.Status == AppConstants.SavingGoalStatus.Active),
             goals.Count(g => g.Status == AppConstants.SavingGoalStatus.Completed),
-            goalTypeAllocation,
             top5Goals
         );
     }

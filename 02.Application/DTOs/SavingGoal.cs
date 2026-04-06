@@ -33,21 +33,12 @@ public record SavingGoalContributionDto(
     DateTime CreatedAt
 );
 
-public record GoalTypeAllocationDto(
-    string GoalType,
-    decimal TotalSaved,
-    decimal TotalTarget,
-    decimal ProgressPercentage,
-    int GoalCount
-);
-
 public record SavingDashboardResponse(
     decimal TotalSaved,
     decimal TotalTarget,
     decimal OverallProgressPercentage,
     int ActiveGoalsCount,
     int CompletedGoalsCount,
-    List<GoalTypeAllocationDto> GoalTypeAllocation,
     List<SavingGoalDto> Top5Goals
 );
 
@@ -86,6 +77,7 @@ public record AddSavingContributionRequest(
 public record SavingGoalFilterRequest
 {
     public AppConstants.SavingGoalStatus? Status { get; init; }
+    public AppConstants.SavingGoalType? GoalType { get; init; }
     public string? Keyword { get; init; }
     public int PageSize { get; init; } = 10;
     public DateTime? Cursor { get; init; }
