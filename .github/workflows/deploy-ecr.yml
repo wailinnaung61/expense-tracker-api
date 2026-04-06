@@ -6,8 +6,8 @@ on:
       - prod
 
 jobs:
-  deploy:
-    name: Build, Push & Deploy
+  build:
+    name: Build & Push to ECR
     runs-on: ubuntu-latest
 
     steps:
@@ -36,6 +36,13 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
+  deploy:
+    name: Deploy to EC2
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1
         with:
