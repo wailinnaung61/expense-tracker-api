@@ -7,7 +7,7 @@
 docker-compose up --build -d
 ```
 
-API: `http://localhost:8080`
+API: `http://localhost:80`
 
 ---
 
@@ -31,6 +31,8 @@ docker-compose restart
 ```powershell
 # Rebuild API image and restart (keeps DB data)
 docker-compose up --build -d
+docker-compose pull api && docker-compose up -d api
+
 ```
 
 ---
@@ -77,33 +79,6 @@ aws ecr get-login-password --region us-east-1 | docker login --username AWS --pa
 docker-compose -f docker-compose.prod.yml pull api
 docker-compose -f docker-compose.prod.yml up -d api
 ```
-
-### First Time EC2 Setup
-
-```sh
-# 1. Install Docker & Docker Compose
-sudo yum update -y
-sudo yum install -y docker
-sudo service docker start
-sudo usermod -a -G docker ec2-user
-
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-
-# Re-login for docker group
-exit
-ssh -i your-key.pem ec2-user@your-ec2-ip
-
-# 2. Create project directory
-mkdir -p ~/expensetracker && cd ~/expensetracker
-
-# 3. Copy files from your PC (run on your PC, not EC2)
-scp -i your-key.pem deployment/docker-compose.prod.yml ec2-user@your-ec2-ip:~/expensetracker/
-scp -i your-key.pem deployment/.env ec2-user@your-ec2-ip:~/expensetracker/
-
-# 4. Login to ECR & start everything
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 908027401522.dkr.ecr.us-east-1.amazonaws.com
-docker-compose -f docker-compose.prod.yml up -d
 ```
 
 ### When to Restart What
@@ -285,3 +260,6 @@ docker-compose up -d -e AWS__AccessKey=xxx -e AWS__SecretKey=xxx
 | `AWS__Cognito__UserPoolId` | — | Cognito pool |
 | `AWS__Cognito__ClientId` | — | Cognito client |
 | `CorsSettings__AllowedOrigins__0` | — | Frontend URL |
+
+
+
