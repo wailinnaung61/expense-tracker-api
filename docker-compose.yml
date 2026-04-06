@@ -1,17 +1,29 @@
-version: "3.8"
-
 services:
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: 908027401522.dkr.ecr.us-east-1.amazonaws.com/expense_tracker/api:latest
     container_name: expense-tracker-api
     ports:
-      - "8080:8080"
+      - "80:8080"
+    env_file:
+      - .env
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=ExpenseTracker;Username=postgres;Password=admin
-      - ConnectionStrings__Redis=redis:6379,abortConnect=false,connectTimeout=10000,syncTimeout=10000,asyncTimeout=10000,connectRetry=3
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=ExpenseTracker;Username=${DB_USER:-postgres};Password=${DB_PASSWORD:-admin}
+      - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD:-},abortConnect=false,connectTimeout=10000,syncTimeout=10000,asyncTimeout=10000,connectRetry=3
+      - AWS__Region=${AWS_REGION:-us-east-1}
+      - AWS__AccessKey=${AWS_ACCESS_KEY:-}
+      - AWS__SecretKey=${AWS_SECRET_KEY:-}
+      - AWS__Cognito__UserPoolId=${COGNITO_USER_POOL_ID:-}
+      - AWS__Cognito__ClientId=${COGNITO_CLIENT_ID:-}
+      - AWS__Cognito__ClientSecret=${COGNITO_CLIENT_SECRET:-}
+      - AWS__Cognito__Region=${AWS_REGION:-us-east-1}
+      - AWS__EventBridge__EventBusName=default
+      - AWS__EventBridge__Source=expense-tracker.export
+      - AWS__S3__ExportBucketName=${S3_EXPORT_BUCKET:-}
+      - AWS__S3__PresignedUrlExpiryMinutes=5
+      - CorsSettings__AllowedOrigins__0=${FRONTEND_URL:-http://localhost:5173}
+      - OpenAI__ApiKey=${OPENAI_API_KEY:-}
+      - OpenAI__Model=gpt-4o-mini
     depends_on:
       postgres:
         condition: service_healthy
@@ -26,8 +38,8 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_DB: ExpenseTracker
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: admin
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-admin}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
