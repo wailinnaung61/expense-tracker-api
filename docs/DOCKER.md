@@ -76,32 +76,31 @@ cd ~/expensetracker
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 908027401522.dkr.ecr.us-east-1.amazonaws.com
 
 # Pull latest API image & restart (DB + Redis untouched)
-docker-compose -f docker-compose.prod.yml pull api
-docker-compose -f docker-compose.prod.yml up -d api
-```
+docker-compose pull api
+docker-compose up -d api
 ```
 
 ### When to Restart What
 
 | Change | Command on EC2 |
 |---|---|
-| API code change | `docker-compose -f docker-compose.prod.yml pull api && docker-compose -f docker-compose.prod.yml up -d api` |
-| `.env` change | `docker-compose -f docker-compose.prod.yml up -d api` |
-| DB password change | `docker-compose -f docker-compose.prod.yml up -d` |
-| First time setup | `docker-compose -f docker-compose.prod.yml up -d` |
-| Nuclear reset | `docker-compose -f docker-compose.prod.yml down -v && docker-compose -f docker-compose.prod.yml up -d` |
+| API code change | `docker-compose pull api && docker-compose up -d api` |
+| `.env` change | `docker-compose up -d api` |
+| DB password change | `docker-compose up -d` |
+| First time setup | `docker-compose up -d` |
+| Nuclear reset | `docker-compose down -v && docker-compose up -d` |
 
 ### Production Logs (on EC2)
 
 ```sh
 # API logs
-docker-compose -f docker-compose.prod.yml logs -f api
+docker-compose logs -f api
 
 # All logs
-docker-compose -f docker-compose.prod.yml logs -f
+docker-compose logs -f
 
 # Last 100 lines
-docker-compose -f docker-compose.prod.yml logs --tail=100 api
+docker-compose logs --tail=100 api
 ```
 
 ---
@@ -113,9 +112,11 @@ deployment/
 ├── .env.example              # Environment variables template → copy to .env
 ├── deploy-ecr.ps1            # Push to ECR (Windows)
 ├── deploy-ecr.sh             # Push to ECR (Linux)
-└── docker-compose.prod.yml   # Production compose (pulls from ECR)
 
-docker-compose.yml            # Local development (builds from source)
+.github/workflows/
+└── deploy-ecr.yml            # CI/CD: auto build → ECR → approve → deploy EC2
+
+docker-compose.yml            # Used on both local & EC2
 Dockerfile                    # Multi-stage build
 ```
 
