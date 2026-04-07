@@ -263,4 +263,12 @@ docker-compose up -d -e AWS__AccessKey=xxx -e AWS__SecretKey=xxx
 | `CorsSettings__AllowedOrigins__0` | — | Frontend URL |
 
 
+## Update DockerCompose
 
+```update api
+# api only
+docker-compose up -d --force-recreate api
+
+# update all services
+docker-compose up -d --force-recreate
+```
