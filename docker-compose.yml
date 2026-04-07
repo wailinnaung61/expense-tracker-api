@@ -3,7 +3,7 @@ services:
     image: 908027401522.dkr.ecr.us-east-1.amazonaws.com/expense_tracker/api:latest
     container_name: expense-tracker-api
     ports:
-      - "80:8080"
+      - "8080:8080"
     env_file:
       - .env
     environment:
@@ -21,7 +21,8 @@ services:
       - AWS__EventBridge__Source=expense-tracker.export
       - AWS__S3__ExportBucketName=${S3_EXPORT_BUCKET:-}
       - AWS__S3__PresignedUrlExpiryMinutes=5
-      - CorsSettings__AllowedOrigins__0=${FRONTEND_URL:-http://localhost:5173}
+      - CorsSettings__AllowedOrigins__0=https://usespendio.com
+      - CorsSettings__AllowedOrigins__1=https://www.usespendio.com
       - OpenAI__ApiKey=${OPENAI_API_KEY:-}
       - OpenAI__Model=gpt-4o-mini
     depends_on:
