@@ -67,6 +67,8 @@ public static class AppConstants
         public const string Categories = "categories";
         public const string RecurringPayments = "recurring_payments";
         public const string Budget = "budget";
+        public const string Savings = "savings";
+        public const string Investments = "investments";
     }
 
     public enum BudgetStatus

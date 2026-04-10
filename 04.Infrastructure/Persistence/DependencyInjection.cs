@@ -5,6 +5,8 @@ using Amazon.Runtime;
 using Amazon.S3;
 using expense_tracker_backend.Application.Interfaces;
 using expense_tracker_backend.Application.Services;
+using expense_tracker_backend.Application.Services.Chat;
+using expense_tracker_backend.Application.Services.Chat.Handlers;
 using expense_tracker_backend.Domain.Interfaces;
 using expense_tracker_backend.Infrastructure.AWS.Configuration;
 using Infrastructure.Data;
@@ -49,9 +51,6 @@ public static class DependencyInjection
         services.AddScoped<ISavingGoalRepository, SavingGoalRepository>();
         services.AddScoped<ISavingGoalContributionRepository, SavingGoalContributionRepository>();
 
-        // In-memory cache for chat conversation history
-        services.AddMemoryCache();
-
         // Register services
         services.AddScoped<IExpenseCategoryService, ExpenseCategoryService>();
         services.AddScoped<ITranactionService, TranactionService>();
@@ -61,8 +60,27 @@ public static class DependencyInjection
         services.AddScoped<IInvestmentService, InvestmentService>();
         services.AddScoped<IInvestmentPortfolioService, InvestmentPortfolioService>();
         services.AddScoped<ISavingGoalService, SavingGoalService>();
-        services.AddScoped<IChatService, ChatService>();
         services.AddScoped<IDashboardService, DashboardService>();
+
+        // Chat V2: orchestrator + supporting classes
+        services.AddScoped<IChatService, ChatService>();
+        services.AddScoped<ChatContextLoader>();
+        services.AddScoped<ChatHistoryStore>();
+        services.AddScoped<ChatPreFilter>();
+        services.AddScoped<ChatSystemPromptBuilder>();
+        services.AddScoped<ChatToolRegistry>();
+        services.AddScoped<ChatRefreshResolver>();
+        services.AddScoped<ChatConfirmationHandler>();
+
+        // Chat V2: domain handlers
+        services.AddScoped<TransactionChatHandler>();
+        services.AddScoped<CategoryChatHandler>();
+        services.AddScoped<BudgetChatHandler>();
+        services.AddScoped<RecurringPaymentChatHandler>();
+        services.AddScoped<SavingGoalChatHandler>();
+        services.AddScoped<InvestmentChatHandler>();
+        services.AddScoped<AggregationChatHandler>();
+        services.AddScoped<ExportChatHandler>();
 
         // Notifications
         services.AddScoped<INotificationRepository, NotificationRepository>();

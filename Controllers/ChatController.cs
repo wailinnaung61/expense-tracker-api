@@ -21,9 +21,34 @@ public class ChatController : BaseController
         _logger = logger;
     }
 
-    /// <summary>
-    /// Send a chat message to AI assistant
-    /// </summary>
+    [HttpGet("init")]
+    public async Task<ActionResult<ChatInitResponse>> Init()
+    {
+        if (UserId is null)
+            return Unauthorized();
+
+        try
+        {
+            var response = await _chatService.InitAsync(UserId.Value);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Chat init failed for user {UserId}", UserId);
+            return StatusCode(500, new { message = "Failed to initialize chat." });
+        }
+    }
+
+    [HttpDelete("history")]
+    public async Task<ActionResult> ClearHistory()
+    {
+        if (UserId is null)
+            return Unauthorized();
+
+        await _chatService.ClearHistoryAsync(UserId.Value);
+        return Ok(new { message = "Chat history cleared." });
+    }
+
     [HttpPost]
     public async Task<ActionResult<ChatResponse>> Chat([FromBody] ChatRequest request)
     {
