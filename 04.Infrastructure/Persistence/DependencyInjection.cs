@@ -80,7 +80,6 @@ public static class DependencyInjection
         services.AddScoped<SavingGoalChatHandler>();
         services.AddScoped<InvestmentChatHandler>();
         services.AddScoped<AggregationChatHandler>();
-        services.AddScoped<ExportChatHandler>();
 
         // Notifications
         services.AddScoped<INotificationRepository, NotificationRepository>();

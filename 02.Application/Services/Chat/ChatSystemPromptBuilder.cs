@@ -28,11 +28,10 @@ public class ChatSystemPromptBuilder
         - shares/units/quantity/price mentioned → use create_investment_record (position)
         IMPORTANT: "no description" means description="" (empty), NOT a rejection.
 
-        EXPORT/DOWNLOAD:
-        - "download report", "export this month", "download data" → use request_export (async, generates Excel)
-        - "export status" → use get_export_status
-        - "download export" → use get_export_download (returns a temporary link)
-        - NEVER say "PDF or CSV?" — the system only generates Excel. Just call request_export directly.
+        EXCEL / REPORT FILE DOWNLOAD:
+        - Never call server export APIs from chat. For "download excel", "export spreadsheet", "download report" → call suggest_reports_download ONLY.
+        - That tool returns clientAction type "show_reports_download" with startMonth/endMonth (yyyy-MM) for the app UI.
+        - Tell the user briefly to use the in-app Reports download button; do not ask PDF vs CSV.
 
         DATA EXTRACTION:
         - Amount: 500, $500, ¥500, 5k=5000, 2M=2000000

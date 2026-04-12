@@ -29,7 +29,6 @@ public class ChatService : IChatService
     private readonly SavingGoalChatHandler _savingHandler;
     private readonly InvestmentChatHandler _investmentHandler;
     private readonly AggregationChatHandler _aggregationHandler;
-    private readonly ExportChatHandler _exportHandler;
 
     private const int MaxToolCallIterations = 5;
 
@@ -49,8 +48,7 @@ public class ChatService : IChatService
         RecurringPaymentChatHandler recurringHandler,
         SavingGoalChatHandler savingHandler,
         InvestmentChatHandler investmentHandler,
-        AggregationChatHandler aggregationHandler,
-        ExportChatHandler exportHandler)
+        AggregationChatHandler aggregationHandler)
     {
         _logger = logger;
         _contextLoader = contextLoader;
@@ -67,7 +65,6 @@ public class ChatService : IChatService
         _savingHandler = savingHandler;
         _investmentHandler = investmentHandler;
         _aggregationHandler = aggregationHandler;
-        _exportHandler = exportHandler;
 
         var apiKey = configuration["OpenAI:ApiKey"]
             ?? throw new InvalidOperationException("OpenAI:ApiKey is not configured");
@@ -139,13 +136,14 @@ public class ChatService : IChatService
             var args = doc.RootElement.Clone();
 
             var (summary, data) = await ExecuteFunctionAsync(userId, command.FunctionName, args);
-            var functionsCalled = new List<FunctionCallResult> { new(command.FunctionName, data) };
+            var functionsCalled = new List<FunctionCallResult> { new(command.FunctionName, data is ChatClientAction ? null : data) };
             var refreshTarget = _refreshResolver.Resolve(functionsCalled);
+            var clientAction = data as ChatClientAction;
 
             if (refreshTarget is not null)
                 await _contextLoader.InvalidateAsync(userId);
 
-            return new ChatResponse(summary, userName, refreshTarget, functionsCalled, DateTime.UtcNow);
+            return new ChatResponse(summary, userName, refreshTarget, functionsCalled, DateTime.UtcNow, clientAction);
         }
         catch (Exception ex)
         {
@@ -175,6 +173,7 @@ public class ChatService : IChatService
         var choice = response.Value;
 
         var functionsCalled = new List<FunctionCallResult>();
+        ChatClientAction? clientActionFromTools = null;
         var iterations = 0;
 
         while (choice.FinishReason == ChatFinishReason.ToolCalls && iterations < MaxToolCallIterations)
@@ -202,8 +201,10 @@ public class ChatService : IChatService
                 using var doc = JsonDocument.Parse(argsJson);
                 var args = doc.RootElement.Clone();
                 var (result, resultObj) = await ExecuteFunctionAsync(userId, primaryCall.FunctionName, args);
+                if (resultObj is ChatClientAction ca)
+                    clientActionFromTools = ca;
                 messages.Add(new ToolChatMessage(primaryCall.Id, result ?? string.Empty));
-                functionsCalled.Add(new FunctionCallResult(primaryCall.FunctionName, resultObj));
+                functionsCalled.Add(new FunctionCallResult(primaryCall.FunctionName, resultObj is ChatClientAction ? null : resultObj));
             }
 
             var next = await _chatClient.CompleteChatAsync(messages, options);
@@ -217,7 +218,7 @@ public class ChatService : IChatService
                 ?? string.Join("\n", functionsCalled.Select(f => f.FunctionName));
             messages.Add(new AssistantChatMessage(choice));
             var refreshTarget = _refreshResolver.Resolve(functionsCalled);
-            chatResponse = new ChatResponse(finalText, userName, refreshTarget, functionsCalled, DateTime.UtcNow);
+            chatResponse = new ChatResponse(finalText, userName, refreshTarget, functionsCalled, DateTime.UtcNow, clientActionFromTools);
 
             if (refreshTarget is not null)
                 await _contextLoader.InvalidateAsync(userId);
@@ -290,10 +291,9 @@ public class ChatService : IChatService
                 "get_expense_breakdown" => await _aggregationHandler.GetExpenseBreakdownAsync(userId, args),
                 "get_dashboard" => await _aggregationHandler.GetDashboardAsync(userId, args),
 
-                "request_export" => await _exportHandler.RequestExportAsync(userId, args),
-                "get_export_status" => await _exportHandler.GetExportStatusAsync(userId, args),
-                "get_export_download" => await _exportHandler.GetExportDownloadAsync(userId, args),
-                "list_exports" => await _exportHandler.ListExportsAsync(userId),
+                "suggest_reports_download" => (
+                    ChatReportsDownloadIntent.AssistantMessage,
+                    ChatReportsDownloadIntent.BuildClientActionFromToolArgs(args)),
 
                 _ => ($"Unknown function: {functionName}", null)
             };
