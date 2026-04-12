@@ -28,6 +28,7 @@ public class ChatPreFilter
             • **Saving Goals** — list, create, update, delete goals, add contributions
             • **Investments** — list, create, update, delete positions
             • **Reports** — monthly/yearly summaries, expense breakdowns, dashboard
+            • **Excel export** — ask in chat; the app shows a **Reports → Download** button (not started from chat APIs)
             
             Try: "add expense 500 coffee" or "show my budget" or "monthly summary"
             """),
@@ -79,6 +80,13 @@ public class ChatPreFilter
         {
             if (pattern.IsMatch(trimmed))
                 return new ChatResponse(response, userName, null, null, DateTime.UtcNow);
+        }
+
+        // Excel / report download → UI hint only (no export API from chat)
+        if (ChatReportsDownloadIntent.Matches(trimmed))
+        {
+            var action = ChatReportsDownloadIntent.BuildClientActionFromMessage(trimmed);
+            return new ChatResponse(ChatReportsDownloadIntent.AssistantMessage, userName, null, null, DateTime.UtcNow, action);
         }
 
         // Off-topic detection

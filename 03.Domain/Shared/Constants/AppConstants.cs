@@ -59,6 +59,13 @@ public static class AppConstants
         Completed
     }
 
+    /// <summary>Machine-readable hints for the mobile/web client (e.g. show a CTA button).</summary>
+    public static class ChatClientActionType
+    {
+        /// <summary>Show the Reports screen download / Excel export control; use StartMonth/EndMonth (yyyy-MM).</summary>
+        public const string ShowReportsDownload = "show_reports_download";
+    }
+
     // Chat refresh targets — tells the frontend which data to reload after a chat action
     public static class ChatRefreshTarget
     {

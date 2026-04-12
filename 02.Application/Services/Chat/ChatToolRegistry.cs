@@ -14,7 +14,6 @@ public class ChatToolRegistry
         tools.AddRange(SavingGoalTools());
         tools.AddRange(InvestmentTools());
         tools.AddRange(ReportTools());
-        tools.AddRange(ExportTools());
         return tools;
     }
 
@@ -677,57 +676,18 @@ public class ChatToolRegistry
                     "month": { "type": "string", "description": "Month in yyyy-MM format. Default current month." }
                 }
             }
-            """))
-    ];
+            """)),
 
-    // ── Export ───────────────────────────────────────────────────────────────
-
-    private static List<ChatTool> ExportTools() =>
-    [
         ChatTool.CreateFunctionTool(
-            "request_export",
-            "Request an Excel export of transactions for a date range. Use when user says 'download report', 'export this month', 'export data'. This is async — the file is generated in the background.",
+            "suggest_reports_download",
+            "When the user wants to download Excel, export a spreadsheet, or download a report file: call this ONLY. Does NOT call any server export API — returns a clientAction so the app can show the Reports download button.",
             BinaryData.FromString("""
             {
                 "type": "object",
                 "properties": {
-                    "start_month": { "type": "string", "description": "Start month in yyyy-MM format. Default current month." },
-                    "end_month": { "type": "string", "description": "End month in yyyy-MM format. Default same as start_month." }
+                    "start_month": { "type": "string", "description": "Start month yyyy-MM for the export range. Default current month." },
+                    "end_month": { "type": "string", "description": "End month yyyy-MM. Default same as start_month." }
                 }
-            }
-            """)),
-
-        ChatTool.CreateFunctionTool(
-            "get_export_status",
-            "Check the status of an export job. If no job_id given, shows the latest export.",
-            BinaryData.FromString("""
-            {
-                "type": "object",
-                "properties": {
-                    "job_id": { "type": "string", "description": "Export job UUID (optional — shows latest if omitted)" }
-                }
-            }
-            """)),
-
-        ChatTool.CreateFunctionTool(
-            "get_export_download",
-            "Get the download link for a completed export. Link is valid for 5 minutes.",
-            BinaryData.FromString("""
-            {
-                "type": "object",
-                "properties": {
-                    "job_id": { "type": "string", "description": "Export job UUID (optional — uses latest completed if omitted)" }
-                }
-            }
-            """)),
-
-        ChatTool.CreateFunctionTool(
-            "list_exports",
-            "List recent export jobs and their statuses.",
-            BinaryData.FromString("""
-            {
-                "type": "object",
-                "properties": {}
             }
             """))
     ];

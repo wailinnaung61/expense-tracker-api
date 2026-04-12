@@ -4,6 +4,11 @@ namespace expense_tracker_backend.Application.DTOs;
 
 public record ChatRequest(string Message);
 
+public record ChatClientAction(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("startMonth")] string? StartMonth = null,
+    [property: JsonPropertyName("endMonth")] string? EndMonth = null);
+
 public record ChatResponse(
     string Message,
     [property: JsonPropertyName("name")]
@@ -13,8 +18,9 @@ public record ChatResponse(
     [property: JsonPropertyName("functionsCalled")]
     List<FunctionCallResult>? FunctionsCalled = null,
     [property: JsonPropertyName("createdAt")]
-    DateTime CreatedAt = default
-);
+    DateTime CreatedAt = default,
+    [property: JsonPropertyName("clientAction")]
+    ChatClientAction? ClientAction = null);
 
 public record FunctionCallResult(
     string FunctionName,
