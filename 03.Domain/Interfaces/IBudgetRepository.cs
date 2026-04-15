@@ -16,6 +16,12 @@ public interface IBudgetRepository
     Task<BudgetSnapshotResult?> UpdateSnapshotOnTransactionAsync(string userId, string categoryId, string transactionDate, decimal amountDelta, int countDelta);
     Task ResetSnapshotsAsync(string userId, string budgetId);
     Task InvalidateCacheAsync(string userId, int year, int month);
+
+    /// <summary>True if any budget for the user overlaps [startDateIso, endDateIso] (inclusive ISO yyyy-MM-dd).</summary>
+    Task<bool> HasOverlappingBudgetAsync(string userId, string startDateIso, string endDateIso, string? excludeBudgetId = null);
+
+    /// <summary>Invalidates month-scoped budget cache keys for every calendar month touched by the inclusive range.</summary>
+    Task InvalidateCacheForBudgetRangeAsync(string userId, DateOnly rangeStart, DateOnly rangeEnd);
 }
 
 public record BudgetSnapshotResult(

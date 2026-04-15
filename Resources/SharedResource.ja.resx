@@ -170,6 +170,15 @@
   <data name="BudgetCategoryDeleteSuccess" xml:space="preserve">
     <value>予算カテゴリを削除しました。</value>
   </data>
+  <data name="BudgetDateRangeOverlaps" xml:space="preserve">
+    <value>この期間は既存の予算と重なっています。</value>
+  </data>
+  <data name="BudgetCustomDatesBothRequired" xml:space="preserve">
+    <value>カスタム期間の場合は、開始日と終了日の両方を指定してください。</value>
+  </data>
+  <data name="BudgetEndBeforeStart" xml:space="preserve">
+    <value>終了日は開始日以降である必要があります。</value>
+  </data>
   <data name="MfaSessionExpired" xml:space="preserve">
     <value>MFAセッションの有効期限が切れたか、既に使用されています。もう一度サインインしてください。</value>
   </data>

@@ -249,6 +249,15 @@
   <data name="BudgetCategoryDeleteSuccess" xml:space="preserve">
     <value>ဘတ်ဂျက် ကတဂိုရီ ဖျက်သိမ်းပြီးပါပြီ။</value>
   </data>
+  <data name="BudgetDateRangeOverlaps" xml:space="preserve">
+    <value>ဤရက်စွဲအပိုင်းအခြားသည် ရှိပြီးသား ဘတ်ဂျက်နှင့် ထပ်နေပါသည်။</value>
+  </data>
+  <data name="BudgetCustomDatesBothRequired" xml:space="preserve">
+    <value>စိတ်ကြိုက် ကာလအတွက် စတင်ရက်နှင့် အဆုံးရက် နှစ်ခုလုံး ထည့်သွင်းရပါမည်။</value>
+  </data>
+  <data name="BudgetEndBeforeStart" xml:space="preserve">
+    <value>အဆုံးရက်သည် စတင်ရက်နေ့ ဒါမှမဟုတ် ၎င်းနောက်မှ ဖြစ်ရပါမည်။</value>
+  </data>
   <data name="MfaSessionExpired" xml:space="preserve">
     <value>MFA session ကုန်သွားပြီ သို့မဟုတ် အသုံးပြုပြီးဖြစ်သည်။ ထပ်မံ လက်မှတ်ထိုးဝင်ပါ။</value>
   </data>

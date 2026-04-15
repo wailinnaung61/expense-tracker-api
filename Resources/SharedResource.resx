@@ -170,6 +170,15 @@
   <data name="BudgetCategoryDeleteSuccess" xml:space="preserve">
     <value>Budget category removed successfully.</value>
   </data>
+  <data name="BudgetDateRangeOverlaps" xml:space="preserve">
+    <value>This date range overlaps an existing budget.</value>
+  </data>
+  <data name="BudgetCustomDatesBothRequired" xml:space="preserve">
+    <value>StartDate and EndDate must both be provided for a custom budget range.</value>
+  </data>
+  <data name="BudgetEndBeforeStart" xml:space="preserve">
+    <value>Budget end date must be on or after the start date.</value>
+  </data>
   <data name="MfaSessionExpired" xml:space="preserve">
     <value>MFA session has expired or already been used. Please sign in again.</value>
   </data>

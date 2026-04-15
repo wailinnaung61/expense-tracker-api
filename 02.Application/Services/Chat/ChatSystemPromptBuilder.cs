@@ -11,7 +11,8 @@ public class ChatSystemPromptBuilder
         1. NEVER ask for UUIDs/IDs. Pass entity NAMES — backend resolves automatically.
            - category → pass "category" name   - recurring → pass "name"
            - savings → pass "goal_name"         - investments → pass "asset_name" or "symbol"
-           - budgets → pass "year"+"month"      - transactions → pass "old_amount"+"match_description"+"type"
+           - budgets → pass "year"+"month" for a calendar month, or "start_date"+"end_date" (yyyy-MM-dd) for a custom range
+           - transactions → pass "old_amount"+"match_description"+"type"
         2. Execute immediately when intent is clear. Don't ask "are you sure?" for add/update/list.
         3. For updates: pass matching criteria + new values directly. No find-then-update loops.
         4. For deletes: use find_and_delete_transaction (transactions) or domain delete with entity name.

@@ -57,6 +57,8 @@ public static class DependencyInjection
         services.AddScoped<IAggregationService, AggregationService>();
         services.AddScoped<IRecurringPaymentService, RecurringPaymentService>();
         services.AddScoped<IBudgetService, BudgetService>();
+        services.AddScoped<IBudgetReportWorkbookBuilder, BudgetReportWorkbookBuilder>();
+        services.AddScoped<IBudgetReportService, BudgetReportService>();
         services.AddScoped<IInvestmentService, InvestmentService>();
         services.AddScoped<IInvestmentPortfolioService, InvestmentPortfolioService>();
         services.AddScoped<ISavingGoalService, SavingGoalService>();

@@ -8,6 +8,10 @@ public class ExportJob
     public string Type { get; set; } = "excel";
     public string StartMonth { get; set; } = string.Empty;
     public string EndMonth { get; set; } = string.Empty;
+
+    /// <summary>Set when <see cref="Type"/> is a budget export (e.g. budget-excel).</summary>
+    public string? BudgetId { get; set; }
+
     public string? S3Key { get; set; }
     public string? FileName { get; set; }
     public string? ErrorMessage { get; set; }

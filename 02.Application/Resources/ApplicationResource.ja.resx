@@ -54,4 +54,28 @@
   <data name="Notif_ExportFailed_Msg" xml:space="preserve"><value>取引エクスポートに失敗しました。もう一度お試しください。</value></data>
   <data name="Notif_LargeTransaction_Msg" xml:space="preserve"><value>「{1}」に{0}の支出が記録されました</value></data>
   <data name="Notif_PaymentFailed_Msg" xml:space="preserve"><value>取引「{0}」（{1}）が失敗しました</value></data>
+  <data name="BudgetExcel_SheetName" xml:space="preserve"><value>予算レポート</value></data>
+  <data name="BudgetExcel_TitleDefault" xml:space="preserve"><value>月次予算</value></data>
+  <data name="BudgetExcel_TitleWithName" xml:space="preserve"><value>{0}さんの月次予算</value></data>
+  <data name="BudgetExcel_MainTitleLine" xml:space="preserve"><value>Spendio — {0}</value></data>
+  <data name="BudgetExcel_HeaderMetaLine" xml:space="preserve"><value>ユーザー: {0} | 期間: {1} ～ {2} | 通貨: {3} | 種類: {4}</value></data>
+  <data name="BudgetExcel_HeaderUnknownUser" xml:space="preserve"><value>—</value></data>
+  <data name="BudgetExcel_PeriodType_Monthly" xml:space="preserve"><value>月次</value></data>
+  <data name="BudgetExcel_PeriodType_Custom" xml:space="preserve"><value>カスタム期間</value></data>
+  <data name="BudgetExcel_BalanceOverview" xml:space="preserve"><value>収支の概要</value></data>
+  <data name="BudgetExcel_TotalBudgetCeiling" xml:space="preserve"><value>予算上限（天井）</value></data>
+  <data name="BudgetExcel_TotalAllocatedLines" xml:space="preserve"><value>行への配分合計</value></data>
+  <data name="BudgetExcel_UnallocatedToLines" xml:space="preserve"><value>行に未配分</value></data>
+  <data name="BudgetExcel_TotalSpentActual" xml:space="preserve"><value>実際の支出合計</value></data>
+  <data name="BudgetExcel_RemainingBudgetMinusSpent" xml:space="preserve"><value>残り（予算 − 支出）</value></data>
+  <data name="BudgetExcel_BudgetByCategory" xml:space="preserve"><value>カテゴリ別予算</value></data>
+  <data name="BudgetExcel_ColumnCategory" xml:space="preserve"><value>カテゴリ</value></data>
+  <data name="BudgetExcel_ColumnProjected" xml:space="preserve"><value>予定（{0}）</value></data>
+  <data name="BudgetExcel_ColumnActual" xml:space="preserve"><value>実績（{0}）</value></data>
+  <data name="BudgetExcel_ColumnDifference" xml:space="preserve"><value>差分（{0}）</value></data>
+  <data name="BudgetExcel_ColumnVariancePercent" xml:space="preserve"><value>乖離率</value></data>
+  <data name="BudgetExcel_ColumnTxCount" xml:space="preserve"><value>取引件数</value></data>
+  <data name="BudgetExcel_Subtotal" xml:space="preserve"><value>小計</value></data>
+  <data name="BudgetExcel_FooterNote" xml:space="preserve"><value>予定＝カテゴリごとの配分。実績＝期間内の記録された支出。差分＝予定 − 実績。乖離率＝実績 ÷ 予定。</value></data>
+  <data name="BudgetExcel_UnknownCategory" xml:space="preserve"><value>（不明）</value></data>
 </root>

@@ -2,6 +2,7 @@ using System.Globalization;
 using _04.Infrastructure.Services;
 using expense_tracker_backend;
 using expense_tracker_backend.Application.Interfaces;
+using expense_tracker_backend.Application.Options;
 using expense_tracker_backend.Application.Services;
 using expense_tracker_backend.Domain.Interfaces;
 using Infrastructure.Data;
@@ -68,6 +69,7 @@ builder.Services.AddSwaggerGen(options =>
 
 // AWS & Cognito
 builder.Services.Configure<AwsSettings>(builder.Configuration.GetSection(AwsSettings.SectionName));
+builder.Services.Configure<S3PresignOptions>(builder.Configuration.GetSection("AWS:S3"));
 
 var awsSettings = builder.Configuration.GetSection(AwsSettings.SectionName).Get<AwsSettings>()!;
 var credentials = new BasicAWSCredentials(awsSettings.AccessKey, awsSettings.SecretKey);

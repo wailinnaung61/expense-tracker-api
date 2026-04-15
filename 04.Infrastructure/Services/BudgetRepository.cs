@@ -50,19 +50,27 @@ public class BudgetRepository : IBudgetRepository
 
     public async Task<Budget?> GetByMonthAsync(string userId, int year, int month)
     {
-        var startDate = new DateOnly(year, month, 1).ToString("yyyy-MM-dd");
+        var monthStart = new DateOnly(year, month, 1);
+        var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+        var monthStartStr = monthStart.ToString("yyyy-MM-dd");
+        var monthEndStr = monthEnd.ToString("yyyy-MM-dd");
 
         var cacheKey = BuildCacheKey(userId, year, month);
         var cached = await GetFromCacheAsync<Budget>(cacheKey);
         if (cached is not null) return cached;
 
+        // Budget overlaps this calendar month iff start <= monthEnd && end >= monthStart (ISO strings order lexically).
         var budget = await _context.Budgets
             .AsNoTracking()
             .Include(b => b.BudgetCategories)
                 .ThenInclude(bc => bc.Snapshot)
             .Include(b => b.BudgetCategories)
                 .ThenInclude(bc => bc.Category)
-            .FirstOrDefaultAsync(b => b.UserId == userId && b.StartDate == startDate);
+            .Where(b => b.UserId == userId &&
+                b.StartDate.CompareTo(monthEndStr) <= 0 &&
+                b.EndDate.CompareTo(monthStartStr) >= 0)
+            .OrderBy(b => b.StartDate)
+            .FirstOrDefaultAsync();
 
         if (budget is not null)
             await SetCacheAsync(cacheKey, budget);
@@ -87,8 +95,9 @@ public class BudgetRepository : IBudgetRepository
         await _context.Budgets.AddAsync(budget);
         await _context.SaveChangesAsync();
 
-        var startDate = DateOnly.ParseExact(budget.StartDate, "yyyy-MM-dd");
-        await InvalidateCacheAsync(budget.UserId, startDate.Year, startDate.Month);
+        var rangeStart = DateOnly.ParseExact(budget.StartDate, "yyyy-MM-dd");
+        var rangeEnd = DateOnly.ParseExact(budget.EndDate, "yyyy-MM-dd");
+        await InvalidateCacheForBudgetRangeAsync(budget.UserId, rangeStart, rangeEnd);
 
         return budget;
     }
@@ -115,8 +124,13 @@ public class BudgetRepository : IBudgetRepository
 
         if (budget is null) return false;
 
+        var rangeStart = DateOnly.ParseExact(budget.StartDate, "yyyy-MM-dd");
+        var rangeEnd = DateOnly.ParseExact(budget.EndDate, "yyyy-MM-dd");
+
         _context.Budgets.Remove(budget);
         await _context.SaveChangesAsync();
+
+        await InvalidateCacheForBudgetRangeAsync(userId, rangeStart, rangeEnd);
         return true;
     }
 
@@ -132,8 +146,9 @@ public class BudgetRepository : IBudgetRepository
 
         if (budget is not null)
         {
-            var startDate = DateOnly.ParseExact(budget.StartDate, "yyyy-MM-dd");
-            await InvalidateCacheAsync(budget.UserId, startDate.Year, startDate.Month);
+            var rangeStart = DateOnly.ParseExact(budget.StartDate, "yyyy-MM-dd");
+            var rangeEnd = DateOnly.ParseExact(budget.EndDate, "yyyy-MM-dd");
+            await InvalidateCacheForBudgetRangeAsync(budget.UserId, rangeStart, rangeEnd);
         }
 
         return budgetCategory;
@@ -164,12 +179,13 @@ public class BudgetRepository : IBudgetRepository
 
         if (budgetCategory is null) return false;
 
-        var startDate = DateOnly.ParseExact(budgetCategory.Budget!.StartDate, "yyyy-MM-dd");
+        var rangeStart = DateOnly.ParseExact(budgetCategory.Budget!.StartDate, "yyyy-MM-dd");
+        var rangeEnd = DateOnly.ParseExact(budgetCategory.Budget.EndDate, "yyyy-MM-dd");
 
         _context.BudgetCategories.Remove(budgetCategory);
         await _context.SaveChangesAsync();
 
-        await InvalidateCacheAsync(userId, startDate.Year, startDate.Month);
+        await InvalidateCacheForBudgetRangeAsync(userId, rangeStart, rangeEnd);
         return true;
     }
 
@@ -201,8 +217,9 @@ public class BudgetRepository : IBudgetRepository
         await _context.SaveChangesAsync();
 
         var budget = snapshot.BudgetCategory!.Budget!;
-        var startDate = DateOnly.ParseExact(budget.StartDate, "yyyy-MM-dd");
-        await InvalidateCacheAsync(userId, startDate.Year, startDate.Month);
+        var rangeStart = DateOnly.ParseExact(budget.StartDate, "yyyy-MM-dd");
+        var rangeEnd = DateOnly.ParseExact(budget.EndDate, "yyyy-MM-dd");
+        await InvalidateCacheForBudgetRangeAsync(userId, rangeStart, rangeEnd);
 
         _logger.LogInformation(
             "Budget snapshot updated: userId={UserId} categoryId={CategoryId} delta={Delta}",
@@ -241,6 +258,29 @@ public class BudgetRepository : IBudgetRepository
     {
         var key = BuildCacheKey(userId, year, month);
         await _cache.RemoveAsync(key);
+    }
+
+    public async Task<bool> HasOverlappingBudgetAsync(
+        string userId, string startDateIso, string endDateIso, string? excludeBudgetId = null)
+    {
+        var query = _context.Budgets.AsNoTracking().Where(b => b.UserId == userId);
+        if (!string.IsNullOrEmpty(excludeBudgetId))
+            query = query.Where(b => b.BudgetId != excludeBudgetId);
+
+        return await query.AnyAsync(b =>
+            b.StartDate.CompareTo(endDateIso) <= 0 &&
+            b.EndDate.CompareTo(startDateIso) >= 0);
+    }
+
+    public async Task InvalidateCacheForBudgetRangeAsync(string userId, DateOnly rangeStart, DateOnly rangeEnd)
+    {
+        var cursor = new DateOnly(rangeStart.Year, rangeStart.Month, 1);
+        var endMonth = new DateOnly(rangeEnd.Year, rangeEnd.Month, 1);
+        while (cursor <= endMonth)
+        {
+            await InvalidateCacheAsync(userId, cursor.Year, cursor.Month);
+            cursor = cursor.AddMonths(1);
+        }
     }
 
     // ── Cache helpers ────────────────────────────────────────────────────────────

@@ -1,3 +1,4 @@
+using System.Net;
 using Amazon.S3;
 using Amazon.S3.Model;
 using expense_tracker_backend.Application.Interfaces;
@@ -41,5 +42,23 @@ public class S3ExportFileService : IExportFileService
             _logger.LogError(ex, "Failed to generate pre-signed URL for {S3Key}", s3Key);
             return null;
         }
+    }
+
+    public async Task UploadObjectAsync(string key, byte[] body, string contentType,
+        CancellationToken cancellationToken = default)
+    {
+        using var ms = new MemoryStream(body, writable: false);
+        var request = new PutObjectRequest
+        {
+            BucketName = _aws.S3.ExportBucketName,
+            Key = key,
+            InputStream = ms,
+            ContentType = contentType,
+            ServerSideEncryptionMethod = ServerSideEncryptionMethod.AES256
+        };
+
+        var response = await _s3.PutObjectAsync(request, cancellationToken);
+        if (response.HttpStatusCode != HttpStatusCode.OK)
+            _logger.LogWarning("S3 PutObject returned {Status} for key {Key}", response.HttpStatusCode, key);
     }
 }

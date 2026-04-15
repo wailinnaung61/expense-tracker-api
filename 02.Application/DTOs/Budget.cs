@@ -8,7 +8,11 @@ public record BudgetMonthlyResponse(
     BudgetSummaryDto Summary,
     List<BudgetCategoryDto> Categories,
     List<TopSpendingDto> TopSpending,
-    string? BudgetId
+    string? BudgetId,
+    /// <summary>Inclusive budget period start (yyyy-MM-dd).</summary>
+    string StartDate,
+    /// <summary>Inclusive budget period end (yyyy-MM-dd).</summary>
+    string EndDate
 );
 
 public record BudgetSummaryDto(
@@ -51,11 +55,17 @@ public record BudgetDto(
 
 // ── Request DTOs ───────────────────────────────────────────────────────────────
 
+/// <param name="Year">Used with <paramref name="Month"/> when <paramref name="StartDate"/> and <paramref name="EndDate"/> are omitted (full calendar month).</param>
+/// <param name="Month">1–12; first/last day of month become the budget range when custom dates are not sent.</param>
+/// <param name="StartDate">Optional inclusive start (yyyy-MM-dd). Must be sent together with <paramref name="EndDate"/> for a custom range.</param>
+/// <param name="EndDate">Optional inclusive end (yyyy-MM-dd).</param>
 public record CreateBudgetRequest(
     int Year,
     int Month,
     decimal TotalAmount,
-    List<CreateBudgetCategoryRequest>? Categories = null
+    List<CreateBudgetCategoryRequest>? Categories = null,
+    DateOnly? StartDate = null,
+    DateOnly? EndDate = null
 );
 
 public record CreateBudgetCategoryRequest(

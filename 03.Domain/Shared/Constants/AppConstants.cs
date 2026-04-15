@@ -86,7 +86,8 @@ public static class AppConstants
 
     public enum BudgetPeriodType
     {
-        Monthly
+        Monthly,
+        Custom
     }
 
     public enum SavingGoalStatus
