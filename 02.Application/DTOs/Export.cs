@@ -22,6 +22,9 @@ public record ExportJobResponse(
 
 public record ExportDownloadResponse(string DownloadUrl, string FileName, DateTime ExpiresAt);
 
+/// <summary>Returned after a budget Excel file is generated and uploaded to S3.</summary>
+public record BudgetReportExcelResponse(Guid JobId, string Status, string FileName, DateTime CreatedAt);
+
 // ── EventBridge detail payload (matches your Lambda) ──
 // camelCase because your Lambda expects: userId, type, startMonth, endMonth
 public class ExportEventDetail

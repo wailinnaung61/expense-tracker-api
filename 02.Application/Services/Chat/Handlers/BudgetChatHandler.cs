@@ -44,10 +44,28 @@ public class BudgetChatHandler
         if (totalAmount <= 0)
             return ("Please provide the total budget amount.", null);
 
-        var request = new CreateBudgetRequest(year, month, totalAmount);
+        var startDate = TryDateOnly(args, "start_date");
+        var endDate = TryDateOnly(args, "end_date");
+        if (startDate.HasValue != endDate.HasValue)
+            return ("For a custom range, pass both start_date and end_date (yyyy-MM-dd). For a full month, omit both and use year/month.", null);
+
+        CreateBudgetRequest request;
+        string summaryLabel;
+        if (startDate.HasValue && endDate.HasValue)
+        {
+            request = new CreateBudgetRequest(
+                startDate.Value.Year, startDate.Value.Month, totalAmount, null, startDate, endDate);
+            summaryLabel = $"{startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}";
+        }
+        else
+        {
+            request = new CreateBudgetRequest(year, month, totalAmount);
+            summaryLabel = $"{year}-{month:D2}";
+        }
+
         var result = await _budgetService.CreateBudgetAsync(userId, request);
 
-        return ($"Created budget for {year}-{month:D2}: {totalAmount:N0} total", result);
+        return ($"Created budget for {summaryLabel}: {totalAmount:N0} total", result);
     }
 
     public async Task<(string, object?)> UpdateBudgetAsync(Guid userId, JsonElement args)
@@ -175,4 +193,12 @@ public class BudgetChatHandler
 
     private static int TryInt(JsonElement args, string prop, int fallback) =>
         args.TryGetProperty(prop, out var v) && v.TryGetInt32(out var i) ? i : fallback;
+
+    private static DateOnly? TryDateOnly(JsonElement args, string prop)
+    {
+        if (!args.TryGetProperty(prop, out var v) || v.ValueKind != JsonValueKind.String)
+            return null;
+        var s = v.GetString();
+        return DateOnly.TryParse(s, out var d) ? d : null;
+    }
 }

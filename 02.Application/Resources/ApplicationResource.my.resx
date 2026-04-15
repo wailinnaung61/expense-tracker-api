@@ -54,4 +54,28 @@
   <data name="Notif_ExportFailed_Msg" xml:space="preserve"><value>ငွေလွှဲမှု ထုတ်ယူမှု မအောင်မြင်ပါ။ ထပ်မံ ကြိုးစားပါ။</value></data>
   <data name="Notif_LargeTransaction_Msg" xml:space="preserve"><value>"{1}" အတွက် {0} သုံးစွဲမှု မှတ်တမ်းတင်ပြီး</value></data>
   <data name="Notif_PaymentFailed_Msg" xml:space="preserve"><value>ငွေလွှဲမှု "{0}" ({1}) မအောင်မြင်ပါ</value></data>
+  <data name="BudgetExcel_SheetName" xml:space="preserve"><value>ဘတ်ဂျက်အစီရင်ခံစာ</value></data>
+  <data name="BudgetExcel_TitleDefault" xml:space="preserve"><value>လစဉ်ဘတ်ဂျက်</value></data>
+  <data name="BudgetExcel_TitleWithName" xml:space="preserve"><value>{0} ၏ လစဉ်ဘတ်ဂျက်</value></data>
+  <data name="BudgetExcel_MainTitleLine" xml:space="preserve"><value>Spendio — {0}</value></data>
+  <data name="BudgetExcel_HeaderMetaLine" xml:space="preserve"><value>အသုံးပြုသူ: {0} | ကာလ: {1} ~ {2} | ငွေကြေး: {3} | အမျိုးအစား: {4}</value></data>
+  <data name="BudgetExcel_HeaderUnknownUser" xml:space="preserve"><value>—</value></data>
+  <data name="BudgetExcel_PeriodType_Monthly" xml:space="preserve"><value>လစဉ်</value></data>
+  <data name="BudgetExcel_PeriodType_Custom" xml:space="preserve"><value>စိတ်ကြိုက် ကာလ</value></data>
+  <data name="BudgetExcel_BalanceOverview" xml:space="preserve"><value>လက်ကျန်အကျဉ်းချုပ်</value></data>
+  <data name="BudgetExcel_TotalBudgetCeiling" xml:space="preserve"><value>စုစုပေါင်းဘတ်ဂျက် (အမြင့်ဆုံးကန့်သတ်)</value></data>
+  <data name="BudgetExcel_TotalAllocatedLines" xml:space="preserve"><value>ခွဲဝေထားသောငွေ စုစုပေါင်း</value></data>
+  <data name="BudgetExcel_UnallocatedToLines" xml:space="preserve"><value>မခွဲဝေရသေးသောငွေ စုစုပေါင်း</value></data>
+  <data name="BudgetExcel_TotalSpentActual" xml:space="preserve"><value>သုံးစွဲမှု စုစုပေါင်း</value></data>
+  <data name="BudgetExcel_RemainingBudgetMinusSpent" xml:space="preserve"><value>ကျန်ငွေ (ဘတ်ဂျက် − သုံးစွဲမှု)</value></data>
+  <data name="BudgetExcel_BudgetByCategory" xml:space="preserve"><value>အမျိုးအစားအလိုက် ဘတ်ဂျက်</value></data>
+  <data name="BudgetExcel_ColumnCategory" xml:space="preserve"><value>အမျိုးအစား</value></data>
+  <data name="BudgetExcel_ColumnProjected" xml:space="preserve"><value>ခန့်မှန်း ({0})</value></data>
+  <data name="BudgetExcel_ColumnActual" xml:space="preserve"><value>အမှန် ({0})</value></data>
+  <data name="BudgetExcel_ColumnDifference" xml:space="preserve"><value>ကွာခြားချက် ({0})</value></data>
+  <data name="BudgetExcel_ColumnVariancePercent" xml:space="preserve"><value>ကွာခြားချက် %</value></data>
+  <data name="BudgetExcel_ColumnTxCount" xml:space="preserve"><value>ငွေလွှဲမှု အရေအတွက်</value></data>
+  <data name="BudgetExcel_Subtotal" xml:space="preserve"><value>အပေါင်း</value></data>
+  <data name="BudgetExcel_FooterNote" xml:space="preserve"><value>ခန့်မှန်း = အမျိုးအစားတစ်ခုချင်းစီ၏ ခွဲဝေမှု။ အမှန် = ကာလအတွင်း မှတ်တမ်းတင်ထားသော သုံးစွဲမှု။ ကွာခြားချက် = ခန့်မှန်း − အမှန်။ ကွာခြားချက် % = အမှန် ÷ ခန့်မှန်း။</value></data>
+  <data name="BudgetExcel_UnknownCategory" xml:space="preserve"><value>(မသိ)</value></data>
 </root>

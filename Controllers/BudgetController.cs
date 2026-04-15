@@ -12,22 +12,57 @@ namespace expense_tracker_backend.API.Controllers;
 public class BudgetController : BaseController
 {
     private readonly IBudgetService _service;
+    private readonly IBudgetReportService _budgetReportService;
     private readonly ILogger<BudgetController> _logger;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public BudgetController(
         IBudgetService service,
+        IBudgetReportService budgetReportService,
         ILogger<BudgetController> logger,
         IStringLocalizer<SharedResource> localizer)
     {
         _service = service;
+        _budgetReportService = budgetReportService;
         _logger = logger;
         _localizer = localizer;
     }
 
     /// <summary>
+    /// GET /api/budgets/reports/{jobId}/download — pre-signed URL for a budget Excel created via POST .../reports/excel.
+    /// </summary>
+    [HttpGet("reports/{jobId:guid}/download")]
+    public async Task<ActionResult<ExportDownloadResponse>> GetBudgetReportDownload(Guid jobId)
+    {
+        if (UserId is null) return Unauthorized();
+
+        var result = await _budgetReportService.GetReportDownloadUrlAsync(UserId.Value, jobId);
+        return result is null
+            ? NotFound(new { message = "Budget report not ready or not found." })
+            : Ok(result);
+    }
+
+    /// <summary>
+    /// POST /api/budgets/{budgetId}/reports/excel — build workbook, upload to S3, return job id for download.
+    /// </summary>
+    [HttpPost("{budgetId}/reports/excel")]
+    public async Task<ActionResult<BudgetReportExcelResponse>> CreateBudgetReportExcel(
+        string budgetId, CancellationToken cancellationToken)
+    {
+        if (UserId is null) return Unauthorized();
+
+        _logger.LogInformation("Budget Excel report requested for budget {BudgetId} user {UserId}", budgetId, UserId);
+
+        var result = await _budgetReportService.CreateExcelReportAsync(UserId.Value, budgetId, cancellationToken);
+        if (result is null)
+            return NotFound(new { message = _localizer["BudgetNotFound"].Value });
+
+        return Ok(result);
+    }
+
+    /// <summary>
     /// GET /api/budgets/{year}/{month}
-    /// Returns budget summary, categories with snapshot, top spending for the given month
+    /// Returns budget summary, categories with snapshot, top spending, budget id, and the budget period <c>startDate</c>/<c>endDate</c> (yyyy-MM-dd) for the range that overlaps this calendar month.
     /// </summary>
     [HttpGet("{year:int}/{month:int}")]
     public async Task<ActionResult<BudgetMonthlyResponse>> GetByMonth(int year, int month)
@@ -36,7 +71,7 @@ public class BudgetController : BaseController
 
         _logger.LogInformation("Getting budget for user {UserId} {Year}/{Month}", UserId, year, month);
 
-        var budget = await _service.GetByMonthAsync(UserId.Value, year, month);
+        BudgetMonthlyResponse? budget = await _service.GetByMonthAsync(UserId.Value, year, month);
 
         if (budget is null)
             return NotFound(new { message = _localizer["BudgetNotFound"].Value });
@@ -46,21 +81,32 @@ public class BudgetController : BaseController
 
     /// <summary>
     /// POST /api/budgets
-    /// Create a new monthly budget (with optional category allocations)
+    /// Create a budget: either <see cref="CreateBudgetRequest.Year"/>/<see cref="CreateBudgetRequest.Month"/> (full calendar month)
+    /// or <see cref="CreateBudgetRequest.StartDate"/> and <see cref="CreateBudgetRequest.EndDate"/> (custom inclusive range).
     /// </summary>
     [HttpPost]
     public async Task<ActionResult<BudgetDto>> Create([FromBody] CreateBudgetRequest request)
     {
         if (UserId is null) return Unauthorized();
 
-        _logger.LogInformation("Creating budget for user {UserId} {Year}/{Month} amount={Amount}",
-            UserId, request.Year, request.Month, request.TotalAmount);
+        var (routeYear, routeMonth) = request.StartDate is not null && request.EndDate is not null
+            ? (request.StartDate.Value.Year, request.StartDate.Value.Month)
+            : (request.Year, request.Month);
+
+        _logger.LogInformation(
+            "Creating budget for user {UserId} {Year}/{Month} amount={Amount} customRange={Custom}",
+            UserId, routeYear, routeMonth, request.TotalAmount,
+            request.StartDate is not null && request.EndDate is not null);
 
         try
         {
             var created = await _service.CreateBudgetAsync(UserId.Value, request);
-            return CreatedAtAction(nameof(GetByMonth),
-                new { year = request.Year, month = request.Month }, created);
+            return CreatedAtAction(nameof(GetByMonth), new { year = routeYear, month = routeMonth }, created);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Budget create validation failed for user {UserId}", UserId);
+            return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
         {

@@ -41,6 +41,10 @@ public class ExportJobConfiguration : IEntityTypeConfiguration<ExportJob>
             .HasMaxLength(10)
             .IsRequired();
 
+        builder.Property(e => e.BudgetId)
+            .HasColumnName("budget_id")
+            .HasMaxLength(50);
+
         builder.Property(e => e.S3Key)
             .HasColumnName("s3_key")
             .HasMaxLength(500);

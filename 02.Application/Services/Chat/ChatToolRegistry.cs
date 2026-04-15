@@ -250,14 +250,16 @@ public class ChatToolRegistry
 
         ChatTool.CreateFunctionTool(
             "create_budget",
-            "Create a new monthly budget.",
+            "Create a budget for a full calendar month (year+month) or a custom inclusive date range (start_date+end_date, yyyy-MM-dd). Ranges must not overlap existing budgets.",
             BinaryData.FromString("""
             {
                 "type": "object",
                 "properties": {
-                    "year": { "type": "integer", "description": "Budget year (default current)" },
+                    "year": { "type": "integer", "description": "Budget year (default current); used with month when start_date/end_date omitted" },
                     "month": { "type": "integer", "description": "Budget month 1-12 (default current)" },
-                    "total_amount": { "type": "number", "description": "Total budget amount for the month" }
+                    "start_date": { "type": "string", "description": "Inclusive start yyyy-MM-dd (optional; must pair with end_date)" },
+                    "end_date": { "type": "string", "description": "Inclusive end yyyy-MM-dd (optional; must pair with start_date)" },
+                    "total_amount": { "type": "number", "description": "Total budget amount for the period" }
                 },
                 "required": ["total_amount"]
             }

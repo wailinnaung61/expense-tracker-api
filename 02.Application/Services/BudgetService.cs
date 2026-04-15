@@ -3,16 +3,19 @@ using expense_tracker_backend.Application.Interfaces;
 using expense_tracker_backend.Domain.Entities;
 using expense_tracker_backend.Domain.Interfaces;
 using expense_tracker_backend.Domain.Shared.Constants;
+using Microsoft.Extensions.Localization;
 
 namespace expense_tracker_backend.Application.Services;
 
 public class BudgetService : IBudgetService
 {
     private readonly IBudgetRepository _repository;
+    private readonly IStringLocalizer _localizer;
 
-    public BudgetService(IBudgetRepository repository)
+    public BudgetService(IBudgetRepository repository, IStringLocalizer localizer)
     {
         _repository = repository;
+        _localizer = localizer;
     }
 
     public async Task<BudgetMonthlyResponse?> GetByMonthAsync(Guid userId, int year, int month)
@@ -52,21 +55,49 @@ public class BudgetService : IBudgetService
             dailyBudget,
             usagePercent);
 
-        return new BudgetMonthlyResponse(summary, categories, topSpending, budget.BudgetId);
+        return new BudgetMonthlyResponse(
+            summary, categories, topSpending, budget.BudgetId, budget.StartDate, budget.EndDate);
     }
 
     public async Task<BudgetDto> CreateBudgetAsync(Guid userId, CreateBudgetRequest request)
     {
-        var startDate = new DateOnly(request.Year, request.Month, 1);
-        var endDate = startDate.AddMonths(1).AddDays(-1);
+        DateOnly startDate;
+        DateOnly endDate;
+
+        if (request.StartDate.HasValue || request.EndDate.HasValue)
+        {
+            if (!request.StartDate.HasValue || !request.EndDate.HasValue)
+                throw new InvalidOperationException(_localizer["BudgetCustomDatesBothRequired"].Value);
+
+            startDate = request.StartDate.Value;
+            endDate = request.EndDate.Value;
+        }
+        else
+        {
+            startDate = new DateOnly(request.Year, request.Month, 1);
+            endDate = startDate.AddMonths(1).AddDays(-1);
+        }
+
+        if (endDate < startDate)
+            throw new InvalidOperationException(_localizer["BudgetEndBeforeStart"].Value);
+
+        var startIso = startDate.ToString("yyyy-MM-dd");
+        var endIso = endDate.ToString("yyyy-MM-dd");
+
+        if (await _repository.HasOverlappingBudgetAsync(userId.ToString(), startIso, endIso))
+            throw new InvalidOperationException(_localizer["BudgetDateRangeOverlaps"].Value);
+
+        var periodType = IsFullCalendarMonth(startDate, endDate)
+            ? AppConstants.BudgetPeriodType.Monthly
+            : AppConstants.BudgetPeriodType.Custom;
 
         var budget = new Budget
         {
             BudgetId = Guid.NewGuid().ToString(),
             UserId = userId.ToString(),
-            PeriodType = AppConstants.BudgetPeriodType.Monthly,
-            StartDate = startDate.ToString("yyyy-MM-dd"),
-            EndDate = endDate.ToString("yyyy-MM-dd"),
+            PeriodType = periodType,
+            StartDate = startIso,
+            EndDate = endIso,
             TotalAmount = request.TotalAmount,
             CreatedAt = DateTime.UtcNow
         };
@@ -107,8 +138,9 @@ public class BudgetService : IBudgetService
 
         var updated = await _repository.UpdateAsync(budget);
 
-        var startDate = DateOnly.ParseExact(budget.StartDate, "yyyy-MM-dd");
-        await _repository.InvalidateCacheAsync(userId.ToString(), startDate.Year, startDate.Month);
+        var rangeStart = DateOnly.ParseExact(budget.StartDate, "yyyy-MM-dd");
+        var rangeEnd = DateOnly.ParseExact(budget.EndDate, "yyyy-MM-dd");
+        await _repository.InvalidateCacheForBudgetRangeAsync(userId.ToString(), rangeStart, rangeEnd);
 
         return MapToBudgetDto(updated);
     }
@@ -148,15 +180,15 @@ public class BudgetService : IBudgetService
         var budgetCategory = await _repository.GetBudgetCategoryAsync(userId.ToString(), budgetCategoryId);
         if (budgetCategory is null) return null;
 
-        // Read start date before update — Budget navigation won't be available on the returned entity
-        var startDate = DateOnly.ParseExact(budgetCategory.Budget!.StartDate, "yyyy-MM-dd");
+        var rangeStart = DateOnly.ParseExact(budgetCategory.Budget!.StartDate, "yyyy-MM-dd");
+        var rangeEnd = DateOnly.ParseExact(budgetCategory.Budget.EndDate, "yyyy-MM-dd");
 
         budgetCategory.AllocatedAmount = request.AllocatedAmount;
         if (request.AlertThreshold.HasValue)
             budgetCategory.AlertThreshold = request.AlertThreshold.Value;
 
         await _repository.UpdateBudgetCategoryAsync(budgetCategory);
-        await _repository.InvalidateCacheAsync(userId.ToString(), startDate.Year, startDate.Month);
+        await _repository.InvalidateCacheForBudgetRangeAsync(userId.ToString(), rangeStart, rangeEnd);
 
         return MapToCategoryDto(budgetCategory);
     }
@@ -173,27 +205,20 @@ public class BudgetService : IBudgetService
 
         await _repository.ResetSnapshotsAsync(userId.ToString(), budgetId);
 
-        var startDate = DateOnly.ParseExact(budget.StartDate, "yyyy-MM-dd");
-        await _repository.InvalidateCacheAsync(userId.ToString(), startDate.Year, startDate.Month);
+        var rangeStart = DateOnly.ParseExact(budget.StartDate, "yyyy-MM-dd");
+        var rangeEnd = DateOnly.ParseExact(budget.EndDate, "yyyy-MM-dd");
+        await _repository.InvalidateCacheForBudgetRangeAsync(userId.ToString(), rangeStart, rangeEnd);
 
         return true;
     }
 
-    public async Task<bool> DeleteBudgetAsync(Guid userId, string budgetId)
-    {
-        var budget = await _repository.GetByIdAsync(userId.ToString(), budgetId);
-        if (budget is null) return false;
-
-        var startDate = DateOnly.ParseExact(budget.StartDate, "yyyy-MM-dd");
-        var deleted = await _repository.DeleteAsync(userId.ToString(), budgetId);
-
-        if (deleted)
-            await _repository.InvalidateCacheAsync(userId.ToString(), startDate.Year, startDate.Month);
-
-        return deleted;
-    }
+    public async Task<bool> DeleteBudgetAsync(Guid userId, string budgetId) =>
+        await _repository.DeleteAsync(userId.ToString(), budgetId);
 
     // ── Helpers ──────────────────────────────────────────────────────────────────
+
+    private static bool IsFullCalendarMonth(DateOnly start, DateOnly end) =>
+        start.Day == 1 && end == start.AddMonths(1).AddDays(-1);
 
     private static string GetBudgetCategoryStatus(decimal spent, decimal allocated, decimal threshold)
     {
