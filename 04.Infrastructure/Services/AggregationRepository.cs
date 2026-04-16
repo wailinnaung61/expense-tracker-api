@@ -1,6 +1,7 @@
 using System.Text.Json;
 using expense_tracker_backend.Domain.Entities;
 using expense_tracker_backend.Domain.Interfaces;
+using expense_tracker_backend.Domain.Shared.Constants;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
@@ -224,6 +225,39 @@ public class AggregationRepository : IAggregationRepository
         return result;
     }
 
+    public async Task<Aggregation> GetCustomDateSummaryAsync(Guid userId, string startDate, string endDate)
+    {
+        var cacheKey = $"agg:{userId}:custom-summary:{startDate}:{endDate}";
+        var cached = await GetFromCacheAsync<Aggregation>(cacheKey);
+        if (cached is not null) return cached;
+
+        await RefreshWithLockAsync("mv_daily_aggregations");
+        var userIdStr = userId.ToString();
+        var startParam = DateOnly.Parse(startDate);
+        var endParam = DateOnly.Parse(endDate);
+
+        var row = await _context.Database
+            .SqlQuery<AggregationRow>($"""
+                SELECT
+                    {startDate + "_to_" + endDate} AS period,
+                    TO_CHAR({startParam}, 'YYYY/MM/DD') AS period_start,
+                    TO_CHAR({endParam}, 'YYYY/MM/DD') AS period_end,
+                    COALESCE(SUM(income), 0) AS income,
+                    COALESCE(SUM(expense), 0) AS expense,
+                    COALESCE(SUM(saving), 0) AS saving,
+                    COALESCE(SUM(investment), 0) AS investment,
+                    COALESCE(SUM(transaction_count), 0) AS transaction_count
+                FROM mv_daily_aggregations
+                WHERE user_id = {userIdStr}
+                    AND period BETWEEN {startParam} AND {endParam}
+                """)
+            .FirstAsync();
+
+        var result = MapToAggregation(row);
+        await SetCacheAsync(cacheKey, result);
+        return result;
+    }
+
     // ============================================================================
     // YEARLY AGGREGATIONS
     // ============================================================================
@@ -353,31 +387,26 @@ public class AggregationRepository : IAggregationRepository
         var cached = await GetFromCacheAsync<List<CategoryAggregation>>(cacheKey);
         if (cached is not null) return cached;
 
-        await RefreshWithLockAsync("mv_category_monthly_aggregations");
         var userIdStr = userId.ToString();
-        var startParam = DateOnly.Parse(startDate);
-        var endParam = DateOnly.Parse(endDate);
-
-        var rows = await _context.Database
-            .SqlQuery<CategoryAggregationRow>($"""
-                SELECT
-                    category_id,
-                    type,
-                    '' AS period,
-                    TO_CHAR(MIN(period_start), 'YYYY/MM/DD') AS period_start,
-                    TO_CHAR(MAX(period_end),   'YYYY/MM/DD') AS period_end,
-                    SUM(total_amount)       AS total_amount,
-                    SUM(transaction_count)  AS transaction_count
-                FROM mv_category_monthly_aggregations
-                WHERE user_id = {userIdStr}
-                    AND period_start <= {endParam}
-                    AND period_end   >= {startParam}
-                    AND type = 'EXPENSE'
-                GROUP BY category_id, type
-                """)
+        var result = await _context.Transactions
+            .AsNoTracking()
+            .Where(t => t.UserId == userIdStr
+                && t.Type == AppConstants.TransactionType.Expense
+                && string.Compare(t.TransactionDate, startDate) >= 0
+                && string.Compare(t.TransactionDate, endDate) <= 0
+                && !string.IsNullOrEmpty(t.CategoryId))
+            .GroupBy(t => t.CategoryId!)
+            .Select(g => new CategoryAggregation
+            {
+                CategoryId = g.Key,
+                Period = string.Empty,
+                PeriodStart = startDate.Replace('-', '/'),
+                PeriodEnd = endDate.Replace('-', '/'),
+                TotalAmount = g.Sum(t => t.Amount),
+                TransactionCount = g.Count()
+            })
             .ToListAsync();
 
-        var result = rows.Select(MapToCategoryAggregation).ToList();
         await SetCacheAsync(cacheKey, result);
         return result;
     }

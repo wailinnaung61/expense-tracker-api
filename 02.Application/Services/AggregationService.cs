@@ -155,38 +155,29 @@ public class AggregationService : IAggregationService
             ));
         }
 
-        MonthlyComparison? comparison = null;
-        if (DateOnly.TryParse(startDate, out var start) && DateOnly.TryParse(endDate, out var end))
-        {
-            var days = end.DayNumber - start.DayNumber + 1;
-            var prevEnd = start.AddDays(-1);
-            var prevStart = prevEnd.AddDays(-(days - 1));
-
-            var prevDocs = await _repository.GetCategoryAggregationsByDateRangeAsync(
-                userId, prevStart.ToString("yyyy-MM-dd"), prevEnd.ToString("yyyy-MM-dd"));
-
-            var prevTotal = prevDocs.Sum(x => x.TotalAmount);
-            if (prevTotal > 0 || totalExpenses > 0)
-            {
-                var difference = totalExpenses - prevTotal;
-                var percentageChange = prevTotal > 0
-                    ? (double)(difference / prevTotal * 100)
-                    : 0;
-
-                comparison = new MonthlyComparison(
-                    prevTotal,
-                    totalExpenses,
-                    difference,
-                    Math.Round(percentageChange, 1)
-                );
-            }
-        }
-
         return new ExpenseBreakdown(
             totalExpenses,
             breakdownItems.OrderByDescending(x => x.Amount).ToList(),
-            comparison
+            null
         );
+    }
+
+    public async Task<CustomDateAggregationResponse> GetCustomDateAggregationAsync(Guid userId, string startDate, string endDate)
+    {
+        var summaryDoc = await _repository.GetCustomDateSummaryAsync(userId, startDate, endDate);
+        var summary = new MonthlyAggregation(
+            summaryDoc.Period,
+            summaryDoc.PeriodStart ?? startDate,
+            summaryDoc.PeriodEnd ?? endDate,
+            summaryDoc.Income,
+            summaryDoc.Expense,
+            summaryDoc.Saving,
+            summaryDoc.Investment,
+            summaryDoc.TransactionCount
+        );
+
+        var breakdown = await GetExpenseBreakdownByRangeAsync(userId, startDate, endDate);
+        return new CustomDateAggregationResponse(summary, breakdown);
     }
 
     private static DailyAggregation MapToDailyAggregation(Aggregation doc) => new(
