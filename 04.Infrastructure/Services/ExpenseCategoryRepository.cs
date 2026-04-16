@@ -60,8 +60,8 @@ public class ExpenseCategoryRepository : IExpenseCategoryRepository
         }
 
         var items = await query
-            .OrderByDescending(c => c.CreatedAt)
-            .ThenByDescending(c => c.CategoryId)
+            .OrderBy(c => c.DisplayName)
+            .ThenBy(c => c.CategoryId)
             .Take(pageSize + 1)
             .ToListAsync();
 
