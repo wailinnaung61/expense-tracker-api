@@ -52,11 +52,23 @@ public class ExpenseCategoryRepository : IExpenseCategoryRepository
 
         var totalCount = await query.CountAsync();
 
-        if (cursor.HasValue && !string.IsNullOrEmpty(cursorId))
+        if (!string.IsNullOrEmpty(cursorId))
         {
-            query = query.Where(c =>
-                c.CreatedAt < cursor.Value ||
-                (c.CreatedAt == cursor.Value && string.Compare(c.CategoryId, cursorId) < 0));
+            // Cursor pagination must use the same ordering keys as the final ORDER BY
+            // to avoid duplicates across pages.
+            var cursorItem = await _context.ExpenseCategories
+                .AsNoTracking()
+                .Where(c => c.UserId == userId && c.CategoryId == cursorId)
+                .Select(c => new { c.DisplayName, c.CategoryId })
+                .FirstOrDefaultAsync();
+
+            if (cursorItem is not null)
+            {
+                query = query.Where(c =>
+                    string.Compare(c.DisplayName, cursorItem.DisplayName) > 0 ||
+                    (c.DisplayName == cursorItem.DisplayName &&
+                     string.Compare(c.CategoryId, cursorItem.CategoryId) > 0));
+            }
         }
 
         var items = await query
