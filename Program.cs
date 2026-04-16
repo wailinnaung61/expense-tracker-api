@@ -20,6 +20,7 @@ using expense_tracker_backend.Infrastructure.Services;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Serilog;
 
@@ -136,7 +137,23 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var migrateLog = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseMigrate");
+    var pending = db.Database.GetPendingMigrations().ToList();
+    if (pending.Count > 0)
+        migrateLog.LogInformation("Applying {Count} pending EF migration(s): {Migrations}", pending.Count, string.Join(", ", pending));
+    else
+        migrateLog.LogInformation("No pending EF migrations (schema already matches this build).");
+
     db.Database.Migrate();
+
+    var stillPending = db.Database.GetPendingMigrations().ToList();
+    if (stillPending.Count > 0)
+        migrateLog.LogWarning("After Migrate(), these migrations are still pending (investigate): {Migrations}", string.Join(", ", stillPending));
+    else
+    {
+        var latest = db.Database.GetAppliedMigrations().OrderByDescending(m => m).FirstOrDefault();
+        migrateLog.LogInformation("EF migrations up to date. Latest applied migration id: {Latest}", latest ?? "(none)");
+    }
 }
 
 // Configure the HTTP request pipeline.
