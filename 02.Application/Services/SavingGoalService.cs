@@ -153,6 +153,47 @@ public class SavingGoalService : ISavingGoalService
         );
     }
 
+    public async Task<SavingDashboardResponse> GetDashboardByRangeAsync(Guid userId, string startDate, string endDate)
+    {
+        // Dashboard goal progress is portfolio-wide state; limiting goals by creation date
+        // makes totals misleading for custom ranges.
+        var goals = await _repository.GetAllForDashboardAsync(userId);
+
+        var (savingTxs, _) = await _transactionRepository.GetTransactionsAsync(
+            userId.ToString(),
+            DateTime.SpecifyKind(DateOnly.Parse(startDate).ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc),
+            DateTime.SpecifyKind(DateOnly.Parse(endDate).ToDateTime(TimeOnly.MaxValue), DateTimeKind.Utc),
+            [AppConstants.TransactionType.Savings],
+            AppConstants.PaymentStatus.Completed,
+            null,
+            null,
+            5000,
+            null,
+            null);
+
+        var totalSaved = savingTxs.Sum(t => t.Amount);
+        var totalTarget = goals
+            .Where(g => g.Status == AppConstants.SavingGoalStatus.Active)
+            .Sum(g => g.TargetAmount);
+        var overallProgress = totalTarget > 0 ? Math.Round(totalSaved / totalTarget * 100, 2) : 0;
+
+        var top5Goals = goals
+            .Select(MapToDto)
+            .Where(g => g.Status == AppConstants.SavingGoalStatus.Active.ToString().ToUpperInvariant())
+            .OrderByDescending(g => g.ProgressPercentage)
+            .Take(5)
+            .ToList();
+
+        return new SavingDashboardResponse(
+            totalSaved,
+            totalTarget,
+            overallProgress,
+            goals.Count(g => g.Status == AppConstants.SavingGoalStatus.Active),
+            goals.Count(g => g.Status == AppConstants.SavingGoalStatus.Completed),
+            top5Goals
+        );
+    }
+
     // ── Contributions ─────────────────────────────────────────────────────────
 
     public async Task<PagedResult<SavingGoalContributionDto>> GetContributionsAsync(

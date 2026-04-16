@@ -20,4 +20,5 @@ public interface IInvestmentRepository
     Task<bool> DeleteAsync(Guid userId, Guid investmentId);
     Task InvalidateCacheAsync(string userId);
     Task<List<Investment>> GetAllForDashboardAsync(string userId);
+    Task<List<Investment>> GetAllForDashboardByRangeAsync(string userId, string startDate, string endDate);
 }

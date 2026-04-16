@@ -15,6 +15,7 @@ public interface ISavingGoalRepository
         DateTime? cursor,
         Guid? cursorId);
     Task<List<SavingGoal>> GetAllForDashboardAsync(Guid userId);
+    Task<List<SavingGoal>> GetAllForDashboardByRangeAsync(Guid userId, string startDate, string endDate);
     Task<SavingGoal> CreateAsync(SavingGoal savingGoal);
     Task<SavingGoal?> UpdateAsync(SavingGoal savingGoal);
     Task<bool> DeleteAsync(Guid userId, Guid savingGoalId);

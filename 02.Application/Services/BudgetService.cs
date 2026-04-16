@@ -59,6 +59,47 @@ public class BudgetService : IBudgetService
             summary, categories, topSpending, budget.BudgetId, budget.StartDate, budget.EndDate);
     }
 
+    public async Task<BudgetMonthlyResponse?> GetByDateRangeAsync(Guid userId, string startDate, string endDate)
+    {
+        var budget = await _repository.GetByDateRangeAsync(userId.ToString(), startDate, endDate);
+        if (budget is null) return null;
+
+        var totalSpent = budget.BudgetCategories
+            .Sum(bc => bc.Snapshot?.SpentAmount ?? 0);
+
+        var end = DateOnly.ParseExact(endDate, "yyyy-MM-dd");
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var effectiveToday = today < end ? today : end;
+        var remainingDays = Math.Max(1, (end.DayNumber - effectiveToday.DayNumber) + 1);
+        var remaining = budget.TotalAmount - totalSpent;
+        var dailyBudget = Math.Round(remaining / remainingDays, 2);
+        var usagePercent = budget.TotalAmount > 0
+            ? (int)Math.Round(totalSpent / budget.TotalAmount * 100)
+            : 0;
+
+        var categories = budget.BudgetCategories
+            .OrderBy(bc => bc.SortOrder)
+            .Select(MapToCategoryDto)
+            .ToList();
+
+        var topSpending = categories
+            .Where(c => budget.TotalAmount > 0)
+            .Select(c => new TopSpendingDto(c.Name, (int)Math.Round(c.Spent / budget.TotalAmount * 100)))
+            .OrderByDescending(t => t.Percent)
+            .Take(5)
+            .ToList();
+
+        var summary = new BudgetSummaryDto(
+            budget.TotalAmount,
+            totalSpent,
+            remaining,
+            dailyBudget,
+            usagePercent);
+
+        return new BudgetMonthlyResponse(
+            summary, categories, topSpending, budget.BudgetId, budget.StartDate, budget.EndDate);
+    }
+
     public async Task<BudgetDto> CreateBudgetAsync(Guid userId, CreateBudgetRequest request)
     {
         DateOnly startDate;

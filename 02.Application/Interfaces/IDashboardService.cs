@@ -5,4 +5,5 @@ namespace expense_tracker_backend.Application.Interfaces;
 public interface IDashboardService
 {
     Task<DashboardResponse> GetDashboardAsync(Guid userId, string month);
+    Task<DashboardResponse> GetDashboardByRangeAsync(Guid userId, string startDate, string endDate);
 }

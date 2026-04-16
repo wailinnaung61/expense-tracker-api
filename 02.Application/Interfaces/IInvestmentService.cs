@@ -10,4 +10,5 @@ public interface IInvestmentService
     Task<InvestmentDto?> UpdateAsync(Guid userId, Guid investmentId, UpdateInvestmentRequest request);
     Task<bool> DeleteAsync(Guid userId, Guid investmentId);
     Task<InvestmentDashboardResponse> GetDashboardAsync(Guid userId);
+    Task<InvestmentDashboardResponse> GetDashboardByRangeAsync(Guid userId, string startDate, string endDate);
 }

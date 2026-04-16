@@ -366,4 +366,13 @@
   <data name="Notif_PaymentFailed_Msg" xml:space="preserve">
     <value>ငွေလွှဲမှု "{0}" ({1}) မအောင်မြင်ပါ</value>
   </data>
+  <data name="DashboardInvalidDateFormat" xml:space="preserve">
+    <value>ရက်စွဲပုံစံ မမှန်ပါ။ yyyy-MM-dd (ဥပမာ 2026-03-01) ကိုသုံးပါ။</value>
+  </data>
+  <data name="DashboardStartAfterEnd" xml:space="preserve">
+    <value>startDate သည် endDate ထက် စောရမည် သို့မဟုတ် တူညီရမည်။</value>
+  </data>
+  <data name="DashboardRangeExceeds24Months" xml:space="preserve">
+    <value>ရက်အပိုင်းအခြားသည် 24 လ ထက် မကျော်ရပါ။</value>
+  </data>
 </root>

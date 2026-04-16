@@ -177,6 +177,41 @@ public class InvestmentRepository : IInvestmentRepository
         return items;
     }
 
+    public async Task<List<Investment>> GetAllForDashboardByRangeAsync(string userId, string startDate, string endDate)
+    {
+        var cacheKey = $"investment:dashboard:raw:{userId}:range:{startDate}:{endDate}";
+
+        try
+        {
+            var bytes = await _cache.GetAsync(cacheKey);
+            if (bytes is not null)
+                return JsonSerializer.Deserialize<List<Investment>>(bytes)!;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Redis cache read failed for key {Key}", cacheKey);
+        }
+
+        var items = await _context.Investments
+            .AsNoTracking()
+            .Where(i => i.UserId == userId
+                && string.Compare(i.PurchaseDate, startDate) >= 0
+                && string.Compare(i.PurchaseDate, endDate) <= 0)
+            .ToListAsync();
+
+        try
+        {
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(items);
+            await _cache.SetAsync(cacheKey, bytes, DashboardCacheOptions);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Redis cache write failed for key {Key}", cacheKey);
+        }
+
+        return items;
+    }
+
     // ============================================================================
     // CACHE
     // ============================================================================

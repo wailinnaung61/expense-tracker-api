@@ -287,4 +287,13 @@
   <data name="Notif_PaymentFailed_Msg" xml:space="preserve">
     <value>Transaction "{0}" ({1}) failed</value>
   </data>
+  <data name="DashboardInvalidDateFormat" xml:space="preserve">
+    <value>Invalid date format. Use yyyy-MM-dd (e.g. 2026-03-01).</value>
+  </data>
+  <data name="DashboardStartAfterEnd" xml:space="preserve">
+    <value>startDate must be before or equal to endDate.</value>
+  </data>
+  <data name="DashboardRangeExceeds24Months" xml:space="preserve">
+    <value>Date range cannot exceed 24 months.</value>
+  </data>
 </root>

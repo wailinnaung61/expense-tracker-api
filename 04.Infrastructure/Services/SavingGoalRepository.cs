@@ -113,6 +113,42 @@ public class SavingGoalRepository : ISavingGoalRepository
         return items;
     }
 
+    public async Task<List<SavingGoal>> GetAllForDashboardByRangeAsync(Guid userId, string startDate, string endDate)
+    {
+        var cacheKey = $"saving:dashboard:range:{userId}:{startDate}:{endDate}";
+        try
+        {
+            var bytes = await _cache.GetAsync(cacheKey);
+            if (bytes is not null)
+                return JsonSerializer.Deserialize<List<SavingGoal>>(bytes)!;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Redis read failed for key {Key}", cacheKey);
+        }
+
+        var start = DateTime.SpecifyKind(DateOnly.Parse(startDate).ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+        var end = DateTime.SpecifyKind(DateOnly.Parse(endDate).ToDateTime(TimeOnly.MaxValue), DateTimeKind.Utc);
+
+        var items = await _context.SavingGoals
+            .AsNoTracking()
+            .Where(s => s.UserId == userId.ToString() && s.CreatedAt >= start && s.CreatedAt <= end)
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync();
+
+        try
+        {
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(items);
+            await _cache.SetAsync(cacheKey, bytes, CacheOptions);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Redis write failed for key {Key}", cacheKey);
+        }
+
+        return items;
+    }
+
     public async Task<SavingGoal> CreateAsync(SavingGoal savingGoal)
     {
         savingGoal.CreatedAt = DateTime.UtcNow;
@@ -161,5 +197,17 @@ public class SavingGoalRepository : ISavingGoalRepository
         var key = $"saving:dashboard:raw:{userId}";
         try { await _cache.RemoveAsync(key); }
         catch (Exception ex) { _logger.LogWarning(ex, "Cache invalidation failed for {Key}", key); }
+
+        try
+        {
+            var prefix = $"ExpenseTracker:saving:dashboard:range:{userId}:";
+            // No Redis multiplexer injected here; remove known broad wildcard-free fallback not available.
+            // Range cache entries are short-lived and will expire automatically.
+            _logger.LogDebug("Skipping wildcard invalidation for saving range cache prefix {Prefix}", prefix);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Range cache invalidation warning for user {UserId}", userId);
+        }
     }
 }
