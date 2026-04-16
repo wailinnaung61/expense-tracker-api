@@ -6,6 +6,7 @@ public interface IBudgetRepository
 {
     Task<Budget?> GetByIdAsync(string userId, string budgetId);
     Task<Budget?> GetByMonthAsync(string userId, int year, int month);
+    Task<Budget?> GetByDateRangeAsync(string userId, string startDateIso, string endDateIso);
     Task<BudgetCategory?> GetBudgetCategoryAsync(string userId, string budgetCategoryId);
     Task<Budget> CreateAsync(Budget budget);
     Task<Budget> UpdateAsync(Budget budget);

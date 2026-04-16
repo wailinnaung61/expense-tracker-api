@@ -392,6 +392,7 @@ public class AggregationRepository : IAggregationRepository
             .AsNoTracking()
             .Where(t => t.UserId == userIdStr
                 && t.Type == AppConstants.TransactionType.Expense
+                && t.Status == AppConstants.PaymentStatus.Completed
                 && string.Compare(t.TransactionDate, startDate) >= 0
                 && string.Compare(t.TransactionDate, endDate) <= 0
                 && !string.IsNullOrEmpty(t.CategoryId))
@@ -531,6 +532,7 @@ public class AggregationRepository : IAggregationRepository
                 $"ExpenseTracker:agg:{userId}:weekly-range:*",
                 $"ExpenseTracker:agg:{userId}:monthly-range:*",
                 $"ExpenseTracker:agg:{userId}:yearly-range:*",
+                $"ExpenseTracker:agg:{userId}:custom-summary:*",
                 $"ExpenseTracker:agg:{userId}:cat-monthly:*:{month}",
                 $"ExpenseTracker:agg:{userId}:cat-range:*",
             };

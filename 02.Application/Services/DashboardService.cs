@@ -68,6 +68,57 @@ public class DashboardService : IDashboardService
         );
     }
 
+    public async Task<DashboardResponse> GetDashboardByRangeAsync(Guid userId, string startDate, string endDate)
+    {
+        var start = DateOnly.Parse(startDate);
+        var end = DateOnly.Parse(endDate);
+        var startMonth = start.ToString("yyyy-MM");
+        var endMonth = end.ToString("yyyy-MM");
+
+        var customAggTask = Scoped<IAggregationService, CustomDateAggregationResponse>(
+            s => s.GetCustomDateAggregationAsync(userId, startDate, endDate));
+
+        var monthlyTrendTask = Scoped<IAggregationService, List<MonthlyAggregation>>(
+            s => s.GetMonthlyAggregationsRangeAsync(userId, startMonth, endMonth));
+
+        var recentTxTask = Scoped<ITranactionService, PagedResult<Tranaction>>(
+            s => s.GetTransactionsAsync(userId, new TransactionFilterRequest
+            {
+                StartDate = DateTime.SpecifyKind(start.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc),
+                EndDate = DateTime.SpecifyKind(end.ToDateTime(TimeOnly.MaxValue), DateTimeKind.Utc),
+                PageSize = 5
+            }));
+
+        var budgetTask = Scoped<IBudgetService, BudgetMonthlyResponse?>(
+            s => s.GetByDateRangeAsync(userId, startDate, endDate));
+
+        var savingsTask = Scoped<ISavingGoalService, SavingDashboardResponse>(
+            s => s.GetDashboardByRangeAsync(userId, startDate, endDate));
+
+        var investmentTask = Scoped<IInvestmentService, InvestmentDashboardResponse>(
+            s => s.GetDashboardByRangeAsync(userId, startDate, endDate));
+
+        var upcomingBillsTask = Scoped<IRecurringPaymentService, List<RecurringPayment>>(
+            s => s.GetUpcomingAsync(userId, startDate, endDate));
+
+        await Task.WhenAll(
+            customAggTask, monthlyTrendTask, recentTxTask, budgetTask,
+            savingsTask, investmentTask, upcomingBillsTask);
+
+        var upcomingBillDtos = await MapBillsToDtosAsync(userId, upcomingBillsTask.Result);
+
+        return new DashboardResponse(
+            customAggTask.Result.Summary,
+            monthlyTrendTask.Result,
+            customAggTask.Result.Breakdown,
+            recentTxTask.Result.Items,
+            budgetTask.Result,
+            savingsTask.Result,
+            investmentTask.Result,
+            upcomingBillDtos
+        );
+    }
+
     // ── Scope helper ──────────────────────────────────────────────────────────
 
     private async Task<TResult> Scoped<TService, TResult>(Func<TService, Task<TResult>> operation)

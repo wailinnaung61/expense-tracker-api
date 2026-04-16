@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using expense_tracker_backend.Domain.Entities;
 using expense_tracker_backend.Domain.Interfaces;
+using expense_tracker_backend.Domain.Shared.Constants;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
@@ -76,6 +77,81 @@ public class BudgetRepository : IBudgetRepository
             await SetCacheAsync(cacheKey, budget);
 
         return budget;
+    }
+
+    public async Task<Budget?> GetByDateRangeAsync(string userId, string startDateIso, string endDateIso)
+    {
+        var cacheKey = $"budget:{userId}:range:{startDateIso}:{endDateIso}";
+        var cached = await GetFromCacheAsync<Budget>(cacheKey);
+        if (cached is not null) return cached;
+
+        var budgets = await _context.Budgets
+            .AsNoTracking()
+            .Include(b => b.BudgetCategories)
+                .ThenInclude(bc => bc.Snapshot)
+            .Include(b => b.BudgetCategories)
+                .ThenInclude(bc => bc.Category)
+            .Where(b => b.UserId == userId &&
+                b.StartDate.CompareTo(endDateIso) <= 0 &&
+                b.EndDate.CompareTo(startDateIso) >= 0)
+            .OrderBy(b => b.StartDate)
+            .ToListAsync();
+
+        if (budgets.Count == 0) return null;
+
+        if (budgets.Count == 1)
+        {
+            await SetCacheAsync(cacheKey, budgets[0]);
+            return budgets[0];
+        }
+
+        var mergedCategories = budgets
+            .SelectMany(b => b.BudgetCategories)
+            .GroupBy(bc => bc.CategoryId)
+            .Select((group, index) =>
+            {
+                var first = group.First();
+                return new BudgetCategory
+                {
+                    BudgetCategoryId = $"merged-{index}-{group.Key}",
+                    BudgetId = "merged",
+                    CategoryId = group.Key,
+                    AllocatedAmount = group.Sum(x => x.AllocatedAmount),
+                    AlertThreshold = group.Max(x => x.AlertThreshold),
+                    SortOrder = group.Min(x => x.SortOrder),
+                    Category = first.Category,
+                    Snapshot = new BudgetSnapshot
+                    {
+                        BudgetCategoryId = $"merged-{index}-{group.Key}",
+                        SpentAmount = group.Sum(x => x.Snapshot?.SpentAmount ?? 0),
+                        TransactionCount = group.Sum(x => x.Snapshot?.TransactionCount ?? 0),
+                        LastTransactionDate = group
+                            .Select(x => x.Snapshot?.LastTransactionDate)
+                            .Where(x => !string.IsNullOrWhiteSpace(x))
+                            .OrderByDescending(x => x)
+                            .FirstOrDefault(),
+                        UpdatedAt = DateTime.UtcNow
+                    }
+                };
+            })
+            .ToList();
+
+        var mergedBudget = new Budget
+        {
+            BudgetId = "merged",
+            UserId = userId,
+            PeriodType = AppConstants.BudgetPeriodType.Custom,
+            StartDate = startDateIso,
+            EndDate = endDateIso,
+            TotalAmount = budgets.Sum(b => b.TotalAmount),
+            Status = AppConstants.BudgetStatus.Active,
+            CreatedAt = budgets.Min(b => b.CreatedAt),
+            UpdatedAt = DateTime.UtcNow,
+            BudgetCategories = mergedCategories
+        };
+
+        await SetCacheAsync(cacheKey, mergedBudget);
+        return mergedBudget;
     }
 
     public async Task<BudgetCategory?> GetBudgetCategoryAsync(string userId, string budgetCategoryId)

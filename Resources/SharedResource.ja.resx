@@ -287,4 +287,13 @@
   <data name="Notif_PaymentFailed_Msg" xml:space="preserve">
     <value>取引「{0}」（{1}）が失敗しました</value>
   </data>
+  <data name="DashboardInvalidDateFormat" xml:space="preserve">
+    <value>日付形式が無効です。yyyy-MM-dd（例: 2026-03-01）を使用してください。</value>
+  </data>
+  <data name="DashboardStartAfterEnd" xml:space="preserve">
+    <value>startDate は endDate 以前である必要があります。</value>
+  </data>
+  <data name="DashboardRangeExceeds24Months" xml:space="preserve">
+    <value>日付範囲は 24 か月を超えることはできません。</value>
+  </data>
 </root>

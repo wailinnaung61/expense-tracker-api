@@ -209,6 +209,47 @@ public class InvestmentService : IInvestmentService
             allocation, topPerformers, worstPerformers);
     }
 
+    public async Task<InvestmentDashboardResponse> GetDashboardByRangeAsync(Guid userId, string startDate, string endDate)
+    {
+        // Investment dashboard represents current portfolio holdings/performance.
+        // Filtering holdings by purchase date produces incorrect totals.
+        var items = await _repository.GetAllForDashboardAsync(userId.ToString());
+
+        var totalInvested = items.Sum(i => i.Quantity * i.PurchasePrice);
+        var currentValue = items.Sum(i => i.Quantity * i.CurrentPrice);
+        var totalProfitLoss = currentValue - totalInvested;
+        var returnPercentage = totalInvested > 0
+            ? Math.Round(totalProfitLoss / totalInvested * 100, 2)
+            : 0;
+
+        var allocation = items
+            .GroupBy(i => i.AssetType)
+            .Select(g => new AssetAllocationDto(
+                g.Key.ToString().ToUpperInvariant(),
+                g.Sum(i => i.Quantity * i.CurrentPrice),
+                currentValue > 0
+                    ? Math.Round(g.Sum(i => i.Quantity * i.CurrentPrice) / currentValue * 100, 2)
+                    : 0))
+            .OrderByDescending(a => a.CurrentValue)
+            .ToList();
+
+        var dtos = items.Select(MapToDto).ToList();
+        var topPerformers = dtos
+            .Where(d => d.ReturnPercentage > 0)
+            .OrderByDescending(d => d.ReturnPercentage)
+            .Take(5)
+            .ToList();
+        var worstPerformers = dtos
+            .Where(d => d.ReturnPercentage < 0)
+            .OrderBy(d => d.ReturnPercentage)
+            .Take(5)
+            .ToList();
+
+        return new InvestmentDashboardResponse(
+            totalInvested, currentValue, totalProfitLoss, returnPercentage,
+            allocation, topPerformers, worstPerformers);
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────────
 
     private static InvestmentDto MapToDto(Investment i)
