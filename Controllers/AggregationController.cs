@@ -222,4 +222,27 @@ public class AggregationController : BaseController
         var result = await _aggregationService.GetExpenseBreakdownByRangeAsync(UserId.Value, startDate, endDate);
         return Ok(result);
     }
+
+    /// <summary>
+    /// Get custom date aggregation summary and category breakdown totals
+    /// </summary>
+    [HttpGet("custom")]
+    public async Task<ActionResult<CustomDateAggregationResponse>> GetCustomDateAggregation(
+        [FromQuery] string startDate,
+        [FromQuery] string endDate)
+    {
+        if (UserId is null)
+            return Unauthorized();
+
+        if (!DateOnly.TryParse(startDate, out var start) || !DateOnly.TryParse(endDate, out var end))
+            return BadRequest(new { message = "Invalid date format. Use yyyy-MM-dd (e.g. 2026-03-01)." });
+
+        if (start > end)
+            return BadRequest(new { message = "startDate must be before or equal to endDate." });
+
+        _logger.LogInformation("Getting custom date aggregation for user: {UserId}, range: {StartDate} to {EndDate}", UserId, startDate, endDate);
+
+        var result = await _aggregationService.GetCustomDateAggregationAsync(UserId.Value, startDate, endDate);
+        return Ok(result);
+    }
 }

@@ -11,6 +11,7 @@ public interface IAggregationRepository
     Task<List<Aggregation>> GetWeeklyAggregationsRangeAsync(Guid userId, string startWeek, string endWeek);
     Task<Aggregation?> GetMonthlyAggregationAsync(Guid userId, string month);
     Task<List<Aggregation>> GetMonthlyAggregationsRangeAsync(Guid userId, string startMonth, string endMonth);
+    Task<Aggregation> GetCustomDateSummaryAsync(Guid userId, string startDate, string endDate);
     Task<Aggregation?> GetYearlyAggregationAsync(Guid userId, string year);
     Task<List<Aggregation>> GetYearlyAggregationsRangeAsync(Guid userId, string startYear, string endYear);
     Task<List<CategoryAggregation>> GetCategoryMonthlyAggregationsAsync(Guid userId, string month);

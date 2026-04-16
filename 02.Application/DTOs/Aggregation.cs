@@ -53,6 +53,11 @@ public record ExpenseBreakdown(
     MonthlyComparison? Comparison
 );
 
+public record CustomDateAggregationResponse(
+    MonthlyAggregation Summary,
+    ExpenseBreakdown Breakdown
+);
+
 public record CategoryBreakdownItem(
     string CategoryId,
     string CategoryName,
