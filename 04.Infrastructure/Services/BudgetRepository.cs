@@ -79,6 +79,21 @@ public class BudgetRepository : IBudgetRepository
         return budget;
     }
 
+    public async Task<Budget?> GetContainingBudgetAsync(string userId, string dateIso)
+    {
+        return await _context.Budgets
+            .AsNoTracking()
+            .Include(b => b.BudgetCategories)
+                .ThenInclude(bc => bc.Snapshot)
+            .Include(b => b.BudgetCategories)
+                .ThenInclude(bc => bc.Category)
+            .Where(b => b.UserId == userId
+                && b.StartDate.CompareTo(dateIso) <= 0
+                && b.EndDate.CompareTo(dateIso) >= 0)
+            .OrderBy(b => b.StartDate)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<Budget?> GetByDateRangeAsync(string userId, string startDateIso, string endDateIso)
     {
         var cacheKey = $"budget:{userId}:range:{startDateIso}:{endDateIso}";
