@@ -112,4 +112,90 @@ public class AggregationChatHandler
 
         return (string.Join("\n", parts), result);
     }
+
+    public async Task<(string, object?)> GetCustomDateRangeAsync(Guid userId, JsonElement args)
+    {
+        var start = TryDateString(args, "start_date");
+        var end = TryDateString(args, "end_date");
+        if (start is null || end is null)
+            return ("Please provide start_date and end_date (yyyy-MM-dd).", null);
+
+        if (!DateOnly.TryParse(start, out var startD) || !DateOnly.TryParse(end, out var endD))
+            return ("Invalid date format. Use yyyy-MM-dd for both dates.", null);
+
+        if (startD > endD)
+            return ("start_date must be on or before end_date.", null);
+
+        var result = await _aggregationService.GetCustomDateAggregationAsync(userId, start, end);
+        var summary = result.Summary;
+        var net = summary.Income - summary.Expense - summary.Saving - summary.Investment;
+
+        var lines = new List<string>
+        {
+            $"Summary {summary.PeriodStart} → {summary.PeriodEnd}:",
+            $"• Income: {summary.Income:N0}",
+            $"• Expense: {summary.Expense:N0}",
+            $"• Savings: {summary.Saving:N0}",
+            $"• Investment: {summary.Investment:N0}",
+            $"• Net: {net:N0}",
+            $"• Transactions: {summary.TransactionCount}"
+        };
+
+        if (result.Breakdown.Categories.Count > 0)
+        {
+            lines.Add($"Expense by category (total categorized: {result.Breakdown.TotalExpenses:N0}):");
+            foreach (var c in result.Breakdown.Categories.OrderByDescending(x => x.Amount).Take(15))
+                lines.Add($"• {c.CategoryName}: {c.Amount:N0} ({c.Percentage:F1}%)");
+        }
+
+        return (string.Join("\n", lines), result);
+    }
+
+    public async Task<(string, object?)> GetDashboardByRangeAsync(Guid userId, JsonElement args)
+    {
+        var start = TryDateString(args, "start_date");
+        var end = TryDateString(args, "end_date");
+        if (start is null || end is null)
+            return ("Please provide start_date and end_date (yyyy-MM-dd).", null);
+
+        if (!DateOnly.TryParse(start, out var startD) || !DateOnly.TryParse(end, out var endD))
+            return ("Invalid date format. Use yyyy-MM-dd for both dates.", null);
+
+        if (startD > endD)
+            return ("start_date must be on or before end_date.", null);
+
+        if (startD.AddMonths(24) < endD)
+            return ("Date range cannot exceed 24 months.", null);
+
+        var result = await _dashboardService.GetDashboardByRangeAsync(userId, start, end);
+
+        var parts = new List<string> { $"Dashboard {start} → {end}:" };
+
+        if (result.CurrentMonth is not null)
+        {
+            var cm = result.CurrentMonth;
+            parts.Add(
+                $"Summary: Income {cm.Income:N0} | Expense {cm.Expense:N0} | Savings {cm.Saving:N0} | Investment {cm.Investment:N0}");
+        }
+
+        if (result.Budget?.Summary is not null)
+        {
+            var b = result.Budget.Summary;
+            parts.Add($"Budget: {b.TotalSpent:N0}/{b.TotalBudget:N0} ({b.UsagePercent}% used) ({result.Budget.StartDate}–{result.Budget.EndDate})");
+        }
+
+        parts.Add($"Savings (period): {result.Savings.TotalSaved:N0} saved, {result.Savings.ActiveGoalsCount} active goals");
+        parts.Add($"Investments (portfolio): {result.Investment.TotalInvested:N0} invested, P/L {result.Investment.TotalProfitLoss:N0}");
+
+        if (result.UpcomingBills.Count > 0)
+        {
+            var bills = string.Join(", ", result.UpcomingBills.Take(3).Select(b => $"{b.Name} ({b.Amount:N0})"));
+            parts.Add($"Upcoming bills: {bills}");
+        }
+
+        return (string.Join("\n", parts), result);
+    }
+
+    private static string? TryDateString(JsonElement args, string prop) =>
+        args.TryGetProperty(prop, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
 }

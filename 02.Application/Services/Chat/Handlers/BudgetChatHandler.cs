@@ -36,6 +36,60 @@ public class BudgetChatHandler
         return (summary, result);
     }
 
+    public async Task<(string, object?)> GetBudgetByRangeAsync(Guid userId, JsonElement args)
+    {
+        var start = TryStr(args, "start_date");
+        var end = TryStr(args, "end_date");
+        if (string.IsNullOrWhiteSpace(start) || string.IsNullOrWhiteSpace(end))
+            return ("Please provide start_date and end_date (yyyy-MM-dd).", null);
+
+        if (!DateOnly.TryParse(start, out var startD) || !DateOnly.TryParse(end, out var endD))
+            return ("Invalid date format. Use yyyy-MM-dd.", null);
+
+        if (startD > endD)
+            return ("start_date must be on or before end_date.", null);
+
+        var result = await _budgetService.GetByDateRangeAsync(userId, start, end);
+
+        if (result is null)
+            return ($"No budget found overlapping {start}–{end}.", null);
+
+        var lines = result.Categories.Select(c =>
+            $"• {c.Name} {c.Icon}: {c.Spent:N0}/{c.Allocated:N0} ({c.UsagePercent}%)");
+
+        var summary = $"Budget {result.StartDate} → {result.EndDate}:\n" +
+            $"Total: {result.Summary.TotalBudget:N0} | Spent: {result.Summary.TotalSpent:N0} | " +
+            $"Remaining: {result.Summary.Remaining:N0} ({result.Summary.UsagePercent}% used)\n" +
+            string.Join("\n", lines);
+
+        return (summary, result);
+    }
+
+    public async Task<(string, object?)> GetBudgetContainingDateAsync(Guid userId, JsonElement args)
+    {
+        var date = TryStr(args, "date");
+        if (string.IsNullOrWhiteSpace(date))
+            return ("Please provide date (yyyy-MM-dd) — the day that must fall inside the budget period (e.g. pay-cycle).", null);
+
+        if (!DateOnly.TryParse(date, out _))
+            return ("Invalid date format. Use yyyy-MM-dd.", null);
+
+        var result = await _budgetService.GetByContainingDateAsync(userId, date);
+
+        if (result is null)
+            return ($"No budget contains {date}.", null);
+
+        var lines = result.Categories.Select(c =>
+            $"• {c.Name} {c.Icon}: {c.Spent:N0}/{c.Allocated:N0} ({c.UsagePercent}%)");
+
+        var summary = $"Budget containing {date} ({result.StartDate} → {result.EndDate}):\n" +
+            $"Total: {result.Summary.TotalBudget:N0} | Spent: {result.Summary.TotalSpent:N0} | " +
+            $"Remaining: {result.Summary.Remaining:N0} ({result.Summary.UsagePercent}% used)\n" +
+            string.Join("\n", lines);
+
+        return (summary, result);
+    }
+
     public async Task<(string, object?)> CreateBudgetAsync(Guid userId, JsonElement args)
     {
         var year = TryInt(args, "year", DateTime.UtcNow.Year);

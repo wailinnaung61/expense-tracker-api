@@ -256,6 +256,8 @@ public class ChatService : IChatService
                 "delete_category" => await _categoryHandler.DeleteCategoryAsync(userId, args),
 
                 "get_budget" => await _budgetHandler.GetBudgetAsync(userId, args),
+                "get_budget_range" => await _budgetHandler.GetBudgetByRangeAsync(userId, args),
+                "get_budget_containing" => await _budgetHandler.GetBudgetContainingDateAsync(userId, args),
                 "create_budget" => await _budgetHandler.CreateBudgetAsync(userId, args),
                 "update_budget" => await _budgetHandler.UpdateBudgetAsync(userId, args),
                 "delete_budget" => await _budgetHandler.DeleteBudgetAsync(userId, args),
@@ -289,7 +291,9 @@ public class ChatService : IChatService
                 "get_monthly_summary" => await _aggregationHandler.GetMonthlySummaryAsync(userId, args),
                 "get_yearly_summary" => await _aggregationHandler.GetYearlySummaryAsync(userId, args),
                 "get_expense_breakdown" => await _aggregationHandler.GetExpenseBreakdownAsync(userId, args),
+                "get_custom_date_range" => await _aggregationHandler.GetCustomDateRangeAsync(userId, args),
                 "get_dashboard" => await _aggregationHandler.GetDashboardAsync(userId, args),
+                "get_dashboard_range" => await _aggregationHandler.GetDashboardByRangeAsync(userId, args),
 
                 "suggest_reports_download" => (
                     ChatReportsDownloadIntent.AssistantMessage,

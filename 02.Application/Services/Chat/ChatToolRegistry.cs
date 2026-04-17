@@ -237,7 +237,7 @@ public class ChatToolRegistry
     [
         ChatTool.CreateFunctionTool(
             "get_budget",
-            "View the monthly budget with category allocations and spending.",
+            "View the budget for a calendar month (year+month). If two pay cycles fall in the same month, prefer get_budget_containing or get_budget_range.",
             BinaryData.FromString("""
             {
                 "type": "object",
@@ -245,6 +245,33 @@ public class ChatToolRegistry
                     "year": { "type": "integer", "description": "Year (default current year)" },
                     "month": { "type": "integer", "description": "Month 1-12 (default current month)" }
                 }
+            }
+            """)),
+
+        ChatTool.CreateFunctionTool(
+            "get_budget_range",
+            "View merged budget for an inclusive date range (yyyy-MM-dd). Same as app budget-by-range / custom dashboard budget block.",
+            BinaryData.FromString("""
+            {
+                "type": "object",
+                "properties": {
+                    "start_date": { "type": "string", "description": "Inclusive start yyyy-MM-dd" },
+                    "end_date": { "type": "string", "description": "Inclusive end yyyy-MM-dd" }
+                },
+                "required": ["start_date", "end_date"]
+            }
+            """)),
+
+        ChatTool.CreateFunctionTool(
+            "get_budget_containing",
+            "View the single budget whose period contains a given day (e.g. pay cycle mid-month). Use when user refers to salary cycle or a specific date.",
+            BinaryData.FromString("""
+            {
+                "type": "object",
+                "properties": {
+                    "date": { "type": "string", "description": "A calendar day yyyy-MM-dd that must fall inside the budget period" }
+                },
+                "required": ["date"]
             }
             """)),
 
@@ -670,13 +697,41 @@ public class ChatToolRegistry
 
         ChatTool.CreateFunctionTool(
             "get_dashboard",
-            "Get full dashboard overview with current month summary, budget, savings, investments, and upcoming bills.",
+            "Get full dashboard overview for a calendar month (summary, trend, budget, savings, investments, bills).",
             BinaryData.FromString("""
             {
                 "type": "object",
                 "properties": {
                     "month": { "type": "string", "description": "Month in yyyy-MM format. Default current month." }
                 }
+            }
+            """)),
+
+        ChatTool.CreateFunctionTool(
+            "get_custom_date_range",
+            "Get income/expense/savings/investment totals and expense-by-category breakdown for an inclusive custom date range (matches aggregation custom endpoint).",
+            BinaryData.FromString("""
+            {
+                "type": "object",
+                "properties": {
+                    "start_date": { "type": "string", "description": "Inclusive start yyyy-MM-dd" },
+                    "end_date": { "type": "string", "description": "Inclusive end yyyy-MM-dd" }
+                },
+                "required": ["start_date", "end_date"]
+            }
+            """)),
+
+        ChatTool.CreateFunctionTool(
+            "get_dashboard_range",
+            "Get full dashboard for a custom inclusive date range (same as app custom dashboard). Range must be at most 24 months.",
+            BinaryData.FromString("""
+            {
+                "type": "object",
+                "properties": {
+                    "start_date": { "type": "string", "description": "Inclusive start yyyy-MM-dd" },
+                    "end_date": { "type": "string", "description": "Inclusive end yyyy-MM-dd" }
+                },
+                "required": ["start_date", "end_date"]
             }
             """)),
 

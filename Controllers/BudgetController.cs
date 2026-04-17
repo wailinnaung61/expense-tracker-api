@@ -62,7 +62,9 @@ public class BudgetController : BaseController
 
     /// <summary>
     /// GET /api/budgets/{year}/{month}
-    /// Returns budget summary, categories with snapshot, top spending, budget id, and the budget period <c>startDate</c>/<c>endDate</c> (yyyy-MM-dd) for the range that overlaps this calendar month.
+    /// Returns budget summary, categories with snapshot, top spending, budget id, and the budget period <c>startDate</c>/<c>endDate</c> (yyyy-MM-dd).
+    /// When more than one budget overlaps that calendar month (e.g. pay cycles 15th–15th), this returns the one with the <b>earliest</b> <c>startDate</c>.
+    /// For a specific cycle use <see cref="GetContaining"/> or <see cref="GetByRange"/>.
     /// </summary>
     [HttpGet("{year:int}/{month:int}")]
     public async Task<ActionResult<BudgetMonthlyResponse>> GetByMonth(int year, int month)
@@ -73,6 +75,54 @@ public class BudgetController : BaseController
 
         BudgetMonthlyResponse? budget = await _service.GetByMonthAsync(UserId.Value, year, month);
 
+        if (budget is null)
+            return NotFound(new { message = _localizer["BudgetNotFound"].Value });
+
+        return Ok(budget);
+    }
+
+    /// <summary>
+    /// GET /api/budgets/containing?date=2026-05-20
+    /// Returns the budget whose inclusive period contains <paramref name="date"/> (yyyy-MM-dd)—the right choice for split pay cycles in one calendar month.
+    /// </summary>
+    [HttpGet("containing")]
+    public async Task<ActionResult<BudgetMonthlyResponse>> GetContaining([FromQuery] string date)
+    {
+        if (UserId is null) return Unauthorized();
+
+        if (!DateOnly.TryParse(date, out _))
+            return BadRequest(new { message = _localizer["DashboardInvalidDateFormat"].Value });
+
+        _logger.LogInformation("Getting budget containing {Date} for user {UserId}", date, UserId);
+
+        var budget = await _service.GetByContainingDateAsync(UserId.Value, date);
+        if (budget is null)
+            return NotFound(new { message = _localizer["BudgetNotFound"].Value });
+
+        return Ok(budget);
+    }
+
+    /// <summary>
+    /// GET /api/budgets/range?startDate=2026-05-16&amp;endDate=2026-06-15
+    /// Returns merged budget view for every budget overlapping that inclusive range (same semantics as the custom dashboard budget block).
+    /// </summary>
+    [HttpGet("range")]
+    public async Task<ActionResult<BudgetMonthlyResponse>> GetByRange(
+        [FromQuery] string startDate,
+        [FromQuery] string endDate)
+    {
+        if (UserId is null) return Unauthorized();
+
+        if (!DateOnly.TryParse(startDate, out var start) || !DateOnly.TryParse(endDate, out var end))
+            return BadRequest(new { message = _localizer["DashboardInvalidDateFormat"].Value });
+
+        if (start > end)
+            return BadRequest(new { message = _localizer["DashboardStartAfterEnd"].Value });
+
+        _logger.LogInformation(
+            "Getting budget by range {StartDate}–{EndDate} for user {UserId}", startDate, endDate, UserId);
+
+        var budget = await _service.GetByDateRangeAsync(UserId.Value, startDate, endDate);
         if (budget is null)
             return NotFound(new { message = _localizer["BudgetNotFound"].Value });
 

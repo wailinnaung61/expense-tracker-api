@@ -6,6 +6,10 @@ public interface IBudgetRepository
 {
     Task<Budget?> GetByIdAsync(string userId, string budgetId);
     Task<Budget?> GetByMonthAsync(string userId, int year, int month);
+
+    /// <summary>Budget whose inclusive [StartDate, EndDate] contains <paramref name="dateIso"/> (yyyy-MM-dd).</summary>
+    Task<Budget?> GetContainingBudgetAsync(string userId, string dateIso);
+
     Task<Budget?> GetByDateRangeAsync(string userId, string startDateIso, string endDateIso);
     Task<BudgetCategory?> GetBudgetCategoryAsync(string userId, string budgetCategoryId);
     Task<Budget> CreateAsync(Budget budget);
