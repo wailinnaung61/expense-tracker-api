@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text.RegularExpressions;
 using expense_tracker_backend.Application.DTOs;
 
@@ -30,7 +31,7 @@ public class ChatPreFilter
             • **Reports** — monthly/yearly summaries, expense breakdowns, dashboard
             • **Excel export** — ask in chat; the app shows a **Reports → Download** button (not started from chat APIs)
             
-            Try: "add expense 500 coffee" or "show my budget" or "monthly summary"
+            Try: "add expense 500 coffee", "add expense groceries 2418 and 1371", "show my budget", or "monthly summary"
             """),
     ];
 
@@ -42,15 +43,14 @@ public class ChatPreFilter
         @"^(clear|reset|new\s*chat|start\s*over)[\s!.]*$",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-    // Level 2: Direct command shortcut patterns
-    private static readonly Regex AddExpensePattern = new(
-        @"^add\s+expense\s+(\d[\d,.]*k?)\s*(.*)$",
+    private static readonly Regex AddSavingsLeadIn = new(
+        @"^add\s+savings?\s+",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
-    private static readonly Regex AddIncomePattern = new(
-        @"^add\s+income\s+(\d[\d,.]*k?)\s*(.*)$",
+    private static readonly Regex AndMoreAmountPrefix = new(
+        @"^and\s+(\d[\d,.]*k?)\s*",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
-    private static readonly Regex AddSavingsPattern = new(
-        @"^add\s+savings?\s+(\d[\d,.]*k?)\s*(.*)$",
+    private static readonly Regex AmountToken = new(
+        @"\b(\d[\d,.]*k?)\b",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex ListPattern = new(
         @"^(show|list)\s+(expenses?|incomes?|transactions?|categories|budget|recurring|savings?|investments?)$",
@@ -102,17 +102,17 @@ public class ChatPreFilter
     {
         var trimmed = message.Trim();
 
-        var addExpense = AddExpensePattern.Match(trimmed);
-        if (addExpense.Success)
-            return new DirectCommandMatch("add_expense", ParseAmount(addExpense.Groups[1].Value), addExpense.Groups[2].Value.Trim());
+        var addExpense = TryParseFlexibleMoneyCommand(trimmed, "add expense", "add_expense");
+        if (addExpense is not null)
+            return addExpense;
 
-        var addIncome = AddIncomePattern.Match(trimmed);
-        if (addIncome.Success)
-            return new DirectCommandMatch("add_income", ParseAmount(addIncome.Groups[1].Value), addIncome.Groups[2].Value.Trim());
+        var addIncome = TryParseFlexibleMoneyCommand(trimmed, "add income", "add_income");
+        if (addIncome is not null)
+            return addIncome;
 
-        var addSavings = AddSavingsPattern.Match(trimmed);
-        if (addSavings.Success)
-            return new DirectCommandMatch("add_savings", ParseAmount(addSavings.Groups[1].Value), addSavings.Groups[2].Value.Trim());
+        var addSavings = TryParseFlexibleSavingsCommand(trimmed);
+        if (addSavings is not null)
+            return addSavings;
 
         var listMatch = ListPattern.Match(trimmed);
         if (listMatch.Success)
@@ -154,6 +154,113 @@ public class ChatPreFilter
         }
         return decimal.TryParse(s, out var val) ? val : 0;
     }
+
+    /// <summary>
+    /// Parses "add expense|income …" tails: amount-first ("500 coffee", "50 and 100 lunch"),
+    /// or description-first with one or more amounts ("groceries 2418 and 1371").
+    /// </summary>
+    private static DirectCommandMatch? TryParseFlexibleMoneyCommand(string trimmed, string prefix, string functionName)
+    {
+        var lead = prefix + " ";
+        if (!trimmed.StartsWith(lead, StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        var tail = trimmed[lead.Length..].Trim();
+        if (string.IsNullOrEmpty(tail))
+            return null;
+
+        var parsed = ParseMoneyCommandTail(tail);
+        return parsed is null ? null : BuildMoneyDirectCommand(functionName, parsed.Value.amounts, parsed.Value.description);
+    }
+
+    private static DirectCommandMatch? TryParseFlexibleSavingsCommand(string trimmed)
+    {
+        var m = AddSavingsLeadIn.Match(trimmed);
+        if (!m.Success)
+            return null;
+
+        var tail = trimmed[m.Length..].Trim();
+        if (string.IsNullOrEmpty(tail))
+            return null;
+
+        var parsed = ParseMoneyCommandTail(tail);
+        return parsed is null ? null : BuildMoneyDirectCommand("add_savings", parsed.Value.amounts, parsed.Value.description);
+    }
+
+    private static DirectCommandMatch? BuildMoneyDirectCommand(string functionName, List<decimal> amounts, string description)
+    {
+        if (amounts.Count == 0 || amounts[0] <= 0)
+            return null;
+
+        return amounts.Count == 1
+            ? new DirectCommandMatch(functionName, amounts[0], description)
+            : new DirectCommandMatch(functionName, amounts[0], description, amounts.Skip(1).ToList());
+    }
+
+    private static (List<decimal> amounts, string description)? ParseMoneyCommandTail(string tail)
+    {
+        var amountFirst = Regex.Match(tail, @"^(\d[\d,.]*k?)\s*(.*)$", RegexOptions.IgnoreCase);
+        if (amountFirst.Success)
+        {
+            var first = ParseAmount(amountFirst.Groups[1].Value);
+            if (first <= 0)
+                return null;
+
+            var amounts = new List<decimal> { first };
+            var rest = amountFirst.Groups[2].Value.Trim();
+            while (true)
+            {
+                var chain = AndMoreAmountPrefix.Match(rest);
+                if (!chain.Success)
+                    break;
+                var next = ParseAmount(chain.Groups[1].Value);
+                if (next <= 0)
+                    break;
+                amounts.Add(next);
+                rest = rest[chain.Length..].Trim();
+            }
+
+            return (amounts, rest);
+        }
+
+        var parsedAmounts = new List<decimal>();
+        foreach (Match m in AmountToken.Matches(tail))
+        {
+            var a = ParseAmount(m.Groups[1].Value);
+            if (a > 0)
+                parsedAmounts.Add(a);
+        }
+
+        if (parsedAmounts.Count == 0)
+            return null;
+
+        var firstNum = AmountToken.Match(tail);
+        var desc = tail[..firstNum.Index].Trim();
+        if (string.IsNullOrEmpty(desc))
+            return null;
+
+        return (parsedAmounts, desc);
+    }
 }
 
-public record DirectCommandMatch(string FunctionName, decimal Amount = 0, string Description = "");
+public record DirectCommandMatch(
+    string FunctionName,
+    decimal Amount = 0,
+    string Description = "",
+    IReadOnlyList<decimal>? AdditionalAmounts = null)
+{
+    /// <summary>Non-empty amounts for add_expense / add_income / add_savings direct commands.</summary>
+    public IReadOnlyList<decimal> GetMoneyAmounts()
+    {
+        if (FunctionName is not ("add_expense" or "add_income" or "add_savings"))
+            return Array.Empty<decimal>();
+        if (Amount <= 0)
+            return Array.Empty<decimal>();
+        if (AdditionalAmounts is null || AdditionalAmounts.Count == 0)
+            return new[] { Amount };
+
+        var list = new List<decimal> { Amount };
+        list.AddRange(AdditionalAmounts.Where(a => a > 0));
+        return list;
+    }
+}

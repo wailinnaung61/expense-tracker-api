@@ -129,21 +129,47 @@ public class ChatService : IChatService
     {
         try
         {
-            var jsonStr = command.Amount > 0
-                ? $"{{\"amount\":{command.Amount},\"description\":\"{EscapeJson(command.Description)}\",\"category\":\"{EscapeJson(command.Description)}\"}}"
-                : "{}";
-            using var doc = JsonDocument.Parse(jsonStr);
-            var args = doc.RootElement.Clone();
+            var moneyAmounts = command.GetMoneyAmounts();
+            if (moneyAmounts.Count > 0)
+            {
+                var functionsCalled = new List<FunctionCallResult>();
+                var summaries = new List<string>();
+                ChatClientAction? clientAction = null;
 
-            var (summary, data) = await ExecuteFunctionAsync(userId, command.FunctionName, args);
-            var functionsCalled = new List<FunctionCallResult> { new(command.FunctionName, data is ChatClientAction ? null : data) };
-            var refreshTarget = _refreshResolver.Resolve(functionsCalled);
-            var clientAction = data as ChatClientAction;
+                foreach (var amt in moneyAmounts)
+                {
+                    var payloadJson =
+                        $"{{\"amount\":{amt},\"description\":\"{EscapeJson(command.Description)}\",\"category\":\"{EscapeJson(command.Description)}\"}}";
+                    using var doc = JsonDocument.Parse(payloadJson);
+                    var args = doc.RootElement.Clone();
+                    var (summary, data) = await ExecuteFunctionAsync(userId, command.FunctionName, args);
+                    summaries.Add(summary);
+                    functionsCalled.Add(new FunctionCallResult(command.FunctionName, data is ChatClientAction ? null : data));
+                    if (data is ChatClientAction ca)
+                        clientAction = ca;
+                }
 
-            if (refreshTarget is not null)
+                var refreshTarget = _refreshResolver.Resolve(functionsCalled);
+                if (refreshTarget is not null)
+                    await _contextLoader.InvalidateAsync(userId);
+
+                var combinedSummary = string.Join(" ", summaries);
+                return new ChatResponse(combinedSummary, userName, refreshTarget, functionsCalled, DateTime.UtcNow, clientAction);
+            }
+
+            const string emptyArgsJson = "{}";
+            using var doc2 = JsonDocument.Parse(emptyArgsJson);
+            var args2 = doc2.RootElement.Clone();
+
+            var (summary2, data2) = await ExecuteFunctionAsync(userId, command.FunctionName, args2);
+            var functionsCalled2 = new List<FunctionCallResult> { new(command.FunctionName, data2 is ChatClientAction ? null : data2) };
+            var refreshTarget2 = _refreshResolver.Resolve(functionsCalled2);
+            var clientAction2 = data2 as ChatClientAction;
+
+            if (refreshTarget2 is not null)
                 await _contextLoader.InvalidateAsync(userId);
 
-            return new ChatResponse(summary, userName, refreshTarget, functionsCalled, DateTime.UtcNow, clientAction);
+            return new ChatResponse(summary2, userName, refreshTarget2, functionsCalled2, DateTime.UtcNow, clientAction2);
         }
         catch (Exception ex)
         {
