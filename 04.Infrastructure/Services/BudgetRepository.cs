@@ -96,10 +96,9 @@ public class BudgetRepository : IBudgetRepository
 
     public async Task<Budget?> GetByDateRangeAsync(string userId, string startDateIso, string endDateIso)
     {
-        var cacheKey = $"budget:{userId}:range:{startDateIso}:{endDateIso}";
-        var cached = await GetFromCacheAsync<Budget>(cacheKey);
-        if (cached is not null) return cached;
-
+        // Intentionally not cached: clients pass many different [start,end] windows (dashboard, pay cycle,
+        // calendar month). Snapshot updates only invalidated per-month keys + budget-period range key,
+        // so a cached range response could stay stale for the full TTL while DB snapshots were correct.
         var budgets = await _context.Budgets
             .AsNoTracking()
             .Include(b => b.BudgetCategories)
@@ -115,10 +114,7 @@ public class BudgetRepository : IBudgetRepository
         if (budgets.Count == 0) return null;
 
         if (budgets.Count == 1)
-        {
-            await SetCacheAsync(cacheKey, budgets[0]);
             return budgets[0];
-        }
 
         var mergedCategories = budgets
             .SelectMany(b => b.BudgetCategories)
@@ -165,7 +161,6 @@ public class BudgetRepository : IBudgetRepository
             BudgetCategories = mergedCategories
         };
 
-        await SetCacheAsync(cacheKey, mergedBudget);
         return mergedBudget;
     }
 
@@ -371,6 +366,19 @@ public class BudgetRepository : IBudgetRepository
         {
             await InvalidateCacheAsync(userId, cursor.Year, cursor.Month);
             cursor = cursor.AddMonths(1);
+        }
+
+        // Legacy: older builds cached GET .../range?startDate&endDate under this key (exact budget bounds).
+        // Remove it so a refetch after an expense cannot read pre-snapshot values from Redis.
+        var rangeKey =
+            $"budget:{userId}:range:{rangeStart:yyyy-MM-dd}:{rangeEnd:yyyy-MM-dd}";
+        try
+        {
+            await _cache.RemoveAsync(rangeKey);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Cache remove failed for key {Key}", rangeKey);
         }
     }
 

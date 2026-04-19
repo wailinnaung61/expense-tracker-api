@@ -81,10 +81,7 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<List<Aggregation>> GetDailyAggregationsRangeAsync(Guid userId, string startDate, string endDate)
     {
-        var cacheKey = $"agg:{userId}:daily-range:{startDate}:{endDate}";
-        var cached = await GetFromCacheAsync<List<Aggregation>>(cacheKey);
-        if (cached is not null) return cached;
-
+        // Not cached: arbitrary [start,end] keys cannot be invalidated reliably on every tx (Redis KEYS / cluster).
         await RefreshWithLockAsync("mv_daily_aggregations");
         var userIdStr = userId.ToString();
         var startParam = DateOnly.Parse(startDate);
@@ -104,9 +101,7 @@ public class AggregationRepository : IAggregationRepository
                 """)
             .ToListAsync();
 
-        var result = rows.Select(MapToAggregation).ToList();
-        await SetCacheAsync(cacheKey, result);
-        return result;
+        return rows.Select(MapToAggregation).ToList();
     }
 
     // ============================================================================
@@ -141,10 +136,6 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<List<Aggregation>> GetWeeklyAggregationsRangeAsync(Guid userId, string startWeek, string endWeek)
     {
-        var cacheKey = $"agg:{userId}:weekly-range:{startWeek}:{endWeek}";
-        var cached = await GetFromCacheAsync<List<Aggregation>>(cacheKey);
-        if (cached is not null) return cached;
-
         await RefreshWithLockAsync("mv_weekly_aggregations");
         var userIdStr = userId.ToString();
 
@@ -162,9 +153,7 @@ public class AggregationRepository : IAggregationRepository
                 """)
             .ToListAsync();
 
-        var result = rows.Select(MapToAggregation).ToList();
-        await SetCacheAsync(cacheKey, result);
-        return result;
+        return rows.Select(MapToAggregation).ToList();
     }
 
     // ============================================================================
@@ -199,10 +188,6 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<List<Aggregation>> GetMonthlyAggregationsRangeAsync(Guid userId, string startMonth, string endMonth)
     {
-        var cacheKey = $"agg:{userId}:monthly-range:{startMonth}:{endMonth}";
-        var cached = await GetFromCacheAsync<List<Aggregation>>(cacheKey);
-        if (cached is not null) return cached;
-
         await RefreshWithLockAsync("mv_monthly_aggregations");
         var userIdStr = userId.ToString();
 
@@ -220,17 +205,11 @@ public class AggregationRepository : IAggregationRepository
                 """)
             .ToListAsync();
 
-        var result = rows.Select(MapToAggregation).ToList();
-        await SetCacheAsync(cacheKey, result);
-        return result;
+        return rows.Select(MapToAggregation).ToList();
     }
 
     public async Task<Aggregation> GetCustomDateSummaryAsync(Guid userId, string startDate, string endDate)
     {
-        var cacheKey = $"agg:{userId}:custom-summary:{startDate}:{endDate}";
-        var cached = await GetFromCacheAsync<Aggregation>(cacheKey);
-        if (cached is not null) return cached;
-
         await RefreshWithLockAsync("mv_daily_aggregations");
         var userIdStr = userId.ToString();
         var startParam = DateOnly.Parse(startDate);
@@ -253,9 +232,7 @@ public class AggregationRepository : IAggregationRepository
                 """)
             .FirstAsync();
 
-        var result = MapToAggregation(row);
-        await SetCacheAsync(cacheKey, result);
-        return result;
+        return MapToAggregation(row);
     }
 
     // ============================================================================
@@ -290,10 +267,6 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<List<Aggregation>> GetYearlyAggregationsRangeAsync(Guid userId, string startYear, string endYear)
     {
-        var cacheKey = $"agg:{userId}:yearly-range:{startYear}:{endYear}";
-        var cached = await GetFromCacheAsync<List<Aggregation>>(cacheKey);
-        if (cached is not null) return cached;
-
         await RefreshWithLockAsync("mv_yearly_aggregations");
         var userIdStr = userId.ToString();
 
@@ -311,9 +284,7 @@ public class AggregationRepository : IAggregationRepository
                 """)
             .ToListAsync();
 
-        var result = rows.Select(MapToAggregation).ToList();
-        await SetCacheAsync(cacheKey, result);
-        return result;
+        return rows.Select(MapToAggregation).ToList();
     }
 
     // ============================================================================
@@ -383,10 +354,6 @@ public class AggregationRepository : IAggregationRepository
 
     public async Task<List<CategoryAggregation>> GetCategoryAggregationsByDateRangeAsync(Guid userId, string startDate, string endDate)
     {
-        var cacheKey = $"agg:{userId}:cat-range:{startDate}:{endDate}";
-        var cached = await GetFromCacheAsync<List<CategoryAggregation>>(cacheKey);
-        if (cached is not null) return cached;
-
         var userIdStr = userId.ToString();
         var result = await _context.Transactions
             .AsNoTracking()
@@ -408,7 +375,6 @@ public class AggregationRepository : IAggregationRepository
             })
             .ToListAsync();
 
-        await SetCacheAsync(cacheKey, result);
         return result;
     }
 
