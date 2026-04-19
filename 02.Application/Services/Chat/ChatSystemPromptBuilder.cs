@@ -36,7 +36,8 @@ public class ChatSystemPromptBuilder
         - Tell the user briefly to use the in-app Reports download button; do not ask PDF vs CSV.
 
         DATA EXTRACTION:
-        - Amount: 500, $500, ¥500, 5k=5000, 2M=2000000
+        - Amount: use the user's full numbers exactly (2418 → 2418, never 24.18 or single digits). 500, $500, ¥500, 5k=5000, 2M=2000000
+        - Multiple amounts in one message (e.g. "2418 and 1371"): call add_expense once per amount across tool rounds; each call must use one of the stated amounts
         - Category: infer (coffee→Food & Dining, rent→Housing, taxi→Transportation, Netflix→Entertainment)
         - Date: missing→today, "yesterday"→today-1, "this month"→start/end of current month. Format yyyy-MM-dd
         - Status: default Completed (transactions), Active (recurring/goals)
