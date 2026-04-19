@@ -1,4 +1,5 @@
-﻿using expense_tracker_backend.Domain.Entities;
+﻿using System.Collections.Generic;
+using expense_tracker_backend.Domain.Entities;
 using expense_tracker_backend.Domain.Interfaces;
 using expense_tracker_backend.Domain.Shared.Constants;
 using Infrastructure.Data;
@@ -74,6 +75,31 @@ public class TranactionRepository : ITranactionRepository
             .AsNoTracking()
             .FirstOrDefaultAsync(t => t.TransactionId == tranactionId.ToString()
                                    && t.UserId == userId.ToString());
+    }
+
+    public async Task<IReadOnlyDictionary<string, decimal>> GetCompletedExpenseTotalsByCategoryAsync(
+        string userId,
+        string startDateIso,
+        string endDateIso,
+        IReadOnlyList<string> categoryIds)
+    {
+        if (categoryIds is null || categoryIds.Count == 0)
+            return new Dictionary<string, decimal>();
+
+        var rows = await _context.Transactions
+            .AsNoTracking()
+            .Where(t => t.UserId == userId
+                && t.Type == AppConstants.TransactionType.Expense
+                && t.Status == AppConstants.PaymentStatus.Completed
+                && t.CategoryId != null
+                && categoryIds.Contains(t.CategoryId)
+                && string.Compare(t.TransactionDate, startDateIso) >= 0
+                && string.Compare(t.TransactionDate, endDateIso) <= 0)
+            .GroupBy(t => t.CategoryId!)
+            .Select(g => new { CategoryId = g.Key, Total = g.Sum(x => x.Amount) })
+            .ToListAsync();
+
+        return rows.ToDictionary(r => r.CategoryId, r => r.Total);
     }
 
     public async Task<Transaction> CreateAsync(Transaction tranaction)

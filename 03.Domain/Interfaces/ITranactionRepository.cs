@@ -18,6 +18,16 @@ public interface ITranactionRepository
         DateTime? cursor,
         string? cursorId);
     Task<Transaction?> GetByIdAsync(Guid userId, Guid tranactionId);
+
+    /// <summary>
+    /// Completed expenses in [startDateIso, endDateIso] (yyyy-MM-dd), grouped by category id.
+    /// </summary>
+    Task<IReadOnlyDictionary<string, decimal>> GetCompletedExpenseTotalsByCategoryAsync(
+        string userId,
+        string startDateIso,
+        string endDateIso,
+        IReadOnlyList<string> categoryIds);
+
     Task<Transaction> CreateAsync(Transaction tranaction);
     Task CreateBatchAsync(List<Transaction> transactions);
     Task<Transaction?> UpdateAsync(Transaction tranaction);
