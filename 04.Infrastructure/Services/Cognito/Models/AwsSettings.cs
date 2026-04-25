@@ -5,7 +5,10 @@ public class AwsSettings
     public const string SectionName = "AWS";
 
     public string Region { get; set; } = "us-east-1";
+
+    /// <summary>When both this and <see cref="SecretKey"/> are non-empty, static keys are used; otherwise the AWS SDK default credential chain (IAM role on EC2/ECS, shared profile, etc.).</summary>
     public string AccessKey { get; set; } = string.Empty;
+
     public string SecretKey { get; set; } = string.Empty;
     public CognitoSettings Cognito { get; set; } = new();
     public EventBridgeSettings EventBridge { get; set; } = new();

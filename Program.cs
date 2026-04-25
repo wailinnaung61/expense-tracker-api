@@ -73,7 +73,7 @@ builder.Services.Configure<AwsSettings>(builder.Configuration.GetSection(AwsSett
 builder.Services.Configure<S3PresignOptions>(builder.Configuration.GetSection("AWS:S3"));
 
 var awsSettings = builder.Configuration.GetSection(AwsSettings.SectionName).Get<AwsSettings>()!;
-var credentials = new BasicAWSCredentials(awsSettings.AccessKey, awsSettings.SecretKey);
+var credentials = AwsCredentialsProvider.Resolve(awsSettings);
 
 builder.Services.AddSingleton<IAmazonCognitoIdentityProvider>(sp =>
     new AmazonCognitoIdentityProviderClient(credentials, RegionEndpoint.GetBySystemName(awsSettings.Region)));

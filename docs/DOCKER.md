@@ -242,11 +242,13 @@ docker-compose up -d
 ## Environment Variables (Override)
 
 ```powershell
-# Override AWS settings
+# Optional: static IAM user keys (omit both to use the SDK default chain instead)
 docker-compose up -d -e AWS__AccessKey=xxx -e AWS__SecretKey=xxx
 
 # Or edit docker-compose.yml → api → environment section
 ```
+
+**Without access keys:** leave `AWS__AccessKey` and `AWS__SecretKey` unset (or empty in `appsettings`). The API uses the [AWS default credential provider chain](https://docs.aws.amazon.com/sdk-for-net/v3/developer-guide/creds-assign.html): e.g. **IAM instance profile** on EC2, **task role** on ECS/Fargate, or credentials from `~/.aws/credentials` when developing locally. Attach an IAM role/policy that allows Cognito, S3 (exports), and EventBridge as needed.
 
 ### Key environment variables for API:
 
@@ -256,8 +258,8 @@ docker-compose up -d -e AWS__AccessKey=xxx -e AWS__SecretKey=xxx
 | `ConnectionStrings__DefaultConnection` | `Host=postgres;...` | PostgreSQL |
 | `ConnectionStrings__Redis` | `redis:6379,...` | Redis |
 | `AWS__Region` | — | AWS region |
-| `AWS__AccessKey` | — | AWS access key |
-| `AWS__SecretKey` | — | AWS secret key |
+| `AWS__AccessKey` | *(optional)* | Static key; omit with `AWS__SecretKey` to use IAM role / default chain |
+| `AWS__SecretKey` | *(optional)* | Static secret; omit with `AWS__AccessKey` to use IAM role / default chain |
 | `AWS__Cognito__UserPoolId` | — | Cognito pool |
 | `AWS__Cognito__ClientId` | — | Cognito client |
 | `CorsSettings__AllowedOrigins__0` | — | Frontend URL |

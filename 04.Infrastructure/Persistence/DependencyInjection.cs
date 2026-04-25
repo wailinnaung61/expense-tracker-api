@@ -1,7 +1,6 @@
 using _04.Infrastructure.Services;
 using Amazon;
 using Amazon.EventBridge;
-using Amazon.Runtime;
 using Amazon.S3;
 using expense_tracker_backend.Application.Interfaces;
 using expense_tracker_backend.Application.Services;
@@ -97,7 +96,7 @@ public static class DependencyInjection
         services.AddSingleton<IAmazonEventBridge>(sp =>
         {
             var settings = sp.GetRequiredService<IOptions<AwsSettings>>().Value;
-            var creds = new BasicAWSCredentials(settings.AccessKey, settings.SecretKey);
+            var creds = AwsCredentialsProvider.Resolve(settings);
             return new AmazonEventBridgeClient(creds, RegionEndpoint.GetBySystemName(settings.Region));
         });
 
@@ -105,7 +104,7 @@ public static class DependencyInjection
         services.AddSingleton<IAmazonS3>(sp =>
         {
             var settings = sp.GetRequiredService<IOptions<AwsSettings>>().Value;
-            var creds = new BasicAWSCredentials(settings.AccessKey, settings.SecretKey);
+            var creds = AwsCredentialsProvider.Resolve(settings);
             return new AmazonS3Client(creds, RegionEndpoint.GetBySystemName(settings.Region));
         });
 
