@@ -36,7 +36,7 @@ public class TransactionChatHandler
 
         categoryId = await ResolveCategoryIdAsync(userId, categoryId, type, args);
         if (string.IsNullOrEmpty(categoryId))
-            return ("No categories found. Please create a category first.", null);
+            return ("I couldn't map this to one of your categories. Please specify the category name exactly.", null);
 
         var dto = new CreateTranactionDto(type, categoryId, amount, date, status, description, "", "");
         var result = await _transactionService.CreateTranactionAsync(dto, userId);
@@ -277,6 +277,9 @@ public class TransactionChatHandler
 
     private async Task<string> ResolveCategoryIdAsync(Guid userId, string categoryId, AppConstants.TransactionType type, JsonElement args)
     {
+        var explicitCategoryName = TryStr(args, "category");
+        var description = TryStr(args, "description");
+
         if (string.IsNullOrEmpty(categoryId) && args.TryGetProperty("category", out var catName))
         {
             var resolved = await ResolveCategoryByNameAsync(userId, catName.GetString(), type);
@@ -285,9 +288,13 @@ public class TransactionChatHandler
 
         if (string.IsNullOrEmpty(categoryId))
         {
-            var categories = await _categoryService.GetCategoriesAsync(userId, new CategoryFilterRequest { Type = type, PageSize = 1 });
-            if (categories.Items.Count > 0)
-                return categories.Items[0].CategoryId.ToString();
+            // If user did not specify category, try infer from description against known categories.
+            if (string.IsNullOrWhiteSpace(explicitCategoryName))
+            {
+                var inferred = await InferCategoryIdFromDescriptionAsync(userId, type, description);
+                if (!string.IsNullOrEmpty(inferred))
+                    return inferred;
+            }
         }
 
         return categoryId;
@@ -300,10 +307,51 @@ public class TransactionChatHandler
         var categories = await _categoryService.GetCategoriesAsync(userId, new CategoryFilterRequest
         {
             Type = type,
-            Keyword = categoryName,
-            PageSize = 1
+            PageSize = 100
         });
-        return categories.Items.Count > 0 ? categories.Items[0].CategoryId.ToString() : null;
+        if (categories.Items.Count == 0) return null;
+
+        var target = Normalize(categoryName);
+        var exact = categories.Items.FirstOrDefault(c => Normalize(c.DisplayName) == target);
+        if (exact is not null)
+            return exact.CategoryId.ToString();
+
+        var contains = categories.Items.FirstOrDefault(c =>
+            Normalize(c.DisplayName).Contains(target, StringComparison.Ordinal) ||
+            target.Contains(Normalize(c.DisplayName), StringComparison.Ordinal));
+        return contains?.CategoryId.ToString();
+    }
+
+    private async Task<string?> InferCategoryIdFromDescriptionAsync(Guid userId, AppConstants.TransactionType type, string? description)
+    {
+        if (string.IsNullOrWhiteSpace(description)) return null;
+
+        var categories = await _categoryService.GetCategoriesAsync(userId, new CategoryFilterRequest
+        {
+            Type = type,
+            PageSize = 100
+        });
+        if (categories.Items.Count == 0) return null;
+
+        var descTokens = Tokenize(description);
+        if (descTokens.Count == 0) return null;
+
+        var scored = categories.Items
+            .Select(c =>
+            {
+                var catTokens = Tokenize(c.DisplayName);
+                var score = catTokens.Count == 0 ? 0 : catTokens.Count(t => descTokens.Contains(t));
+                return (Category: c, Score: score);
+            })
+            .Where(x => x.Score > 0)
+            .OrderByDescending(x => x.Score)
+            .ThenBy(x => x.Category.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (scored.Count == 0) return null;
+        if (scored.Count > 1 && scored[0].Score == scored[1].Score) return null; // ambiguous, ask user
+
+        return scored[0].Category.CategoryId.ToString();
     }
 
     private static string? TryStr(JsonElement args, string prop) =>
@@ -317,6 +365,18 @@ public class TransactionChatHandler
             DateTimeKind.Local => dateTime.ToUniversalTime(),
             _ => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
         };
+    }
+
+    private static string Normalize(string value) =>
+        string.Concat(value.Trim().ToLowerInvariant().Where(ch => char.IsLetterOrDigit(ch) || char.IsWhiteSpace(ch)));
+
+    private static HashSet<string> Tokenize(string value)
+    {
+        var normalized = Normalize(value);
+        var parts = normalized
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(p => p.Length >= 2);
+        return parts.ToHashSet(StringComparer.Ordinal);
     }
 
     private async Task<(List<Tranaction> Matches, string? Error)> FindTransactionsForUpdateAsync(Guid userId, JsonElement args)

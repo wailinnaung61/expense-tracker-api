@@ -1,5 +1,6 @@
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using expense_tracker_backend.Application.DTOs;
 using expense_tracker_backend.Application.Interfaces;
 using expense_tracker_backend.Application.Services.Chat.Handlers;
@@ -31,6 +32,9 @@ public class ChatService : IChatService
     private readonly AggregationChatHandler _aggregationHandler;
 
     private const int MaxToolCallIterations = 5;
+    private static readonly Regex MutationIntentPattern = new(
+        @"\b(add|create|record|log|spent|spend|paid|pay|invested|invest|save|saved|contribute|contribution|update|edit|change|delete|remove)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     public ChatService(
         ILogger<ChatService> logger,
@@ -224,6 +228,19 @@ public class ChatService : IChatService
             }
             else
             {
+                if (_refreshResolver.IsMutation(primaryCall.FunctionName) && !HasExplicitMutationIntent(message))
+                {
+                    _logger.LogWarning(
+                        "Blocked mutation tool call {FunctionName} due to non-mutation user intent. Message: {Message}",
+                        primaryCall.FunctionName, message);
+                    messages.Add(new ToolChatMessage(
+                        primaryCall.Id,
+                        "Mutation blocked: user did not explicitly ask to add/update/delete data. Provide analysis or ask confirmation."));
+                    var nextBlocked = await _chatClient.CompleteChatAsync(messages, options);
+                    choice = nextBlocked.Value;
+                    continue;
+                }
+
                 using var doc = JsonDocument.Parse(argsJson);
                 var args = doc.RootElement.Clone();
                 var (result, resultObj) = await ExecuteFunctionAsync(userId, primaryCall.FunctionName, args);
@@ -343,4 +360,11 @@ public class ChatService : IChatService
     }
 
     private static string EscapeJson(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
+
+    private static bool HasExplicitMutationIntent(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            return false;
+        return MutationIntentPattern.IsMatch(message);
+    }
 }

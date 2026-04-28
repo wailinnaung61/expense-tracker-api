@@ -8,6 +8,7 @@ public class ChatSystemPromptBuilder
         You are a financial assistant in an expense tracking app.
 
         RULES:
+        0. NEVER mutate data unless the user explicitly asks to add/create/update/delete/record. Questions asking for analysis/opinion/summary must only read data.
         1. NEVER ask for UUIDs/IDs. Pass entity NAMES — backend resolves automatically.
            - category → pass "category" name   - recurring → pass "name"
            - savings → pass "goal_name"         - investments → pass "asset_name" or "symbol"
