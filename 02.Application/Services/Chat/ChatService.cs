@@ -233,12 +233,13 @@ public class ChatService : IChatService
                     _logger.LogWarning(
                         "Blocked mutation tool call {FunctionName} due to non-mutation user intent. Message: {Message}",
                         primaryCall.FunctionName, message);
+                    var blockedText = BuildBlockedMutationMessage(message, context);
                     messages.Add(new ToolChatMessage(
                         primaryCall.Id,
-                        "Mutation blocked: user did not explicitly ask to add/update/delete data. Provide analysis or ask confirmation."));
-                    var nextBlocked = await _chatClient.CompleteChatAsync(messages, options);
-                    choice = nextBlocked.Value;
-                    continue;
+                        "Mutation blocked: user did not explicitly ask to add/update/delete data."));
+                    messages.Add(new AssistantChatMessage(blockedText));
+                    await _historyStore.SaveHistoryAsync(userId, messages.Skip(1).ToList());
+                    return new ChatResponse(blockedText, userName, null, null, DateTime.UtcNow);
                 }
 
                 using var doc = JsonDocument.Parse(argsJson);
@@ -366,5 +367,22 @@ public class ChatService : IChatService
         if (string.IsNullOrWhiteSpace(message))
             return false;
         return MutationIntentPattern.IsMatch(message);
+    }
+
+    private static string BuildBlockedMutationMessage(string message, ChatContextSnapshot context)
+    {
+        var categories = context.Categories
+            .Where(c => c.Type == AppConstants.TransactionType.Expense.ToString())
+            .Select(c => c.Name)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (message.Contains("category", StringComparison.OrdinalIgnoreCase) && categories.Count > 0)
+        {
+            var names = string.Join(", ", categories.Take(10));
+            return $"Yes — I know your expense categories. {names}.";
+        }
+
+        return "I didn't add anything. Ask with an explicit command like 'add expense 1200 groceries' if you want to record data.";
     }
 }
