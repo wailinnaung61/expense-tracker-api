@@ -143,7 +143,7 @@ public class ChatService : IChatService
                 foreach (var amt in moneyAmounts)
                 {
                     var payloadJson =
-                        $"{{\"amount\":{amt},\"description\":\"{EscapeJson(command.Description)}\",\"category\":\"{EscapeJson(command.Description)}\"}}";
+                        $"{{\"amount\":{amt},\"description\":\"{EscapeJson(command.Description)}\",\"category\":\"{EscapeJson(command.Category)}\"}}";
                     using var doc = JsonDocument.Parse(payloadJson);
                     var args = doc.RootElement.Clone();
                     var (summary, data) = await ExecuteFunctionAsync(userId, command.FunctionName, args);

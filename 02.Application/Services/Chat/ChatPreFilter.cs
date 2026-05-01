@@ -52,6 +52,9 @@ public class ChatPreFilter
     private static readonly Regex AmountToken = new(
         @"\b(\d[\d,.]*k?)\b",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex StructuredCategoryDescriptionPattern = new(
+        @"^\s*category(?:\s+name)?\s+is\s+(?<category>.+?)\s+description\s+is\s+(?<description>.+?)\s*$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex ListPattern = new(
         @"^(show|list)\s+(expenses?|incomes?|transactions?|categories|budget|recurring|savings?|investments?)$",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -192,9 +195,10 @@ public class ChatPreFilter
         if (amounts.Count == 0 || amounts[0] <= 0)
             return null;
 
+        var (parsedCategory, parsedDescription) = ParseStructuredCategoryAndDescription(description);
         return amounts.Count == 1
-            ? new DirectCommandMatch(functionName, amounts[0], description)
-            : new DirectCommandMatch(functionName, amounts[0], description, amounts.Skip(1).ToList());
+            ? new DirectCommandMatch(functionName, amounts[0], parsedDescription, parsedCategory)
+            : new DirectCommandMatch(functionName, amounts[0], parsedDescription, parsedCategory, amounts.Skip(1).ToList());
     }
 
     private static (List<decimal> amounts, string description)? ParseMoneyCommandTail(string tail)
@@ -241,12 +245,27 @@ public class ChatPreFilter
 
         return (parsedAmounts, desc);
     }
+
+    private static (string category, string description) ParseStructuredCategoryAndDescription(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return (string.Empty, string.Empty);
+
+        var match = StructuredCategoryDescriptionPattern.Match(text.Trim());
+        if (!match.Success)
+            return (text.Trim(), text.Trim());
+
+        var category = match.Groups["category"].Value.Trim();
+        var description = match.Groups["description"].Value.Trim();
+        return (category, description);
+    }
 }
 
 public record DirectCommandMatch(
     string FunctionName,
     decimal Amount = 0,
     string Description = "",
+    string Category = "",
     IReadOnlyList<decimal>? AdditionalAmounts = null)
 {
     /// <summary>Non-empty amounts for add_expense / add_income / add_savings direct commands.</summary>
