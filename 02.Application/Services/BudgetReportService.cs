@@ -13,6 +13,7 @@ public class BudgetReportService : IBudgetReportService
     public const string ExportTypeBudgetExcel = "budget-excel";
 
     private readonly IBudgetRepository _budgetRepository;
+    private readonly ITranactionRepository _transactions;
     private readonly IMemberRepository _memberRepository;
     private readonly IBudgetReportWorkbookBuilder _workbookBuilder;
     private readonly IExportFileService _fileService;
@@ -21,6 +22,7 @@ public class BudgetReportService : IBudgetReportService
 
     public BudgetReportService(
         IBudgetRepository budgetRepository,
+        ITranactionRepository transactions,
         IMemberRepository memberRepository,
         IBudgetReportWorkbookBuilder workbookBuilder,
         IExportFileService fileService,
@@ -28,6 +30,7 @@ public class BudgetReportService : IBudgetReportService
         IOptions<S3PresignOptions> presignOptions)
     {
         _budgetRepository = budgetRepository;
+        _transactions = transactions;
         _memberRepository = memberRepository;
         _workbookBuilder = workbookBuilder;
         _fileService = fileService;
@@ -44,7 +47,11 @@ public class BudgetReportService : IBudgetReportService
         var profile = await _memberRepository.GetProfileByUserIdAsync(userId.ToString());
         var currency = string.IsNullOrWhiteSpace(profile?.Currency) ? "JPY" : profile!.Currency;
 
-        var bytes = _workbookBuilder.Build(budget, currency, profile?.UserName);
+        var categoryIds = budget.BudgetCategories.Select(bc => bc.CategoryId).Distinct().ToList();
+        var spentByCategory = await _transactions.GetCompletedExpenseTotalsByCategoryAsync(
+            userId.ToString(), budget.StartDate, budget.EndDate, categoryIds);
+
+        var bytes = _workbookBuilder.Build(budget, currency, profile?.UserName, spentByCategory);
         var safeFile = BuildBudgetExcelFileName(budget);
         var key = $"exports/{userId}/{safeFile}";
 

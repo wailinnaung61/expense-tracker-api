@@ -37,7 +37,11 @@ public class BudgetReportWorkbookBuilder : IBudgetReportWorkbookBuilder
     private string S(string key) => _loc[key].Value;
     private string S(string key, params object[] args) => _loc[key, args].Value;
 
-    public byte[] Build(Budget budget, string currencyCode, string? userDisplayName)
+    public byte[] Build(
+        Budget budget,
+        string currencyCode,
+        string? userDisplayName,
+        IReadOnlyDictionary<string, decimal> spentByCategoryId)
     {
         var currency = string.IsNullOrWhiteSpace(currencyCode) ? "JPY" : currencyCode.Trim().ToUpperInvariant();
         var fmt = CurrencyNumberFormat(currency);
@@ -80,7 +84,7 @@ public class BudgetReportWorkbookBuilder : IBudgetReportWorkbookBuilder
 
         var categories = budget.BudgetCategories.OrderBy(c => c.SortOrder).ToList();
         var totalAllocated = categories.Sum(c => c.AllocatedAmount);
-        var totalSpent = categories.Sum(c => c.Snapshot?.SpentAmount ?? 0m);
+        var totalSpent = categories.Sum(c => spentByCategoryId.GetValueOrDefault(c.CategoryId, 0m));
         var remaining = budget.TotalAmount - totalSpent;
         var unallocatedToLines = budget.TotalAmount - totalAllocated;
 
@@ -122,7 +126,7 @@ public class BudgetReportWorkbookBuilder : IBudgetReportWorkbookBuilder
         {
             var name = bc.Category?.DisplayName ?? unknown;
             var allocated = bc.AllocatedAmount;
-            var spent = bc.Snapshot?.SpentAmount ?? 0m;
+            var spent = spentByCategoryId.GetValueOrDefault(bc.CategoryId, 0m);
             var diff = allocated - spent;
             var pctRatio = allocated > 0 ? (double)(spent / allocated) : (double?)null;
 
