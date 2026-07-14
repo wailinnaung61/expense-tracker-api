@@ -68,11 +68,38 @@ public class RecurringPaymentService : IRecurringPaymentService
         var payment = await _repository.GetByIdAsync(userId, recurringId);
         if (payment == null) return null;
 
+        ApplyPaidAcknowledgement(payment);
+        return await _repository.UpdateAsync(payment);
+    }
+
+    public async Task<RecurringPayment?> AcknowledgePaidAsync(Guid userId, string recurringId)
+    {
+        var payment = await _repository.GetByIdAsync(userId, recurringId);
+        if (payment == null) return null;
+
+        // Same schedule-safe clear as mark-paid, without creating a transaction
+        // (manual expense already recorded elsewhere).
+        ApplyPaidAcknowledgement(payment);
+        return await _repository.UpdateAsync(payment);
+    }
+
+    /// <summary>
+    /// Clears missed state and advances NextDueDate only while it is still due (≤ today).
+    /// If the overdue job already moved NextDueDate into the future, do not skip another period.
+    /// </summary>
+    private static void ApplyPaidAcknowledgement(RecurringPayment payment)
+    {
+        var today = DateTime.UtcNow.Date;
         payment.LastPaidDate = DateTime.UtcNow;
         payment.MissedCount = 0;
-        payment.NextDueDate = CalculateNextDueDate(payment.NextDueDate, payment.Frequency);
+
+        if (payment.NextDueDate.Date <= today)
+        {
+            while (payment.NextDueDate.Date <= today)
+                payment.NextDueDate = CalculateNextDueDate(payment.NextDueDate, payment.Frequency);
+        }
+
         payment.UpdatedAt = DateTime.UtcNow;
-        return await _repository.UpdateAsync(payment);
     }
 
     public async Task<int> ProcessOverduePaymentsAsync()

@@ -114,6 +114,18 @@ public class RecurringPaymentChatHandler
             : ("Failed to mark as paid.", null);
     }
 
+    public async Task<(string, object?)> AcknowledgePaidAsync(Guid userId, JsonElement args)
+    {
+        var existing = await ResolveRecurringAsync(userId, args);
+        if (existing is null)
+            return ("Recurring payment not found. Try 'list recurring' to see your payments.", null);
+
+        var result = await _recurringService.AcknowledgePaidAsync(userId, existing.RecurringId);
+        return result is not null
+            ? ($"Acknowledged paid (missed cleared): {result.Name}. Next due: {result.NextDueDate:yyyy-MM-dd}", result)
+            : ("Failed to acknowledge payment.", null);
+    }
+
     private async Task<RecurringPayment?> ResolveRecurringAsync(Guid userId, JsonElement args)
     {
         var recurringId = TryStr(args, "recurring_id");

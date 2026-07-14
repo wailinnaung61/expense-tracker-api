@@ -25,7 +25,7 @@ public class ChatPreFilter
             • **Transactions** — add, list, update, delete expenses/income/investments/savings
             • **Categories** — list, create, update, delete categories
             • **Budgets** — view, create, update monthly budgets
-            • **Recurring Payments** — list, create, update, delete, mark paid
+            • **Recurring Payments** — list, create, update, delete, mark paid, acknowledge paid (clear missed)
             • **Saving Goals** — list, create, update, delete goals, add contributions
             • **Investments** — list, create, update, delete positions
             • **Reports** — monthly/yearly summaries, expense breakdowns, dashboard

@@ -29,6 +29,7 @@ public class ChatRefreshResolver
         ["update_recurring_payment"] = AppConstants.ChatRefreshTarget.RecurringPayments,
         ["delete_recurring_payment"] = AppConstants.ChatRefreshTarget.RecurringPayments,
         ["mark_recurring_paid"] = AppConstants.ChatRefreshTarget.RecurringPayments,
+        ["acknowledge_recurring_paid"] = AppConstants.ChatRefreshTarget.RecurringPayments,
 
         ["create_saving_goal"] = AppConstants.ChatRefreshTarget.Savings,
         ["update_saving_goal"] = AppConstants.ChatRefreshTarget.Savings,

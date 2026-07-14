@@ -313,6 +313,7 @@ public class ChatService : IChatService
                 "update_recurring_payment" => await _recurringHandler.UpdateAsync(userId, args),
                 "delete_recurring_payment" => await _recurringHandler.DeleteAsync(userId, args),
                 "mark_recurring_paid" => await _recurringHandler.MarkAsPaidAsync(userId, args),
+                "acknowledge_recurring_paid" => await _recurringHandler.AcknowledgePaidAsync(userId, args),
 
                 "list_saving_goals" => await _savingHandler.ListGoalsAsync(userId, args),
                 "create_saving_goal" => await _savingHandler.CreateGoalAsync(userId, args),

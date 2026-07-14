@@ -420,13 +420,26 @@ public class ChatToolRegistry
 
         ChatTool.CreateFunctionTool(
             "mark_recurring_paid",
-            "Mark a recurring payment as paid for the current period. Pass name — backend resolves.",
+            "Mark a recurring payment as paid for the current period (Pay Now). Clears missed count; advances next due only if still overdue. Pass name — backend resolves.",
             BinaryData.FromString("""
             {
                 "type": "object",
                 "properties": {
                     "recurring_id": { "type": "string", "description": "Recurring payment UUID (optional)" },
                     "name": { "type": "string", "description": "Payment name to mark as paid (e.g. Netflix)" }
+                }
+            }
+            """)),
+
+        ChatTool.CreateFunctionTool(
+            "acknowledge_recurring_paid",
+            "Clear missed count when the user already paid manually (outside Pay Now). Does not create a transaction. Pass name — backend resolves.",
+            BinaryData.FromString("""
+            {
+                "type": "object",
+                "properties": {
+                    "recurring_id": { "type": "string", "description": "Recurring payment UUID (optional)" },
+                    "name": { "type": "string", "description": "Payment name to acknowledge (e.g. Rent)" }
                 }
             }
             """))

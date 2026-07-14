@@ -11,5 +11,10 @@ public interface IRecurringPaymentService
     Task<RecurringPayment> UpdateAsync(Guid userId, RecurringPayment payment);
     Task<bool> DeleteAsync(Guid userId, string recurringId);
     Task<RecurringPayment?> MarkAsPaidAsync(Guid userId, string recurringId);
+    /// <summary>
+    /// Clears missed count after an external/manual payment without creating a transaction.
+    /// Does not advance NextDueDate when it is already in the future (overdue job may have moved it).
+    /// </summary>
+    Task<RecurringPayment?> AcknowledgePaidAsync(Guid userId, string recurringId);
     Task<int> ProcessOverduePaymentsAsync();
 }

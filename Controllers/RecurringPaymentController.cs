@@ -128,7 +128,7 @@ public class RecurringPaymentController : BaseController
     }
 
     /// <summary>
-    /// Mark a recurring payment as paid
+    /// Mark a recurring payment as paid (Pay Now). Clears missed count and advances due date only if still overdue.
     /// </summary>
     [HttpPost("{recurringId}/mark-paid")]
     public async Task<ActionResult<RecurringPaymentDto>> MarkAsPaid(string recurringId)
@@ -157,6 +157,40 @@ public class RecurringPaymentController : BaseController
         {
             _logger.LogError(ex, "Failed to mark recurring payment as paid: {RecurringId}", recurringId);
             return ErrorResponse(_localizer["RecurringPaymentMarkPaidFailed"].Value);
+        }
+    }
+
+    /// <summary>
+    /// Acknowledge a period as paid externally (e.g. manual expense). Clears MissedCount without creating a transaction.
+    /// Use when the user forgot Pay Now but already recorded the payment elsewhere.
+    /// </summary>
+    [HttpPost("{recurringId}/acknowledge-paid")]
+    public async Task<ActionResult<RecurringPaymentDto>> AcknowledgePaid(string recurringId)
+    {
+        if (UserId is null)
+            return Unauthorized();
+
+        _logger.LogInformation("Acknowledging recurring payment as paid externally: {RecurringId}", recurringId);
+
+        try
+        {
+            var payment = await _service.AcknowledgePaidAsync(UserId.Value, recurringId);
+
+            if (payment is null)
+            {
+                _logger.LogWarning("Recurring payment not found for acknowledge-paid: {RecurringId}", recurringId);
+                return NotFound(new { message = _localizer["RecurringPaymentNotFound"].Value });
+            }
+
+            var category = await _categoryService.GetExpenseCategoryByIdAsync(UserId.Value, Guid.Parse(payment.CategoryId));
+
+            _logger.LogInformation("Recurring payment acknowledged as paid: {RecurringId}, missed cleared", recurringId);
+            return Ok(MapToDto(payment, category?.DisplayName));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to acknowledge recurring payment as paid: {RecurringId}", recurringId);
+            return ErrorResponse(_localizer["RecurringPaymentAcknowledgeFailed"].Value);
         }
     }
 
