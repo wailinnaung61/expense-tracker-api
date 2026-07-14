@@ -161,6 +161,74 @@ public class TransactionChatHandler
         return (summary, result);
     }
 
+    public async Task<(string, object?)> SumTransactionsAsync(Guid userId, JsonElement args)
+    {
+        var keyword = TryStr(args, "keyword") ?? TryStr(args, "description");
+        if (string.IsNullOrWhiteSpace(keyword))
+            return ("Please provide a keyword (e.g. merchant or description).", null);
+
+        AppConstants.TransactionType? type = AppConstants.TransactionType.Expense;
+        if (args.TryGetProperty("type", out var t) && Enum.TryParse<AppConstants.TransactionType>(t.GetString(), true, out var parsedType))
+            type = parsedType;
+
+        DateTime? startDate = null;
+        DateTime? endDate = null;
+        var startStr = TryStr(args, "start_date");
+        var endStr = TryStr(args, "end_date");
+        if (!string.IsNullOrEmpty(startStr) && DateTime.TryParse(startStr, out var sd))
+            startDate = EnsureUtc(sd).Date;
+        if (!string.IsNullOrEmpty(endStr) && DateTime.TryParse(endStr, out var ed))
+            endDate = EnsureUtc(ed).Date.AddDays(1).AddTicks(-1);
+
+        // Default to current calendar month when no range given
+        if (startDate is null && endDate is null)
+        {
+            var now = DateTime.UtcNow;
+            startDate = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            endDate = startDate.Value.AddMonths(1).AddTicks(-1);
+        }
+
+        decimal total = 0;
+        var count = 0;
+        DateTime? cursor = null;
+        Guid? cursorId = null;
+        const int maxPages = 5;
+
+        for (var page = 0; page < maxPages; page++)
+        {
+            var filter = new TransactionFilterRequest
+            {
+                Keyword = keyword,
+                Type = type,
+                StartDate = startDate,
+                EndDate = endDate,
+                PageSize = 100,
+                Cursor = cursor,
+                CursorId = cursorId
+            };
+
+            var result = await _transactionService.GetTransactionsAsync(userId, filter);
+            total += result.Items.Sum(tx => tx.Amount);
+            count += result.Items.Count;
+
+            if (!result.HasNextPage || result.Items.Count == 0)
+                break;
+
+            cursor = result.NextCursor;
+            cursorId = result.NextCursorId;
+        }
+
+        var rangeLabel = startDate is not null && endDate is not null
+            ? $"{startDate:yyyy-MM-dd} → {endDate:yyyy-MM-dd}"
+            : "all dates";
+
+        if (count == 0)
+            return ($"No {type} matching '{keyword}' for {rangeLabel}.", new { keyword, total = 0m, count = 0 });
+
+        var summary = $"'{keyword}' ({type}): {total:N0} across {count} transaction(s) ({rangeLabel}).";
+        return (summary, new { keyword, type = type.ToString(), total, count, startDate, endDate });
+    }
+
     public async Task<(string, object?)> FindTransactionAsync(Guid userId, JsonElement args)
     {
         var keyword = args.TryGetProperty("description", out var desc) ? desc.GetString() : null;

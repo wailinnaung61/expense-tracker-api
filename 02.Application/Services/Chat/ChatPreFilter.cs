@@ -56,10 +56,19 @@ public class ChatPreFilter
         @"^\s*category(?:\s+name)?\s+is\s+(?<category>.+?)\s+description\s+is\s+(?<description>.+?)\s*$",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex ListPattern = new(
-        @"^(show|list)\s+(expenses?|incomes?|transactions?|categories|budget|recurring|savings?|investments?)$",
+        @"^(show|list|my)\s+(my\s+)?(expenses?|incomes?|transactions?|categories|budget|recurring|bills?|savings?|investments?)$",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex SummaryPattern = new(
-        @"^(summary|monthly\s*summary|dashboard)$",
+        @"^(summary|monthly\s*summary|this\s*month(\s*summary)?|dashboard|how\s+much\s+(did\s+i\s+)?spend(t)?(\s+this\s+month)?|total\s+spent(\s+this\s+month)?)$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex BreakdownPattern = new(
+        @"^(biggest\s+categor(y|ies)|top\s+categor(y|ies)|expense\s+breakdown|breakdown|where\s+(did\s+)?(my\s+)?money\s+go|spending\s+by\s+categor(y|ies))$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex BudgetPattern = new(
+        @"^(show\s+(my\s+)?budget|my\s+budget|get\s+budget|budget\s+status)$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex BillsPattern = new(
+        @"^(upcoming\s+bills?|show\s+(my\s+)?(bills?|recurring)|my\s+(bills?|recurring))$",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     public ChatPreFilter(ChatHistoryStore historyStore)
@@ -120,13 +129,13 @@ public class ChatPreFilter
         var listMatch = ListPattern.Match(trimmed);
         if (listMatch.Success)
         {
-            var target = listMatch.Groups[2].Value.ToLowerInvariant().TrimEnd('s');
+            var target = listMatch.Groups[3].Value.ToLowerInvariant().TrimEnd('s');
             var functionName = target switch
             {
                 "expense" or "income" or "transaction" => "list_transactions",
                 "categorie" or "category" => "list_categories",
                 "budget" => "get_budget",
-                "recurring" => "list_recurring_payments",
+                "recurring" or "bill" => "list_recurring_payments",
                 "saving" => "list_saving_goals",
                 "investment" => "list_investments",
                 _ => null
@@ -134,6 +143,15 @@ public class ChatPreFilter
             if (functionName is not null)
                 return new DirectCommandMatch(functionName);
         }
+
+        if (BudgetPattern.IsMatch(trimmed))
+            return new DirectCommandMatch("get_budget");
+
+        if (BillsPattern.IsMatch(trimmed))
+            return new DirectCommandMatch("list_recurring_payments");
+
+        if (BreakdownPattern.IsMatch(trimmed))
+            return new DirectCommandMatch("get_expense_breakdown");
 
         var summaryMatch = SummaryPattern.Match(trimmed);
         if (summaryMatch.Success)

@@ -49,6 +49,10 @@ public record ChatCategoryInfo(string Id, string Name, string Type, string Icon)
 public record ChatNotificationInfo(string Title, string Message, DateTime CreatedAt);
 public record ChatBudgetInfo(decimal Total, decimal Spent, decimal Remaining, int UsagePercent);
 public record ChatSavingsInfo(decimal TotalSaved, int ActiveGoals);
+public record ChatMonthTotals(decimal Income, decimal Expense, decimal Saving, decimal Investment);
+public record ChatCategorySpend(string Name, decimal Amount, double Percentage);
+public record ChatUpcomingBill(string Name, decimal Amount, string DueDate);
+public record ChatInvestmentTotals(decimal TotalInvested, decimal ProfitLoss);
 
 // ── Context snapshot (internal, used between ChatContextLoader and ChatSystemPromptBuilder) ──
 
@@ -63,7 +67,11 @@ public record ChatContextSnapshot(
     List<ChatNotificationInfo> RecentNotifications,
     ChatBudgetInfo? Budget,
     ChatSavingsInfo? Savings,
-    List<ChatRecentTransaction> RecentTransactions
+    List<ChatRecentTransaction> RecentTransactions,
+    ChatMonthTotals? MonthTotals = null,
+    List<ChatCategorySpend>? TopCategories = null,
+    List<ChatUpcomingBill>? UpcomingBills = null,
+    ChatInvestmentTotals? Investments = null
 );
 
 public record ChatRecentTransaction(string Type, decimal Amount, string Description, string Date);

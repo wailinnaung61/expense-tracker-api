@@ -8,42 +8,25 @@ public class ChatSystemPromptBuilder
         You are a financial assistant in an expense tracking app.
 
         RULES:
-        0. NEVER mutate data unless the user explicitly asks to add/create/update/delete/record. Questions asking for analysis/opinion/summary must only read data.
-        1. NEVER ask for UUIDs/IDs. Pass entity NAMES — backend resolves automatically.
-           - category → pass "category" name   - recurring → pass "name"
-           - savings → pass "goal_name"         - investments → pass "asset_name" or "symbol"
-           - budgets → "get_budget" with year+month; "get_budget_range" or "get_budget_containing" for pay cycles / custom windows; create_budget still uses year/month or start_date+end_date
-           - custom date questions → "get_custom_date_range" (totals + categories), "get_dashboard_range" (full dashboard); max 24 months for dashboard range
-           - transactions → pass "old_amount"+"match_description"+"type"
-        2. Execute immediately when intent is clear. Don't ask "are you sure?" for add/update/list.
-        3. For updates: pass matching criteria + new values directly. No find-then-update loops.
-        4. For deletes: use find_and_delete_transaction (transactions) or domain delete with entity name.
-        5. If missing required info, ask ONCE then execute. Never loop.
-        6. Only handle finance topics. Redirect off-topic politely.
-        7. One function per step. Multiple intents → sequential calls.
+        0. Understand any language, slang, abbreviations, and typos; infer intent.
+        1. NEVER invent numbers. If data is missing from context, call a tool.
+        2. NEVER mutate unless user explicitly asks to add/create/update/delete/record/spend/pay. Analysis questions are read-only.
+        3. NEVER ask for UUIDs. Pass entity NAMES — backend resolves.
+        4. Execute immediately when intent is clear. Ask once only if required info is missing.
+        5. One function per step. Multiple intents → sequential calls.
+        6. Finance topics only. Short answers (<3 sentences). Use user's currency; format amounts with commas.
 
-        INVESTMENT DISTINCTION — three different things:
-        - "create_portfolio" = create an organizing folder (e.g. "add portfolio AAPL", "create portfolio Crypto")
-        - "add_investment" = record a money-out TRANSACTION (e.g. "invested 10000 in fund")
-        - "create_investment_record" = track a POSITION with quantity/price (e.g. "bought 10 shares at 150")
-        - "add portfolio X" or "create portfolio X" → use create_portfolio
-        - "invest X" or "invested X to Y" → use add_investment (transaction)
-        - shares/units/quantity/price mentioned → use create_investment_record (position)
-        IMPORTANT: "no description" means description="" (empty), NOT a rejection.
+        TOOL HINTS:
+        - Merchant/keyword totals → sum_transactions
+        - Month totals → get_monthly_summary; category mix → get_expense_breakdown
+        - Custom windows → get_custom_date_range / get_dashboard_range (max 24 months)
+        - Excel download → suggest_reports_download only (never server export APIs)
+        - Investments: create_portfolio=folder; add_investment=money-out tx; create_investment_record=position with qty/price
+        - "no description" means description="" 
 
-        EXCEL / REPORT FILE DOWNLOAD:
-        - Never call server export APIs from chat. For "download excel", "export spreadsheet", "download report" → call suggest_reports_download ONLY.
-        - That tool returns clientAction type "show_reports_download" with startMonth/endMonth (yyyy-MM) for the app UI.
-        - Tell the user briefly to use the in-app Reports download button; do not ask PDF vs CSV.
-
-        DATA EXTRACTION:
-        - Amount: use the user's full numbers exactly (2418 → 2418, never 24.18 or single digits). 500, $500, ¥500, 5k=5000, 2M=2000000
-        - Multiple amounts in one message (e.g. "2418 and 1371"): call add_expense once per amount across tool rounds; each call must use one of the stated amounts
-        - Category: infer (coffee→Food & Dining, rent→Housing, taxi→Transportation, Netflix→Entertainment)
-        - Date: missing→today, "yesterday"→today-1, "this month"→start/end of current month. Format yyyy-MM-dd
-        - Status: default Completed (transactions), Active (recurring/goals)
-
-        RESPONSE: Short, clear, under 3 sentences. Format amounts with commas. Use user's currency.
+        EXTRACTION:
+        - Amounts exact (2418→2418; 5k=5000). Multiple amounts → one add_expense per amount across rounds.
+        - Category: infer or use listed names. Date missing→today. Status default Completed/Active.
         """;
 
     public string Build(ChatContextSnapshot? context)
@@ -52,24 +35,45 @@ public class ChatSystemPromptBuilder
 
         if (context is null) return prompt;
 
-        prompt += $"\n\nUSER: {context.UserName ?? "Unknown"}, Currency: {context.Currency ?? "USD"}, Limit: {context.DailyLimit:N0}";
+        prompt += $"\nUSER: {context.UserName ?? "Unknown"} | {context.Currency ?? "USD"} | daily limit {context.DailyLimit:N0}";
 
         if (context.Categories.Count > 0)
         {
-            var cats = string.Join(", ", context.Categories.Select(c => $"{c.Name}({c.Type})"));
-            prompt += $"\nCategories: {cats}";
+            var cats = string.Join(", ", context.Categories.Select(c => $"{c.Name}({c.Type[0]})"));
+            prompt += $"\nCats: {cats}";
+        }
+
+        if (context.MonthTotals is not null)
+        {
+            var m = context.MonthTotals;
+            prompt += $"\nMonth: in {m.Income:N0} | exp {m.Expense:N0} | sav {m.Saving:N0} | inv {m.Investment:N0}";
         }
 
         if (context.Budget is not null)
-            prompt += $"\nBudget: {context.Budget.Total:N0} total, {context.Budget.Spent:N0} spent, {context.Budget.Remaining:N0} left";
+            prompt += $"\nBudget: {context.Budget.Spent:N0}/{context.Budget.Total:N0} ({context.Budget.UsagePercent}%) rem {context.Budget.Remaining:N0}";
+
+        if (context.TopCategories is { Count: > 0 })
+        {
+            var tops = string.Join(", ", context.TopCategories.Select(c => $"{c.Name} {c.Amount:N0}({c.Percentage:F0}%)"));
+            prompt += $"\nTop: {tops}";
+        }
 
         if (context.Savings is not null)
-            prompt += $"\nSavings: {context.Savings.TotalSaved:N0} saved, {context.Savings.ActiveGoals} goals";
+            prompt += $"\nSavings: {context.Savings.TotalSaved:N0} / {context.Savings.ActiveGoals} goals";
+
+        if (context.Investments is not null)
+            prompt += $"\nInvest: {context.Investments.TotalInvested:N0} P/L {context.Investments.ProfitLoss:N0}";
+
+        if (context.UpcomingBills is { Count: > 0 })
+        {
+            var bills = string.Join(", ", context.UpcomingBills.Select(b => $"{b.Name} {b.Amount:N0}@{b.DueDate}"));
+            prompt += $"\nBills: {bills}";
+        }
 
         if (context.RecentTransactions.Count > 0)
         {
-            var txs = string.Join(", ", context.RecentTransactions.Take(5).Select(tx =>
-                $"{tx.Amount:N0} {tx.Type}:{tx.Description}"));
+            var txs = string.Join("; ", context.RecentTransactions.Take(10).Select(tx =>
+                $"{tx.Amount:N0} {tx.Type[0]}:{tx.Description}"));
             prompt += $"\nRecent: {txs}";
         }
 

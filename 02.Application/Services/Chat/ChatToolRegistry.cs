@@ -4,18 +4,153 @@ namespace expense_tracker_backend.Application.Services.Chat;
 
 public class ChatToolRegistry
 {
-    public List<ChatTool> BuildAll()
+    public enum ChatToolIntent
     {
-        var tools = new List<ChatTool>();
-        tools.AddRange(TransactionTools());
-        tools.AddRange(CategoryTools());
-        tools.AddRange(BudgetTools());
-        tools.AddRange(RecurringPaymentTools());
-        tools.AddRange(SavingGoalTools());
-        tools.AddRange(InvestmentTools());
-        tools.AddRange(ReportTools());
-        return tools;
+        All,
+        Mutation,
+        Budget,
+        Report,
+        Recurring,
+        Savings,
+        Investment
     }
+
+    public List<ChatTool> BuildAll() => BuildForIntent(ChatToolIntent.All);
+
+    public List<ChatTool> BuildForIntent(ChatToolIntent intent) => intent switch
+    {
+        ChatToolIntent.Mutation =>
+        [
+            ..TransactionTools(),
+            ..CategoryTools(),
+            SumTransactionsTool(),
+            SuggestReportsTool()
+        ],
+        ChatToolIntent.Budget =>
+        [
+            ..BudgetTools(),
+            ..ReportTools(),
+            SumTransactionsTool(),
+            ListTransactionsOnlyTool()
+        ],
+        ChatToolIntent.Report =>
+        [
+            ..ReportTools(),
+            SumTransactionsTool(),
+            ListTransactionsOnlyTool(),
+            ListCategoriesOnlyTool()
+        ],
+        ChatToolIntent.Recurring =>
+        [
+            ..RecurringPaymentTools(),
+            SumTransactionsTool()
+        ],
+        ChatToolIntent.Savings => SavingGoalTools(),
+        ChatToolIntent.Investment => InvestmentTools(),
+        _ =>
+        [
+            ..TransactionTools(),
+            ..CategoryTools(),
+            ..BudgetTools(),
+            ..RecurringPaymentTools(),
+            ..SavingGoalTools(),
+            ..InvestmentTools(),
+            ..ReportTools()
+        ]
+    };
+
+    public static ChatToolIntent ResolveIntent(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            return ChatToolIntent.All;
+
+        var m = message.ToLowerInvariant();
+
+        if (ContainsAny(m, "budget", "allocate", "allocation"))
+            return ChatToolIntent.Budget;
+
+        if (ContainsAny(m, "recurring", "bill", "subscription", "mark paid", "acknowledge", "overdue", "missed"))
+            return ChatToolIntent.Recurring;
+
+        if (ContainsAny(m, "saving goal", "savings goal", "contribute", "deposit to", "emergency fund", "vacation fund"))
+            return ChatToolIntent.Savings;
+
+        if (ContainsAny(m, "portfolio", "stock", "crypto", "shares", "investment position", "bought", "ticker"))
+            return ChatToolIntent.Investment;
+
+        if (ContainsAny(m, "summary", "breakdown", "dashboard", "how much", "total", "spent", "spend", "report", "biggest", "top categor", "compare", "this month", "last month", "year"))
+            return ChatToolIntent.Report;
+
+        if (ContainsAny(m, "add", "create", "record", "log", "update", "edit", "delete", "remove", "paid", "buy", "bought", "grabbed", "spent", "spend", "income", "expense", "category"))
+            return ChatToolIntent.Mutation;
+
+        return ChatToolIntent.All;
+    }
+
+    private static bool ContainsAny(string haystack, params string[] needles) =>
+        needles.Any(n => haystack.Contains(n, StringComparison.Ordinal));
+
+    private static ChatTool SumTransactionsTool() =>
+        ChatTool.CreateFunctionTool(
+            "sum_transactions",
+            "Sum transactions by keyword/merchant for a date range. Use for 'how much at Family Mart / on coffee this month?'.",
+            BinaryData.FromString("""
+            {
+                "type": "object",
+                "properties": {
+                    "keyword": { "type": "string", "description": "Merchant or description keyword (e.g. Family Mart, coffee)" },
+                    "description": { "type": "string", "description": "Alias for keyword" },
+                    "type": { "type": "string", "enum": ["Expense", "Income"], "description": "Default Expense" },
+                    "start_date": { "type": "string", "description": "yyyy-MM-dd; default first day of current month" },
+                    "end_date": { "type": "string", "description": "yyyy-MM-dd; default last day of current month" }
+                },
+                "required": ["keyword"]
+            }
+            """));
+
+    private static ChatTool ListTransactionsOnlyTool() =>
+        ChatTool.CreateFunctionTool(
+            "list_transactions",
+            "List recent transactions.",
+            BinaryData.FromString("""
+            {
+                "type": "object",
+                "properties": {
+                    "type": { "type": "string", "enum": ["Expense", "Income", "Investment", "Savings"] },
+                    "start_date": { "type": "string" },
+                    "end_date": { "type": "string" },
+                    "keyword": { "type": "string" },
+                    "limit": { "type": "integer" }
+                }
+            }
+            """));
+
+    private static ChatTool ListCategoriesOnlyTool() =>
+        ChatTool.CreateFunctionTool(
+            "list_categories",
+            "List available categories.",
+            BinaryData.FromString("""
+            {
+                "type": "object",
+                "properties": {
+                    "type": { "type": "string", "enum": ["Expense", "Income", "Investment", "Savings"] }
+                }
+            }
+            """));
+
+    private static ChatTool SuggestReportsTool() =>
+        ChatTool.CreateFunctionTool(
+            "suggest_reports_download",
+            "Show in-app Excel/report download button. Never call server export APIs from chat.",
+            BinaryData.FromString("""
+            {
+                "type": "object",
+                "properties": {
+                    "start_month": { "type": "string", "description": "yyyy-MM" },
+                    "end_month": { "type": "string", "description": "yyyy-MM" }
+                }
+            }
+            """));
 
     private static List<ChatTool> TransactionTools() =>
     [
@@ -127,6 +262,8 @@ public class ChatToolRegistry
                 }
             }
             """)),
+
+        SumTransactionsTool(),
 
         ChatTool.CreateFunctionTool(
             "find_transaction",

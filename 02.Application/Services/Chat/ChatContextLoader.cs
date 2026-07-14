@@ -3,17 +3,13 @@ using expense_tracker_backend.Application.DTOs;
 using expense_tracker_backend.Application.Interfaces;
 using expense_tracker_backend.Domain.Interfaces;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace expense_tracker_backend.Application.Services.Chat;
 
 public class ChatContextLoader
 {
-    private readonly IMemberRepository _memberRepository;
-    private readonly IExpenseCategoryService _categoryService;
-    private readonly INotificationService _notificationService;
-    private readonly IBudgetService _budgetService;
-    private readonly ISavingGoalService _savingGoalService;
-    private readonly ITranactionService _transactionService;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly IDistributedCache _cache;
 
     private static readonly DistributedCacheEntryOptions CacheOptions = new()
@@ -21,21 +17,9 @@ public class ChatContextLoader
         SlidingExpiration = TimeSpan.FromMinutes(10)
     };
 
-    public ChatContextLoader(
-        IMemberRepository memberRepository,
-        IExpenseCategoryService categoryService,
-        INotificationService notificationService,
-        IBudgetService budgetService,
-        ISavingGoalService savingGoalService,
-        ITranactionService transactionService,
-        IDistributedCache cache)
+    public ChatContextLoader(IServiceScopeFactory scopeFactory, IDistributedCache cache)
     {
-        _memberRepository = memberRepository;
-        _categoryService = categoryService;
-        _notificationService = notificationService;
-        _budgetService = budgetService;
-        _savingGoalService = savingGoalService;
-        _transactionService = transactionService;
+        _scopeFactory = scopeFactory;
         _cache = cache;
     }
 
@@ -78,16 +62,47 @@ public class ChatContextLoader
 
     private async Task<ChatContextSnapshot> BuildSnapshotAsync(Guid userId)
     {
-        var profile = await _memberRepository.GetProfileByUserIdAsync(userId.ToString());
-
         var now = DateTime.UtcNow;
-        // IMPORTANT: execute sequentially to avoid concurrent EF operations
-        // on the same scoped DbContext instance.
-        var categoriesResult = await _categoryService.GetCategoriesAsync(userId, new CategoryFilterRequest { PageSize = 100 });
-        var notificationsResult = await _notificationService.GetNotificationsAsync(userId, false, 5, null);
-        var budgetResult = await _budgetService.GetByMonthAsync(userId, now.Year, now.Month);
-        var savingsResult = await _savingGoalService.GetDashboardAsync(userId);
-        var recentTxResult = await _transactionService.GetTransactionsAsync(userId, new TransactionFilterRequest { PageSize = 5 });
+        var month = now.ToString("yyyy-MM");
+        var todayStr = now.Date.ToString("yyyy-MM-dd");
+        var upcomingEndStr = now.Date.AddDays(14).ToString("yyyy-MM-dd");
+
+        // One DI scope per call → parallel-safe (same pattern as DashboardService)
+        var profileTask = Scoped<IMemberRepository, Domain.Entities.MemberProfile?>(
+            r => r.GetProfileByUserIdAsync(userId.ToString()));
+        var categoriesTask = Scoped<IExpenseCategoryService, PagedResult<ExpenseCategory>>(
+            s => s.GetCategoriesAsync(userId, new CategoryFilterRequest { PageSize = 100 }));
+        var notificationsTask = Scoped<INotificationService, PagedNotificationResult>(
+            s => s.GetNotificationsAsync(userId, false, 5, null));
+        var budgetTask = Scoped<IBudgetService, BudgetMonthlyResponse?>(
+            s => s.GetByMonthAsync(userId, now.Year, now.Month));
+        var savingsTask = Scoped<ISavingGoalService, SavingDashboardResponse>(
+            s => s.GetDashboardAsync(userId));
+        var recentTxTask = Scoped<ITranactionService, PagedResult<Tranaction>>(
+            s => s.GetTransactionsAsync(userId, new TransactionFilterRequest { PageSize = 10 }));
+        var monthAggTask = Scoped<IAggregationService, MonthlyAggregation?>(
+            s => s.GetMonthlyAggregationAsync(userId, month));
+        var breakdownTask = Scoped<IAggregationService, ExpenseBreakdown>(
+            s => s.GetExpenseBreakdownAsync(userId, month));
+        var billsTask = Scoped<IRecurringPaymentService, List<Domain.Entities.RecurringPayment>>(
+            s => s.GetUpcomingAsync(userId, todayStr, upcomingEndStr));
+        var investmentTask = Scoped<IInvestmentService, InvestmentDashboardResponse>(
+            s => s.GetDashboardAsync(userId));
+
+        await Task.WhenAll(
+            profileTask, categoriesTask, notificationsTask, budgetTask, savingsTask,
+            recentTxTask, monthAggTask, breakdownTask, billsTask, investmentTask);
+
+        var profile = profileTask.Result;
+        var categoriesResult = categoriesTask.Result;
+        var notificationsResult = notificationsTask.Result;
+        var budgetResult = budgetTask.Result;
+        var savingsResult = savingsTask.Result;
+        var recentTxResult = recentTxTask.Result;
+        var monthAgg = monthAggTask.Result;
+        var breakdown = breakdownTask.Result;
+        var bills = billsTask.Result;
+        var investment = investmentTask.Result;
 
         var categories = categoriesResult.Items
             .Select(c => new ChatCategoryInfo(c.CategoryId.ToString(), c.DisplayName, c.Type.ToString(), c.Icon))
@@ -111,6 +126,24 @@ public class ChatContextLoader
             .Select(tx => new ChatRecentTransaction(tx.type.ToString(), tx.Amount, tx.Description, tx.TranactionDate))
             .ToList();
 
+        ChatMonthTotals? monthTotals = monthAgg is not null
+            ? new ChatMonthTotals(monthAgg.Income, monthAgg.Expense, monthAgg.Saving, monthAgg.Investment)
+            : null;
+
+        var topCategories = breakdown.Categories
+            .OrderByDescending(c => c.Amount)
+            .Take(5)
+            .Select(c => new ChatCategorySpend(c.CategoryName, c.Amount, (double)c.Percentage))
+            .ToList();
+
+        var upcomingBills = bills
+            .OrderBy(b => b.NextDueDate)
+            .Take(5)
+            .Select(b => new ChatUpcomingBill(b.Name, b.Amount, b.NextDueDate.ToString("yyyy-MM-dd")))
+            .ToList();
+
+        var investments = new ChatInvestmentTotals(investment.TotalInvested, investment.TotalProfitLoss);
+
         return new ChatContextSnapshot(
             profile?.UserName,
             profile?.Email,
@@ -122,7 +155,18 @@ public class ChatContextLoader
             notifications,
             budget,
             savings,
-            recentTransactions
-        );
+            recentTransactions,
+            monthTotals,
+            topCategories,
+            upcomingBills,
+            investments);
+    }
+
+    private async Task<TResult> Scoped<TService, TResult>(Func<TService, Task<TResult>> operation)
+        where TService : notnull
+    {
+        await using var scope = _scopeFactory.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<TService>();
+        return await operation(service);
     }
 }

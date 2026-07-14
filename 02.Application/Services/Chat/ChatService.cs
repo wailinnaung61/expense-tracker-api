@@ -31,10 +31,42 @@ public class ChatService : IChatService
     private readonly InvestmentChatHandler _investmentHandler;
     private readonly AggregationChatHandler _aggregationHandler;
 
-    private const int MaxToolCallIterations = 5;
+    private const int MaxToolCallIterations = 3;
+    private const int MaxToolCallIterationsMulti = 5;
     private static readonly Regex MutationIntentPattern = new(
-        @"\b(add|create|record|log|spent|spend|paid|pay|invested|invest|save|saved|contribute|contribution|update|edit|change|delete|remove)\b",
+        @"\b(add|create|record|log|spent|spend|spending|paid|pay|invested|invest|save|saved|contribute|contribution|update|edit|change|delete|remove|bought|buy|grabbed|got|took|ordered|purchased|receive[d]?|earn(ed)?|deposit(ed)?|withdraw(n|al)?|acknowledge|mark)\b|" +
+        @"\b(追加|記録|支出|収入|買った|払った|削除|更新|登録)\b",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex MultiAmountPattern = new(
+        @"\b\d[\d,.]*k?\b.*\band\b.*\b\d[\d,.]*k?\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly HashSet<string> TerminalSummaryTools = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "add_expense", "add_income", "add_investment", "add_savings",
+        "list_transactions", "list_categories", "list_recurring_payments",
+        "list_saving_goals", "list_investments", "list_portfolios",
+        "sum_transactions",
+        "get_budget", "get_budget_range", "get_budget_containing",
+        "get_monthly_summary", "get_yearly_summary", "get_expense_breakdown",
+        "get_dashboard", "get_dashboard_range", "get_custom_date_range",
+        "get_saving_dashboard", "get_investment_dashboard",
+        "suggest_reports_download",
+        "mark_recurring_paid", "acknowledge_recurring_paid",
+        "create_category", "create_budget", "create_recurring_payment",
+        "create_saving_goal", "create_portfolio", "create_investment_record",
+        "update_transaction", "update_category", "update_budget",
+        "update_recurring_payment", "update_saving_goal", "update_portfolio", "update_investment",
+        "delete_category", "delete_budget", "delete_recurring_payment",
+        "delete_saving_goal", "delete_portfolio", "delete_investment",
+        "delete_transaction", "find_and_delete_transaction",
+        "add_budget_category", "remove_budget_category", "add_saving_contribution"
+    };
+    private static readonly HashSet<string> DestructiveMutationTools = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "delete_transaction", "find_and_delete_transaction",
+        "delete_category", "delete_budget", "delete_recurring_payment",
+        "delete_saving_goal", "delete_portfolio", "delete_investment"
+    };
 
     public ChatService(
         ILogger<ChatService> logger,
@@ -184,7 +216,9 @@ public class ChatService : IChatService
 
     private async Task<ChatResponse> ExecuteOpenAiFlowAsync(Guid userId, string message, ChatContextSnapshot context, string? userName)
     {
-        var tools = _toolRegistry.BuildAll();
+        var intent = ChatToolRegistry.ResolveIntent(message);
+        var tools = _toolRegistry.BuildForIntent(intent);
+        var maxIterations = MultiAmountPattern.IsMatch(message) ? MaxToolCallIterationsMulti : MaxToolCallIterations;
         var systemMessage = _promptBuilder.Build(context);
         var history = await _historyStore.GetHistoryAsync(userId);
 
@@ -196,8 +230,9 @@ public class ChatService : IChatService
         foreach (var tool in tools)
             options.Tools.Add(tool);
 
-        _logger.LogInformation("OpenAI request for user {UserId}: {Message} (history: {Count} msgs)",
-            userId, message, history.Count);
+        _logger.LogInformation(
+            "OpenAI request for user {UserId}: {Message} (intent={Intent}, tools={ToolCount}, history={Count})",
+            userId, message, intent, tools.Count, history.Count);
 
         var response = await _chatClient.CompleteChatAsync(messages, options);
         var choice = response.Value;
@@ -205,8 +240,9 @@ public class ChatService : IChatService
         var functionsCalled = new List<FunctionCallResult>();
         ChatClientAction? clientActionFromTools = null;
         var iterations = 0;
+        string? lastToolSummary = null;
 
-        while (choice.FinishReason == ChatFinishReason.ToolCalls && iterations < MaxToolCallIterations)
+        while (choice.FinishReason == ChatFinishReason.ToolCalls && iterations < maxIterations)
         {
             iterations++;
             messages.Add(new AssistantChatMessage(choice));
@@ -228,7 +264,8 @@ public class ChatService : IChatService
             }
             else
             {
-                if (_refreshResolver.IsMutation(primaryCall.FunctionName) && !HasExplicitMutationIntent(message))
+                if (_refreshResolver.IsMutation(primaryCall.FunctionName)
+                    && !HasExplicitMutationIntent(message, primaryCall.FunctionName, argsJson))
                 {
                     _logger.LogWarning(
                         "Blocked mutation tool call {FunctionName} due to non-mutation user intent. Message: {Message}",
@@ -247,8 +284,24 @@ public class ChatService : IChatService
                 var (result, resultObj) = await ExecuteFunctionAsync(userId, primaryCall.FunctionName, args);
                 if (resultObj is ChatClientAction ca)
                     clientActionFromTools = ca;
+                lastToolSummary = result;
                 messages.Add(new ToolChatMessage(primaryCall.Id, result ?? string.Empty));
                 functionsCalled.Add(new FunctionCallResult(primaryCall.FunctionName, resultObj is ChatClientAction ? null : resultObj));
+
+                // Fast path: skip rewrite round-trip when tool summary is already user-ready
+                if (TerminalSummaryTools.Contains(primaryCall.FunctionName)
+                    && !string.IsNullOrWhiteSpace(result)
+                    && !MultiAmountPattern.IsMatch(message)
+                    && primaryCall.FunctionName is not ("find_transaction"))
+                {
+                    var refreshTargetFast = _refreshResolver.Resolve(functionsCalled);
+                    if (refreshTargetFast is not null)
+                        await _contextLoader.InvalidateAsync(userId);
+
+                    messages.Add(new AssistantChatMessage(result));
+                    await _historyStore.SaveHistoryAsync(userId, messages.Skip(1).ToList());
+                    return new ChatResponse(result, userName, refreshTargetFast, functionsCalled, DateTime.UtcNow, clientActionFromTools);
+                }
             }
 
             var next = await _chatClient.CompleteChatAsync(messages, options);
@@ -259,6 +312,7 @@ public class ChatService : IChatService
         if (functionsCalled.Count > 0)
         {
             var finalText = choice.Content.FirstOrDefault()?.Text
+                ?? lastToolSummary
                 ?? string.Join("\n", functionsCalled.Select(f => f.FunctionName));
             messages.Add(new AssistantChatMessage(choice));
             var refreshTarget = _refreshResolver.Resolve(functionsCalled);
@@ -293,6 +347,7 @@ public class ChatService : IChatService
                 "find_transaction" => await _transactionHandler.FindTransactionAsync(userId, args),
                 "delete_transaction" => await _transactionHandler.DeleteTransactionAsync(userId, args),
                 "find_and_delete_transaction" => await _transactionHandler.FindAndDeleteTransactionAsync(userId, args),
+                "sum_transactions" => await _transactionHandler.SumTransactionsAsync(userId, args),
 
                 "list_categories" => await _categoryHandler.ListCategoriesAsync(userId, args),
                 "create_category" => await _categoryHandler.CreateCategoryAsync(userId, args),
@@ -363,11 +418,29 @@ public class ChatService : IChatService
 
     private static string EscapeJson(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
-    private static bool HasExplicitMutationIntent(string message)
+    private static bool HasExplicitMutationIntent(string message, string? functionName = null, string? argsJson = null)
     {
         if (string.IsNullOrWhiteSpace(message))
             return false;
-        return MutationIntentPattern.IsMatch(message);
+
+        // Destructive ops still require a clear delete/remove verb
+        if (functionName is not null && DestructiveMutationTools.Contains(functionName))
+        {
+            return Regex.IsMatch(message, @"\b(delete|remove|削除)\b", RegexOptions.IgnoreCase);
+        }
+
+        if (MutationIntentPattern.IsMatch(message))
+            return true;
+
+        // Allow clear add_* tool calls with an amount even if slang verbs were missed
+        if (functionName is "add_expense" or "add_income" or "add_investment" or "add_savings"
+            && !string.IsNullOrWhiteSpace(argsJson)
+            && argsJson.Contains("\"amount\"", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private static string BuildBlockedMutationMessage(string message, ChatContextSnapshot context)
