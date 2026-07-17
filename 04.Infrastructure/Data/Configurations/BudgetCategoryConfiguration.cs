@@ -36,6 +36,10 @@ public class BudgetCategoryConfiguration : IEntityTypeConfiguration<BudgetCatego
             .HasColumnName("alert_threshold")
             .HasColumnType("decimal(5,2)");
 
+        builder.Property(bc => bc.IsReserved)
+            .HasColumnName("is_reserved")
+            .HasDefaultValue(false);
+
         builder.Property(bc => bc.SortOrder)
             .HasColumnName("sort_order");
 

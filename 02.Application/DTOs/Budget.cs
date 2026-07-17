@@ -20,7 +20,11 @@ public record BudgetSummaryDto(
     decimal TotalSpent,
     decimal Remaining,
     decimal DailyBudget,
-    int UsagePercent
+    int UsagePercent,
+    /// <summary>Unspent reserved allocations (IsReserved categories).</summary>
+    decimal ReservedRemaining = 0,
+    /// <summary>Free money after spent + reserved; DailyBudget is based on this.</summary>
+    decimal SpendableRemaining = 0
 );
 
 public record BudgetCategoryDto(
@@ -35,7 +39,8 @@ public record BudgetCategoryDto(
     int UsagePercent,
     string Status,
     decimal AlertThreshold,
-    int SortOrder
+    int SortOrder,
+    bool IsReserved = false
 );
 
 public record TopSpendingDto(
@@ -72,7 +77,8 @@ public record CreateBudgetCategoryRequest(
     string CategoryId,
     decimal AllocatedAmount,
     decimal AlertThreshold = 0.8m,
-    int SortOrder = 0
+    int SortOrder = 0,
+    bool IsReserved = false
 );
 
 public record UpdateBudgetRequest(
@@ -81,5 +87,6 @@ public record UpdateBudgetRequest(
 
 public record UpdateBudgetCategoryRequest(
     decimal AllocatedAmount,
-    decimal? AlertThreshold = null
+    decimal? AlertThreshold = null,
+    bool? IsReserved = null
 );

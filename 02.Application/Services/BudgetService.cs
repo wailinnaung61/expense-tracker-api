@@ -97,6 +97,7 @@ public class BudgetService : IBudgetService
                     AllocatedAmount = cat.AllocatedAmount,
                     AlertThreshold = cat.AlertThreshold,
                     SortOrder = cat.SortOrder,
+                    IsReserved = cat.IsReserved,
                     Snapshot = new BudgetSnapshot
                     {
                         BudgetCategoryId = budgetCategoryId,
@@ -146,6 +147,7 @@ public class BudgetService : IBudgetService
             AllocatedAmount = request.AllocatedAmount,
             AlertThreshold = request.AlertThreshold,
             SortOrder = request.SortOrder,
+            IsReserved = request.IsReserved,
             Snapshot = new Domain.Entities.BudgetSnapshot
             {
                 BudgetCategoryId = budgetCategoryId,
@@ -171,6 +173,8 @@ public class BudgetService : IBudgetService
         budgetCategory.AllocatedAmount = request.AllocatedAmount;
         if (request.AlertThreshold.HasValue)
             budgetCategory.AlertThreshold = request.AlertThreshold.Value;
+        if (request.IsReserved.HasValue)
+            budgetCategory.IsReserved = request.IsReserved.Value;
 
         await _repository.UpdateBudgetCategoryAsync(budgetCategory);
         await _repository.InvalidateCacheForBudgetRangeAsync(userId.ToString(), rangeStart, rangeEnd);
@@ -227,7 +231,18 @@ public class BudgetService : IBudgetService
         var effectiveToday = today < endDate ? today : endDate;
         var remainingDays = Math.Max(1, (endDate.DayNumber - effectiveToday.DayNumber) + 1);
         var remaining = budget.TotalAmount - totalSpent;
-        var dailyBudget = Math.Round(remaining / remainingDays, 2);
+
+        // Reserved categories (gas/rent etc.): unspent allocation is spoken-for money
+        var reservedRemaining = budget.BudgetCategories
+            .Where(bc => bc.IsReserved)
+            .Sum(bc =>
+            {
+                var spent = spentByCat.GetValueOrDefault(bc.CategoryId, 0m);
+                return Math.Max(0m, bc.AllocatedAmount - spent);
+            });
+
+        var spendableRemaining = Math.Max(0m, remaining - reservedRemaining);
+        var dailyBudget = Math.Round(spendableRemaining / remainingDays, 2);
         var usagePercent = budget.TotalAmount > 0
             ? (int)Math.Round(totalSpent / budget.TotalAmount * 100)
             : 0;
@@ -249,7 +264,9 @@ public class BudgetService : IBudgetService
             totalSpent,
             remaining,
             dailyBudget,
-            usagePercent);
+            usagePercent,
+            reservedRemaining,
+            spendableRemaining);
 
         return new BudgetMonthlyResponse(
             summary, categories, topSpending, budget.BudgetId, budget.StartDate, budget.EndDate);
@@ -284,7 +301,8 @@ public class BudgetService : IBudgetService
             usagePercent,
             GetBudgetCategoryStatus(spent, bc.AllocatedAmount, bc.AlertThreshold),
             bc.AlertThreshold,
-            bc.SortOrder);
+            bc.SortOrder,
+            bc.IsReserved);
     }
 
     private static BudgetDto MapToBudgetDto(Budget b) =>

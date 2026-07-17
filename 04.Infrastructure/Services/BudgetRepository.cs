@@ -130,6 +130,7 @@ public class BudgetRepository : IBudgetRepository
                     AllocatedAmount = group.Sum(x => x.AllocatedAmount),
                     AlertThreshold = group.Max(x => x.AlertThreshold),
                     SortOrder = group.Min(x => x.SortOrder),
+                    IsReserved = group.Any(x => x.IsReserved),
                     Category = first.Category,
                     Snapshot = new BudgetSnapshot
                     {
@@ -250,6 +251,7 @@ public class BudgetRepository : IBudgetRepository
         existing.AllocatedAmount = budgetCategory.AllocatedAmount;
         existing.AlertThreshold = budgetCategory.AlertThreshold;
         existing.SortOrder = budgetCategory.SortOrder;
+        existing.IsReserved = budgetCategory.IsReserved;
 
         await _context.SaveChangesAsync();
         return existing;

@@ -30,7 +30,9 @@ public class BudgetChatHandler
 
         var summary = $"Budget for {year}-{month:D2}:\n" +
             $"Total: {result.Summary.TotalBudget:N0} | Spent: {result.Summary.TotalSpent:N0} | " +
-            $"Remaining: {result.Summary.Remaining:N0} ({result.Summary.UsagePercent}% used)\n" +
+            $"Remaining: {result.Summary.Remaining:N0} | Reserved: {result.Summary.ReservedRemaining:N0} | " +
+            $"Spendable: {result.Summary.SpendableRemaining:N0} | Daily: {result.Summary.DailyBudget:N0} " +
+            $"({result.Summary.UsagePercent}% used)\n" +
             string.Join("\n", lines);
 
         return (summary, result);
@@ -59,7 +61,9 @@ public class BudgetChatHandler
 
         var summary = $"Budget {result.StartDate} → {result.EndDate}:\n" +
             $"Total: {result.Summary.TotalBudget:N0} | Spent: {result.Summary.TotalSpent:N0} | " +
-            $"Remaining: {result.Summary.Remaining:N0} ({result.Summary.UsagePercent}% used)\n" +
+            $"Remaining: {result.Summary.Remaining:N0} | Reserved: {result.Summary.ReservedRemaining:N0} | " +
+            $"Spendable: {result.Summary.SpendableRemaining:N0} | Daily: {result.Summary.DailyBudget:N0} " +
+            $"({result.Summary.UsagePercent}% used)\n" +
             string.Join("\n", lines);
 
         return (summary, result);
@@ -84,7 +88,9 @@ public class BudgetChatHandler
 
         var summary = $"Budget containing {date} ({result.StartDate} → {result.EndDate}):\n" +
             $"Total: {result.Summary.TotalBudget:N0} | Spent: {result.Summary.TotalSpent:N0} | " +
-            $"Remaining: {result.Summary.Remaining:N0} ({result.Summary.UsagePercent}% used)\n" +
+            $"Remaining: {result.Summary.Remaining:N0} | Reserved: {result.Summary.ReservedRemaining:N0} | " +
+            $"Spendable: {result.Summary.SpendableRemaining:N0} | Daily: {result.Summary.DailyBudget:N0} " +
+            $"({result.Summary.UsagePercent}% used)\n" +
             string.Join("\n", lines);
 
         return (summary, result);
