@@ -85,6 +85,10 @@ public class RecurringPaymentChatHandler
             existing.NextDueDate = EnsureUtc(parsedDate);
         if (args.TryGetProperty("status", out var s) && Enum.TryParse<AppConstants.RecurringStatus>(s.GetString(), true, out var status))
             existing.Status = status;
+        if (args.TryGetProperty("auto_pay", out var ap) && (ap.ValueKind is JsonValueKind.True or JsonValueKind.False))
+            existing.AutoPay = ap.GetBoolean();
+        else if (args.TryGetProperty("autoPay", out var apCamel) && (apCamel.ValueKind is JsonValueKind.True or JsonValueKind.False))
+            existing.AutoPay = apCamel.GetBoolean();
 
         var result = await _recurringService.UpdateAsync(userId, existing);
         return ($"Updated recurring payment: {result.Name} — {result.Amount:N0}", result);

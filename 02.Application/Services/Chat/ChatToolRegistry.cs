@@ -537,7 +537,8 @@ public class ChatToolRegistry
                     "amount": { "type": "number", "description": "New amount" },
                     "frequency": { "type": "string", "enum": ["Daily", "Weekly", "Monthly", "Yearly"] },
                     "next_due_date": { "type": "string", "description": "New next due date" },
-                    "status": { "type": "string", "enum": ["Active", "Paused", "Completed"] }
+                    "status": { "type": "string", "enum": ["Active", "Paused", "Completed"] },
+                    "auto_pay": { "type": "boolean", "description": "Enable/disable automatic payment when due" }
                 }
             }
             """)),

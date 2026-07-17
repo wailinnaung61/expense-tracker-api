@@ -15,7 +15,8 @@ public record RecurringPaymentDto(
     int MissedCount,
     string Status,
     DateTime CreatedAt,
-    DateTime UpdatedAt
+    DateTime UpdatedAt,
+    bool AutoPay = false
 );
 
 public record CreateRecurringPaymentRequest(
@@ -33,5 +34,6 @@ public record UpdateRecurringPaymentRequest(
     Guid CategoryId,
     AppConstants.RecurringFrequency Frequency,
     string NextDueDate,
-    AppConstants.RecurringStatus Status
+    AppConstants.RecurringStatus Status,
+    bool AutoPay = false
 );

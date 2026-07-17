@@ -221,6 +221,7 @@ public class RecurringPaymentController : BaseController
             existing.Frequency = request.Frequency;
             existing.NextDueDate = DateTime.SpecifyKind(DateTime.Parse(request.NextDueDate), DateTimeKind.Utc);
             existing.Status = request.Status;
+            existing.AutoPay = request.AutoPay;
 
             var updated = await _service.UpdateAsync(UserId.Value, existing);
             var category = await _categoryService.GetExpenseCategoryByIdAsync(UserId.Value, Guid.Parse(updated.CategoryId));
@@ -297,6 +298,7 @@ public class RecurringPaymentController : BaseController
         p.MissedCount,
         p.Status.ToString().ToUpper(),
         p.CreatedAt,
-        p.UpdatedAt ?? p.CreatedAt
+        p.UpdatedAt ?? p.CreatedAt,
+        p.AutoPay
     );
 }

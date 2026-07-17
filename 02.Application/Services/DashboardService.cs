@@ -167,6 +167,7 @@ public class DashboardService : IDashboardService
         p.MissedCount,
         p.Status.ToString().ToUpper(),
         p.CreatedAt,
-        p.UpdatedAt ?? p.CreatedAt
+        p.UpdatedAt ?? p.CreatedAt,
+        p.AutoPay
     );
 }
