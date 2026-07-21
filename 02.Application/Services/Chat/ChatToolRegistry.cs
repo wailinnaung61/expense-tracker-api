@@ -848,7 +848,7 @@ public class ChatToolRegistry
 
         ChatTool.CreateFunctionTool(
             "get_dashboard",
-            "Get full dashboard overview for a calendar month (summary, trend, budget, savings, investments, bills).",
+            "Get full dashboard overview for a calendar month (summary, trend, savings, investments, bills).",
             BinaryData.FromString("""
             {
                 "type": "object",

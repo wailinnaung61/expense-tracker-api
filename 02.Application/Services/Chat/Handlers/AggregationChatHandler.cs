@@ -95,12 +95,6 @@ public class AggregationChatHandler
             parts.Add($"Income: {cm.Income:N0} | Expense: {cm.Expense:N0} | Savings: {cm.Saving:N0} | Investment: {cm.Investment:N0}");
         }
 
-        if (result.Budget?.Summary is not null)
-        {
-            var b = result.Budget.Summary;
-            parts.Add($"Budget: {b.TotalSpent:N0}/{b.TotalBudget:N0} ({b.UsagePercent}% used)");
-        }
-
         parts.Add($"Savings: {result.Savings.TotalSaved:N0} saved, {result.Savings.ActiveGoalsCount} active goals");
         parts.Add($"Investments: {result.Investment.TotalInvested:N0} invested, P/L: {result.Investment.TotalProfitLoss:N0}");
 
@@ -176,12 +170,6 @@ public class AggregationChatHandler
             var cm = result.CurrentMonth;
             parts.Add(
                 $"Summary: Income {cm.Income:N0} | Expense {cm.Expense:N0} | Savings {cm.Saving:N0} | Investment {cm.Investment:N0}");
-        }
-
-        if (result.Budget?.Summary is not null)
-        {
-            var b = result.Budget.Summary;
-            parts.Add($"Budget: {b.TotalSpent:N0}/{b.TotalBudget:N0} ({b.UsagePercent}% used) ({result.Budget.StartDate}–{result.Budget.EndDate})");
         }
 
         parts.Add($"Savings (period): {result.Savings.TotalSaved:N0} saved, {result.Savings.ActiveGoalsCount} active goals");
