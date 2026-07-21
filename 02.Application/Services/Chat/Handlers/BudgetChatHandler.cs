@@ -177,8 +177,9 @@ public class BudgetChatHandler
             return ("Please provide the allocation amount.", null);
 
         var threshold = args.TryGetProperty("alert_threshold", out var th) ? th.GetDecimal() : 0.8m;
+        var alertsEnabled = TryBool(args, "alerts_enabled", true);
 
-        var request = new CreateBudgetCategoryRequest(categoryId, allocated, threshold);
+        var request = new CreateBudgetCategoryRequest(categoryId, allocated, threshold, AlertsEnabled: alertsEnabled);
         var result = await _budgetService.AddCategoryAsync(userId, budgetId, request);
 
         return result is not null
@@ -253,6 +254,11 @@ public class BudgetChatHandler
 
     private static int TryInt(JsonElement args, string prop, int fallback) =>
         args.TryGetProperty(prop, out var v) && v.TryGetInt32(out var i) ? i : fallback;
+
+    private static bool TryBool(JsonElement args, string prop, bool fallback) =>
+        args.TryGetProperty(prop, out var v) && (v.ValueKind is JsonValueKind.True or JsonValueKind.False)
+            ? v.GetBoolean()
+            : fallback;
 
     private static DateOnly? TryDateOnly(JsonElement args, string prop)
     {

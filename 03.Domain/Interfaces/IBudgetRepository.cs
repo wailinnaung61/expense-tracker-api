@@ -34,5 +34,6 @@ public record BudgetSnapshotResult(
     string CategoryName,
     decimal SpentAmount,
     decimal AllocatedAmount,
-    decimal AlertThreshold
+    decimal AlertThreshold,
+    bool AlertsEnabled = true
 );

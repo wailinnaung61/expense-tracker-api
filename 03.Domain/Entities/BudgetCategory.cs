@@ -12,6 +12,11 @@ public class BudgetCategory
     /// (e.g. gas, rent not paid yet but already spoken for).
     /// </summary>
     public bool IsReserved { get; set; }
+    /// <summary>
+    /// When false, skip budget threshold/exceeded notifications for this category
+    /// (e.g. fixed bills like electric where spend equals the allocation).
+    /// </summary>
+    public bool AlertsEnabled { get; set; } = true;
     public int SortOrder { get; set; } = 0;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

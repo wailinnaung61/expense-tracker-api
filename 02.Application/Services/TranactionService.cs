@@ -203,7 +203,7 @@ public class TranactionService : ITranactionService
 
     private async Task CheckBudgetAlertAsync(Guid userId, Domain.Interfaces.BudgetSnapshotResult? result)
     {
-        if (result is null || result.AllocatedAmount <= 0) return;
+        if (result is null || result.AllocatedAmount <= 0 || !result.AlertsEnabled) return;
 
         var percent = (int)(result.SpentAmount / result.AllocatedAmount * 100);
         var spent = result.SpentAmount.ToString("N0");

@@ -131,6 +131,7 @@ public class BudgetRepository : IBudgetRepository
                     AlertThreshold = group.Max(x => x.AlertThreshold),
                     SortOrder = group.Min(x => x.SortOrder),
                     IsReserved = group.Any(x => x.IsReserved),
+                    AlertsEnabled = group.Any(x => x.AlertsEnabled),
                     Category = first.Category,
                     Snapshot = new BudgetSnapshot
                     {
@@ -252,6 +253,7 @@ public class BudgetRepository : IBudgetRepository
         existing.AlertThreshold = budgetCategory.AlertThreshold;
         existing.SortOrder = budgetCategory.SortOrder;
         existing.IsReserved = budgetCategory.IsReserved;
+        existing.AlertsEnabled = budgetCategory.AlertsEnabled;
 
         await _context.SaveChangesAsync();
         return existing;
@@ -319,7 +321,8 @@ public class BudgetRepository : IBudgetRepository
             bc.Category?.DisplayName ?? "",
             snapshot.SpentAmount,
             bc.AllocatedAmount,
-            bc.AlertThreshold
+            bc.AlertThreshold,
+            bc.AlertsEnabled
         );
     }
 

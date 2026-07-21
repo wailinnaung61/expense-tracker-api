@@ -40,6 +40,10 @@ public class BudgetCategoryConfiguration : IEntityTypeConfiguration<BudgetCatego
             .HasColumnName("is_reserved")
             .HasDefaultValue(false);
 
+        builder.Property(bc => bc.AlertsEnabled)
+            .HasColumnName("alerts_enabled")
+            .HasDefaultValue(true);
+
         builder.Property(bc => bc.SortOrder)
             .HasColumnName("sort_order");
 

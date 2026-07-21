@@ -78,9 +78,10 @@ Indexes: (user_id, is_read), (user_id, created_at)
 
 | Field         | Value |
 |---------------|-------|
-| **When**      | User creates/updates a **COMPLETED expense** and the budget category spend reaches the `AlertThreshold` (default 80%) |
+| **When**      | User creates/updates a **COMPLETED expense** and the budget category spend reaches the `AlertThreshold` (default 80%), **and** the category has `AlertsEnabled = true` |
 | **Where**     | `TranactionService.CreateTranactionAsync()` / `UpdateTranactionAsync()` → `CheckBudgetAlertAsync()` |
-| **Trigger**   | `SpentAmount ≥ AllocatedAmount × AlertThreshold` |
+| **Trigger**   | `AlertsEnabled` **and** `SpentAmount ≥ AllocatedAmount × AlertThreshold` |
+| **Also needs**| Profile `NotifyBudgetAlerts = true` |
 | **Real-time** | ✅ Immediate (on transaction) |
 | **Example**   | *"You've spent 82% of your Food budget (¥41,000 / ¥50,000)"* |
 | **Reference** | `budgetCategoryId` → `budget` |
@@ -91,9 +92,10 @@ Indexes: (user_id, is_read), (user_id, created_at)
 
 | Field         | Value |
 |---------------|-------|
-| **When**      | User creates/updates a **COMPLETED expense** and the budget category spend exceeds 100% |
+| **When**      | User creates/updates a **COMPLETED expense** and the budget category spend exceeds 100%, **and** the category has `AlertsEnabled = true` |
 | **Where**     | `TranactionService` → `CheckBudgetAlertAsync()` |
-| **Trigger**   | `SpentAmount > AllocatedAmount` |
+| **Trigger**   | `AlertsEnabled` **and** `SpentAmount > AllocatedAmount` |
+| **Also needs**| Profile `NotifyBudgetAlerts = true` |
 | **Real-time** | ✅ Immediate (on transaction) |
 | **Example**   | *"Food budget exceeded! Spent ¥55,000 of ¥50,000"* |
 | **Reference** | `budgetCategoryId` → `budget` |
@@ -269,6 +271,17 @@ PUT /api/profile
     "paymentFailures": true,
     "exports": true
   }
+}
+```
+
+Budget alerts also require the category’s `alertsEnabled` flag (default `true`). Set `alertsEnabled: false` on fixed bills (electric, rent) so paying the exact allocation does not notify; leave `true` for variable spending (food/groceries).
+
+```http
+POST /api/budgets/{budgetId}/categories
+{
+  "categoryId": "...",
+  "allocatedAmount": 4500,
+  "alertsEnabled": false
 }
 ```
 

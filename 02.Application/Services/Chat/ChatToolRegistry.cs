@@ -472,7 +472,8 @@ public class ChatToolRegistry
                     "category_id": { "type": "string", "description": "Category UUID (optional — use category name instead)" },
                     "category": { "type": "string", "description": "Category name (e.g. 'Food & Dining'). Backend resolves to ID." },
                     "allocated_amount": { "type": "number", "description": "Amount to allocate for this category" },
-                    "alert_threshold": { "type": "number", "description": "Alert at this percentage (default 0.8 = 80%)" }
+                    "alert_threshold": { "type": "number", "description": "Alert at this percentage (default 0.8 = 80%)" },
+                    "alerts_enabled": { "type": "boolean", "description": "Send budget alerts for this category (default true). Set false for fixed bills like electric/rent." }
                 },
                 "required": ["allocated_amount"]
             }

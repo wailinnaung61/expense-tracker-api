@@ -98,6 +98,7 @@ public class BudgetService : IBudgetService
                     AlertThreshold = cat.AlertThreshold,
                     SortOrder = cat.SortOrder,
                     IsReserved = cat.IsReserved,
+                    AlertsEnabled = cat.AlertsEnabled,
                     Snapshot = new BudgetSnapshot
                     {
                         BudgetCategoryId = budgetCategoryId,
@@ -148,6 +149,7 @@ public class BudgetService : IBudgetService
             AlertThreshold = request.AlertThreshold,
             SortOrder = request.SortOrder,
             IsReserved = request.IsReserved,
+            AlertsEnabled = request.AlertsEnabled,
             Snapshot = new Domain.Entities.BudgetSnapshot
             {
                 BudgetCategoryId = budgetCategoryId,
@@ -175,6 +177,8 @@ public class BudgetService : IBudgetService
             budgetCategory.AlertThreshold = request.AlertThreshold.Value;
         if (request.IsReserved.HasValue)
             budgetCategory.IsReserved = request.IsReserved.Value;
+        if (request.AlertsEnabled.HasValue)
+            budgetCategory.AlertsEnabled = request.AlertsEnabled.Value;
 
         await _repository.UpdateBudgetCategoryAsync(budgetCategory);
         await _repository.InvalidateCacheForBudgetRangeAsync(userId.ToString(), rangeStart, rangeEnd);
@@ -302,7 +306,8 @@ public class BudgetService : IBudgetService
             GetBudgetCategoryStatus(spent, bc.AllocatedAmount, bc.AlertThreshold),
             bc.AlertThreshold,
             bc.SortOrder,
-            bc.IsReserved);
+            bc.IsReserved,
+            bc.AlertsEnabled);
     }
 
     private static BudgetDto MapToBudgetDto(Budget b) =>

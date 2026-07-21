@@ -88,6 +88,12 @@ namespace _04.Infrastructure.Migrations
                         .HasColumnType("decimal(5,2)")
                         .HasColumnName("alert_threshold");
 
+                    b.Property<bool>("AlertsEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("alerts_enabled");
+
                     b.Property<decimal>("AllocatedAmount")
                         .HasColumnType("decimal(15,2)")
                         .HasColumnName("allocated_amount");

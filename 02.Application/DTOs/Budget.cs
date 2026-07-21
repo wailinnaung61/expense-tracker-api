@@ -40,7 +40,8 @@ public record BudgetCategoryDto(
     string Status,
     decimal AlertThreshold,
     int SortOrder,
-    bool IsReserved = false
+    bool IsReserved = false,
+    bool AlertsEnabled = true
 );
 
 public record TopSpendingDto(
@@ -78,7 +79,8 @@ public record CreateBudgetCategoryRequest(
     decimal AllocatedAmount,
     decimal AlertThreshold = 0.8m,
     int SortOrder = 0,
-    bool IsReserved = false
+    bool IsReserved = false,
+    bool AlertsEnabled = true
 );
 
 public record UpdateBudgetRequest(
@@ -88,5 +90,6 @@ public record UpdateBudgetRequest(
 public record UpdateBudgetCategoryRequest(
     decimal AllocatedAmount,
     decimal? AlertThreshold = null,
-    bool? IsReserved = null
+    bool? IsReserved = null,
+    bool? AlertsEnabled = null
 );
