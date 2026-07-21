@@ -71,6 +71,7 @@ builder.Services.AddSwaggerGen(options =>
 // AWS & Cognito
 builder.Services.Configure<AwsSettings>(builder.Configuration.GetSection(AwsSettings.SectionName));
 builder.Services.Configure<S3PresignOptions>(builder.Configuration.GetSection("AWS:S3"));
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection(EmailSettings.SectionName));
 
 var awsSettings = builder.Configuration.GetSection(AwsSettings.SectionName).Get<AwsSettings>()!;
 var credentials = AwsCredentialsProvider.Resolve(awsSettings);
@@ -125,6 +126,7 @@ builder.Services.AddScoped<INotificationService>(sp =>
     new NotificationService(
         sp.GetRequiredService<INotificationRepository>(),
         sp.GetRequiredService<IMemberRepository>(),
+        sp.GetRequiredService<IEmailNotificationService>(),
         sp.GetRequiredService<IStringLocalizer<SharedResource>>()));
 
 // Background services

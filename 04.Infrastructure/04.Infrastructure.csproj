@@ -34,7 +34,7 @@
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.301" />
     <PackageReference Include="Amazon.Extensions.CognitoAuthentication" Version="2.5.4" />
 
-    <!-- AWS Export Pipeline (EventBridge ¨ SQS ¨ Lambda ¨ S3) -->
+    <!-- AWS Export Pipeline (EventBridge ï¿½ï¿½ SQS ï¿½ï¿½ Lambda ï¿½ï¿½ S3) -->
     <PackageReference Include="AWSSDK.EventBridge" Version="3.7.401.22" />
     <PackageReference Include="AWSSDK.S3" Version="3.7.410.3" />
 
@@ -46,6 +46,9 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.5" />
+
+    <!-- SMTP email -->
+    <PackageReference Include="MailKit" Version="4.14.1" />
   </ItemGroup>
 
 </Project>

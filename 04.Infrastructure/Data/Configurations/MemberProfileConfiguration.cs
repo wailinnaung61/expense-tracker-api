@@ -110,6 +110,10 @@ public class MemberProfileConfiguration : IEntityTypeConfiguration<MemberProfile
             .HasColumnName("notify_exports")
             .HasDefaultValue(true);
 
+        builder.Property(m => m.NotifyEmailEnabled)
+            .HasColumnName("notify_email_enabled")
+            .HasDefaultValue(false);
+
         builder.Property(m => m.CreatedAt)
             .HasColumnName("created_at");
 

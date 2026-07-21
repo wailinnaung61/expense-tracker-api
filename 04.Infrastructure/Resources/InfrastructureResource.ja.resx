@@ -215,6 +215,9 @@
   <data name="Menu_settings" xml:space="preserve">
     <value>設定</value>
   </data>
+  <data name="Menu_emailSent" xml:space="preserve">
+    <value>送信メール</value>
+  </data>
   <data name="Menu_login" xml:space="preserve">
     <value>ログイン</value>
   </data>

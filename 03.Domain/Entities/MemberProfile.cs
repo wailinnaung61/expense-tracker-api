@@ -32,6 +32,9 @@ public class MemberProfile
     public bool NotifyPaymentFailures { get; set; } = true;
     public bool NotifyExports { get; set; } = true;
 
+    /// <summary>Master switch for outbound email notifications (opt-in).</summary>
+    public bool NotifyEmailEnabled { get; set; } = false;
+
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }

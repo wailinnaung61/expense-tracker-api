@@ -47,32 +47,7 @@ public class ProfileController : BaseController
                 return NotFound(new { message = _localizer["ProfileNotFound"].Value });
             }
 
-            var response = new ProfileResponse(
-                profile.UserId,
-                profile.UserName,
-                profile.Email,
-                profile.PhoneNumber,
-                profile.Currency,
-                profile.Locale,
-                profile.DailyLimit,
-                profile.RoleId,
-                profile.Status,
-                profile.MfaEnabled,
-                profile.MfaMethod,
-                new NotificationPreferencesDto(
-                    profile.NotifyBudgetAlerts,
-                    profile.NotifyRecurringPayments,
-                    profile.NotifyAutoPayments,
-                    profile.NotifySavingGoals,
-                    profile.NotifyLargeTransactions,
-                    profile.NotifyPaymentFailures,
-                    profile.NotifyExports),
-                profile.CreatedAt,
-                profile.UpdatedAt,
-                profile.LastLoginAt
-            );
-
-            return Ok(response);
+            return Ok(MapResponse(profile));
         }
         catch (Exception ex)
         {
@@ -103,7 +78,6 @@ public class ProfileController : BaseController
                 return NotFound(new { message = _localizer["ProfileNotFound"].Value });
             }
 
-            // Update only provided fields
             if (request.PhoneNumber is not null)
             {
                 profile.PhoneNumber = request.PhoneNumber;
@@ -134,6 +108,11 @@ public class ProfileController : BaseController
                     profile.Locale = request.Locale;
             }
 
+            if (request.NotifyEmailEnabled.HasValue)
+            {
+                profile.NotifyEmailEnabled = request.NotifyEmailEnabled.Value;
+            }
+
             if (request.NotificationPreferences is not null)
             {
                 var np = request.NotificationPreferences;
@@ -152,33 +131,8 @@ public class ProfileController : BaseController
                 return ErrorResponse(_localizer["ProfileUpdateFailed"].Value);
             }
 
-            var response = new ProfileResponse(
-                updatedProfile.UserId,
-                updatedProfile.UserName,
-                updatedProfile.Email,
-                updatedProfile.PhoneNumber,
-                updatedProfile.Currency,
-                updatedProfile.Locale,
-                updatedProfile.DailyLimit,
-                updatedProfile.RoleId,
-                updatedProfile.Status,
-                updatedProfile.MfaEnabled,
-                updatedProfile.MfaMethod,
-                new NotificationPreferencesDto(
-                    updatedProfile.NotifyBudgetAlerts,
-                    updatedProfile.NotifyRecurringPayments,
-                    updatedProfile.NotifyAutoPayments,
-                    updatedProfile.NotifySavingGoals,
-                    updatedProfile.NotifyLargeTransactions,
-                    updatedProfile.NotifyPaymentFailures,
-                    updatedProfile.NotifyExports),
-                updatedProfile.CreatedAt,
-                updatedProfile.UpdatedAt,
-                updatedProfile.LastLoginAt
-            );
-
             _logger.LogInformation("Profile updated successfully for user: {UserId}", userId);
-            return Ok(response);
+            return Ok(MapResponse(updatedProfile));
         }
         catch (Exception ex)
         {
@@ -186,6 +140,33 @@ public class ProfileController : BaseController
             return ErrorResponse(_localizer["ProfileUpdateFailed"].Value);
         }
     }
+
+    private static ProfileResponse MapResponse(Domain.Entities.MemberProfile profile) =>
+        new(
+            profile.UserId,
+            profile.UserName,
+            profile.Email,
+            profile.PhoneNumber,
+            profile.Currency,
+            profile.Locale,
+            profile.DailyLimit,
+            profile.RoleId,
+            profile.Status,
+            profile.MfaEnabled,
+            profile.MfaMethod,
+            new NotificationPreferencesDto(
+                profile.NotifyBudgetAlerts,
+                profile.NotifyRecurringPayments,
+                profile.NotifyAutoPayments,
+                profile.NotifySavingGoals,
+                profile.NotifyLargeTransactions,
+                profile.NotifyPaymentFailures,
+                profile.NotifyExports),
+            profile.NotifyEmailEnabled,
+            profile.CreatedAt,
+            profile.UpdatedAt,
+            profile.LastLoginAt
+        );
 
     private static bool IsValidCurrency(string currency)
     {

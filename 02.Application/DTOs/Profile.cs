@@ -13,6 +13,7 @@ public record ProfileResponse(
     bool MfaEnabled,
     string? MfaMethod,
     NotificationPreferencesDto NotificationPreferences,
+    bool NotifyEmailEnabled,
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     DateTime? LastLoginAt
@@ -23,7 +24,8 @@ public record UpdateProfileSettingsRequest(
     string? Currency,
     string? Locale,
     decimal? DailyLimit,
-    NotificationPreferencesDto? NotificationPreferences
+    NotificationPreferencesDto? NotificationPreferences,
+    bool? NotifyEmailEnabled
 );
 
 public record NotificationPreferencesDto(
@@ -35,3 +37,47 @@ public record NotificationPreferencesDto(
     bool PaymentFailures,
     bool Exports
 );
+
+public record EmailSentLogDto(
+    Guid Id,
+    string ToAddress,
+    string Type,
+    string Subject,
+    string Locale,
+    string Status,
+    string? Error,
+    string? ReferenceId,
+    string? Milestone,
+    DateTime CreatedAt,
+    DateTime? SentAt
+);
+
+public record PagedEmailSentResult(
+    List<EmailSentLogDto> Items,
+    int TotalCount,
+    bool HasNextPage,
+    DateTime? NextCursor
+);
+
+public record EmailSettingsResponse(
+    bool EmailFeatureEnabled,
+    bool NotifyEmailEnabled,
+    NotificationPreferencesDto NotificationPreferences,
+    EmailTimingsDto Timings,
+    QuietHoursDto QuietHours,
+    IReadOnlyList<string> TemplateTypes
+);
+
+public record UpdateEmailSettingsRequest(
+    bool? NotifyEmailEnabled,
+    NotificationPreferencesDto? NotificationPreferences
+);
+
+public record EmailTimingsDto(
+    IReadOnlyList<int> RecurringDueDaysBefore,
+    bool RecurringDueOnDueDate,
+    IReadOnlyList<int> RecurringOverdueDaysAfter,
+    int SavingGoalDeadlineDaysBefore
+);
+
+public record QuietHoursDto(int StartHour, int EndHour);

@@ -57,6 +57,7 @@ public class MemberRepository : IMemberRepository
         existing.NotifyLargeTransactions = profile.NotifyLargeTransactions;
         existing.NotifyPaymentFailures = profile.NotifyPaymentFailures;
         existing.NotifyExports = profile.NotifyExports;
+        existing.NotifyEmailEnabled = profile.NotifyEmailEnabled;
         existing.Status = profile.Status;
         existing.UpdatedAt = DateTime.UtcNow;
 

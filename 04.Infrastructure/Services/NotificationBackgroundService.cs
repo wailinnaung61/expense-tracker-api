@@ -1,4 +1,5 @@
 using expense_tracker_backend.Application.Interfaces;
+using expense_tracker_backend.Application.Options;
 using expense_tracker_backend.Domain.Entities;
 using expense_tracker_backend.Domain.Shared.Constants;
 using Infrastructure.Data;
@@ -6,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace _04.Infrastructure.Services;
 
@@ -30,6 +32,7 @@ public class NotificationBackgroundService : BackgroundService
             {
                 await CheckRecurringPaymentsDueAsync();
                 await CheckSavingGoalDeadlinesAsync();
+                await FlushPendingEmailsAsync(stoppingToken);
             }
             catch (Exception ex)
             {
@@ -44,8 +47,19 @@ public class NotificationBackgroundService : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var notif = scope.ServiceProvider.GetRequiredService<INotificationService>();
+        var emailSettings = scope.ServiceProvider.GetRequiredService<IOptions<EmailSettings>>().Value;
+        var timings = emailSettings.Timings;
+
         var today = DateTime.UtcNow.Date;
-        var limit = today.AddDays(3);
+        var dueDays = timings.RecurringDueDaysBefore
+            .Where(d => d > 0)
+            .Distinct()
+            .ToList();
+        if (timings.RecurringDueOnDueDate && !dueDays.Contains(0))
+            dueDays.Add(0);
+
+        var maxDays = dueDays.Count > 0 ? dueDays.Max() : 3;
+        var limit = today.AddDays(maxDays);
 
         var payments = await db.RecurringPayments.AsNoTracking()
             .Where(p => p.Status == AppConstants.RecurringStatus.Active
@@ -53,12 +67,21 @@ public class NotificationBackgroundService : BackgroundService
                      && p.NextDueDate <= limit)
             .ToListAsync();
 
-        _logger.LogInformation("Found {Count} recurring payments due within 3 days", payments.Count);
+        _logger.LogInformation(
+            "Found {Count} recurring payments due within {MaxDays} days (milestones: {Days})",
+            payments.Count, maxDays, string.Join(",", dueDays.OrderByDescending(d => d)));
+
         foreach (var p in payments)
         {
             try
             {
-                // Skip if already notified today for this payment
+                var daysUntil = (p.NextDueDate.Date - today).Days;
+                if (!dueDays.Contains(daysUntil))
+                    continue;
+
+                var milestone = $"due_{daysUntil}";
+
+                // In-app: skip if already notified today for this payment+milestone message window
                 var alreadySent = await db.Notifications.AnyAsync(n =>
                     n.UserId == p.UserId
                     && n.Type == NotificationType.RecurringPaymentDue
@@ -66,9 +89,10 @@ public class NotificationBackgroundService : BackgroundService
                     && n.CreatedAt >= today);
                 if (alreadySent) continue;
 
+                // Email milestone dedupe is handled inside EmailNotificationService via EmailSentLog
                 await notif.NotifyRecurringDueAsync(
                     Guid.Parse(p.UserId), p.Name, p.Amount.ToString("N0"),
-                    p.NextDueDate.ToString("yyyy-MM-dd"), p.RecurringId);
+                    p.NextDueDate.ToString("yyyy-MM-dd"), p.RecurringId, milestone);
             }
             catch (Exception ex)
             {
@@ -82,9 +106,12 @@ public class NotificationBackgroundService : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var notif = scope.ServiceProvider.GetRequiredService<INotificationService>();
+        var emailSettings = scope.ServiceProvider.GetRequiredService<IOptions<EmailSettings>>().Value;
+
         var today = DateTime.UtcNow.Date;
         var todayStr = today.ToString("yyyy-MM-dd");
-        var limitStr = today.AddDays(7).ToString("yyyy-MM-dd");
+        var daysBefore = Math.Max(1, emailSettings.Timings.SavingGoalDeadlineDaysBefore);
+        var limitStr = today.AddDays(daysBefore).ToString("yyyy-MM-dd");
 
         var goals = await db.SavingGoals.AsNoTracking()
             .Where(g => g.Status == AppConstants.SavingGoalStatus.Active
@@ -93,12 +120,11 @@ public class NotificationBackgroundService : BackgroundService
                      && g.TargetDate.CompareTo(limitStr) <= 0)
             .ToListAsync();
 
-        _logger.LogInformation("Found {Count} saving goals with deadline within 7 days", goals.Count);
+        _logger.LogInformation("Found {Count} saving goals with deadline within {Days} days", goals.Count, daysBefore);
         foreach (var g in goals)
         {
             try
             {
-                // Skip if already notified today for this goal
                 var alreadySent = await db.Notifications.AnyAsync(n =>
                     n.UserId == g.UserId
                     && n.Type == NotificationType.SavingGoalDeadlineNear
@@ -118,5 +144,12 @@ public class NotificationBackgroundService : BackgroundService
                 _logger.LogError(ex, "Failed notify deadline for {Id}", g.SavingGoalId);
             }
         }
+    }
+
+    private async Task FlushPendingEmailsAsync(CancellationToken ct)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var email = scope.ServiceProvider.GetRequiredService<IEmailNotificationService>();
+        await email.FlushPendingAsync(ct);
     }
 }

@@ -1,8 +1,10 @@
-# 🔔 Notification System Documentation
+# Notification System Documentation
 
 ## Overview
 
-The expense tracker sends **in-app notifications** to users via a bell icon in the frontend header. Notifications are localized in **English (en)**, **Japanese (ja)**, and **Myanmar (my)** based on the user's `locale` setting in their profile.
+The expense tracker sends **in-app notifications** (bell icon) and optional **email notifications** (SMTP). Both are localized in **English (en)**, **Japanese (ja)**, and **Myanmar (my)** based on the user's `locale`. Email subject/body templates are edited in `appsettings.json` under `Email:Templates` (not `.resx`).
+
+Menu entry for the frontend: key `emailSent`, path `/email-sent` (settings + sent history).
 
 ---
 
@@ -74,7 +76,7 @@ Indexes: (user_id, is_read), (user_id, created_at)
 
 ## Notification Types — When & Where They Fire
 
-### 1. ⚠️ `BUDGET_THRESHOLD_REACHED`
+### 1. `BUDGET_THRESHOLD_REACHED`
 
 | Field         | Value |
 |---------------|-------|
@@ -88,7 +90,7 @@ Indexes: (user_id, is_read), (user_id, created_at)
 
 ---
 
-### 2. 🚨 `BUDGET_EXCEEDED`
+### 2. `BUDGET_EXCEEDED`
 
 | Field         | Value |
 |---------------|-------|
@@ -102,20 +104,21 @@ Indexes: (user_id, is_read), (user_id, created_at)
 
 ---
 
-### 3. 📅 `RECURRING_PAYMENT_DUE`
+### 3. `RECURRING_PAYMENT_DUE`
 
 | Field         | Value |
 |---------------|-------|
-| **When**      | A recurring payment's `NextDueDate` is within **3 days** from today |
+| **When**      | A recurring payment hits a configured due milestone (default **7, 3, 1** days before, plus **due date**) |
 | **Where**     | `NotificationBackgroundService.CheckRecurringPaymentsDueAsync()` |
-| **Trigger**   | `NextDueDate ≥ today AND NextDueDate ≤ today + 3 days` (Active status only) |
-| **Schedule**  | ⏰ Background job — **every 6 hours** |
+| **Trigger** | Exact match on `daysUntilDue` ∈ `Email:Timings:RecurringDueDaysBefore` (and day 0 if `RecurringDueOnDueDate`) |
+| **Schedule**  | Background job — **every 6 hours** |
 | **Example**   | *"Netflix (¥1,500) is due on 2026-04-06"* |
 | **Reference** | `recurringId` → `recurring_payment` |
+| **Email milestone** | `due_7`, `due_3`, `due_1`, `due_0` (deduped in `email_sent_logs`) |
 
 ---
 
-### 4. ❗ `RECURRING_PAYMENT_OVERDUE`
+### 4. `RECURRING_PAYMENT_OVERDUE`
 
 | Field         | Value |
 |---------------|-------|
@@ -128,7 +131,7 @@ Indexes: (user_id, is_read), (user_id, created_at)
 
 ---
 
-### 5. ✅ `RECURRING_PAYMENT_AUTO_PAID`
+### 5. `RECURRING_PAYMENT_AUTO_PAID`
 
 | Field         | Value |
 |---------------|-------|
@@ -141,7 +144,7 @@ Indexes: (user_id, is_read), (user_id, created_at)
 
 ---
 
-### 6. 🎉 `SAVING_GOAL_REACHED`
+### 6. `SAVING_GOAL_REACHED`
 
 | Field         | Value |
 |---------------|-------|
@@ -154,20 +157,20 @@ Indexes: (user_id, is_read), (user_id, created_at)
 
 ---
 
-### 7. ⏰ `SAVING_GOAL_DEADLINE_NEAR`
+### 7. `SAVING_GOAL_DEADLINE_NEAR`
 
 | Field         | Value |
 |---------------|-------|
-| **When**      | An active saving goal's `TargetDate` is within **7 days** and `CurrentAmount < TargetAmount` |
+| **When**      | An active saving goal's `TargetDate` is within `Email:Timings:SavingGoalDeadlineDaysBefore` days (default **7**) and not yet reached |
 | **Where**     | `NotificationBackgroundService.CheckSavingGoalDeadlinesAsync()` |
-| **Trigger**   | `TargetDate ≥ today AND TargetDate ≤ today + 7 days` (Active + not reached) |
-| **Schedule**  | ⏰ Background job — **every 6 hours** |
+| **Trigger**   | `TargetDate ≥ today AND TargetDate ≤ today + N days` (Active + not reached) |
+| **Schedule**  | Background job — **every 6 hours** |
 | **Example**   | *"\"New Car\" goal deadline is in 5 day(s) (¥180,000 / ¥200,000)"* |
 | **Reference** | `savingGoalId` → `saving_goal` |
 
 ---
 
-### 8. ❌ `PAYMENT_FAILED`
+### 8. `PAYMENT_FAILED`
 
 | Field         | Value |
 |---------------|-------|
@@ -180,21 +183,21 @@ Indexes: (user_id, is_read), (user_id, created_at)
 
 ---
 
-### 9. 💰 `LARGE_TRANSACTION`
+### 9. `LARGE_TRANSACTION`
 
 | Field         | Value |
 |---------------|-------|
 | **When**      | A **COMPLETED expense** amount ≥ user's `DailyLimit` from Profile Settings |
 | **Where**     | `TranactionService.CreateTranactionAsync()` → `CheckDailyLimitAsync()` |
 | **Trigger**   | `tx.Amount ≥ profile.DailyLimit` (only if DailyLimit > 0) |
-| **Real-time** | ✅ Immediate (on transaction) |
+| **Real-time** | Immediate (on transaction) |
 | **Example**   | *"¥5,000 expense recorded for \"Dinner\""* (DailyLimit = ¥2,000) |
 | **Reference** | `transactionId` → `transaction` |
-| **Setting**   | Configured in **Profile Settings → Daily Spending Limit** |
+| **Setting**   | Profile → **Daily Spending Limit** (`DailyLimit`). Same rule drives in-app and email. |
 
 ---
 
-### 10. 📊 `EXPORT_COMPLETED` / ❌ `EXPORT_FAILED`
+### 10. `EXPORT_COMPLETED` / `EXPORT_FAILED`
 
 | Field         | Value |
 |---------------|-------|
@@ -210,7 +213,7 @@ Indexes: (user_id, is_read), (user_id, created_at)
 | Service | Interval | What it checks |
 |---------|----------|----------------|
 | `RecurringPaymentBackgroundService` | **Every 1 hour** | Overdue payments → auto-pay or notify overdue |
-| `NotificationBackgroundService` | **Every 6 hours** | Upcoming due (3 days) + Goal deadlines (7 days) |
+| `NotificationBackgroundService` | **Every 6 hours** | Due milestones (JSON timings) + goal deadlines + flush pending emails |
 
 ---
 
@@ -234,15 +237,71 @@ EVERY 1 HOUR (RecurringPaymentBackgroundService):
   └── Overdue + AutoPay=false  → RECURRING_PAYMENT_OVERDUE
 
 EVERY 6 HOURS (NotificationBackgroundService):
-  ├── Due within 3 days        → RECURRING_PAYMENT_DUE
-  └── Deadline within 7 days   → SAVING_GOAL_DEADLINE_NEAR
+  ├── Due on days 7/3/1/0 (configurable) → RECURRING_PAYMENT_DUE
+  ├── Deadline within N days (default 7) → SAVING_GOAL_DEADLINE_NEAR
+  └── Flush Pending emails (outside quiet hours)
+```
+
+---
+
+## Email channel (SMTP + JSON templates)
+
+### Enable flow
+
+1. Set `Email:Enabled = true` and SMTP host/credentials in `appsettings.json` (or env).
+2. User opts in: `notifyEmailEnabled: true` via `PUT /api/profile` or `PUT /api/email-settings`.
+3. Category prefs (`notificationPreferences.*`) gate **both** in-app and email.
+4. Templates resolve by notification `type` + user `locale` (`en`/`ja`/`my`).
+
+### Config shape (`Email` section)
+
+See [`appsettings.json`](../appsettings.json):
+
+- `Smtp` — host, port, SSL, username/password, from address
+- `QuietHours` — UTC hours (default 22–08); emails are queued as `Pending` and flushed later
+- `Timings` — bill due days, overdue days after, saving-goal deadline window
+- `Templates` — per-type `{ en, ja, my }` with `subject` + `bodyHtml` and `{placeholders}`
+
+### APIs
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `GET` | `/api/email-sent` | Paginated history (`status`, `pageSize`, `cursor`) |
+| `GET` | `/api/email-settings` | Timings + template types + user prefs (no SMTP secrets) |
+| `PUT` | `/api/email-settings` | Update `notifyEmailEnabled` + category prefs |
+
+### `email_sent_logs` table
+
+```
+email_sent_logs
+├── id, user_id, to_address, type, subject, body_html
+├── locale, status (Pending/Sent/Failed/Skipped), error
+├── reference_id, milestone, created_at, sent_at
+```
+
+### Opt-in example
+
+```http
+PUT /api/email-settings
+{
+  "notifyEmailEnabled": true,
+  "notificationPreferences": {
+    "budgetAlerts": true,
+    "recurringPayments": true,
+    "autoPayments": true,
+    "savingGoals": true,
+    "largeTransactions": true,
+    "paymentFailures": true,
+    "exports": true
+  }
+}
 ```
 
 ---
 
 ## Localization (Resource Files)
 
-All notification titles and messages are in `SharedResource.{locale}.resx`:
+In-app notification titles and messages are in `SharedResource.{locale}.resx`:
 
 | File | Language |
 |------|----------|
@@ -255,13 +314,16 @@ Resource keys:
 - **Titles**: `Notif_{Type}_Title` — e.g. `Notif_BudgetThreshold_Title`
 - **Messages**: `Notif_{Type}_Msg` — e.g. `Notif_BudgetThreshold_Msg` with `{0}`, `{1}` placeholders
 
+Email copy is **not** in `.resx` — edit `Email:Templates` in JSON.
+
 ### Notification Preferences
 
-Users can toggle individual notification categories on/off in **Profile Settings**:
+Users can toggle individual notification categories on/off in **Profile Settings** (also exposed under Email Sent):
 
 ```http
 PUT /api/profile
 {
+  "notifyEmailEnabled": true,
   "notificationPreferences": {
     "budgetAlerts": true,
     "recurringPayments": true,
@@ -287,14 +349,14 @@ POST /api/budgets/{budgetId}/categories
 
 ### Deduplication
 
-Background service notifications (`RECURRING_PAYMENT_DUE`, `SAVING_GOAL_DEADLINE_NEAR`) check if a notification with the same `type + referenceId` already exists today before creating a new one. This prevents duplicate spam.
+Background service notifications (`RECURRING_PAYMENT_DUE`, `SAVING_GOAL_DEADLINE_NEAR`) check if a notification with the same `type + referenceId` already exists today before creating a new one. Email due milestones are also deduped via `email_sent_logs.milestone` (e.g. `due_7`).
 
 ---
 
 ## Frontend Integration
 
 ```
-🔔 Bell icon (header)
+Bell icon (header)
  │
  ├─ On page load → GET /api/notifications/summary
  │    → show red badge with unreadCount
@@ -309,4 +371,10 @@ Background service notifications (`RECURRING_PAYMENT_DUE`, `SAVING_GOAL_DEADLINE
  ├─ "Mark all read" → PATCH /api/notifications/read-all
  │
  └─ "View all" → Notification page → GET /api/notifications?pageSize=20
+
+Email Sent page (/email-sent)
+ │
+ ├─ GET /api/email-settings → toggles + timings
+ ├─ PUT /api/email-settings → save notifyEmailEnabled + prefs
+ └─ GET /api/email-sent → history table
 ```

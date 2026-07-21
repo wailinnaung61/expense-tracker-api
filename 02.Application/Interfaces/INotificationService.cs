@@ -17,7 +17,9 @@ public interface INotificationService
 
     // ── Create (raw — called by other services / background jobs) ──
     Task SendAsync(Guid userId, string type, string title, string message,
-        string? referenceId = null, string? referenceType = null);
+        string? referenceId = null, string? referenceType = null,
+        IReadOnlyDictionary<string, string>? emailPlaceholders = null,
+        string? emailMilestone = null);
     Task SendBatchAsync(List<(Guid UserId, string Type, string Title, string Message,
         string? ReferenceId, string? ReferenceType)> notifications);
 
@@ -27,7 +29,7 @@ public interface INotificationService
     Task NotifyBudgetExceededAsync(Guid userId, string categoryName,
         string spent, string allocated, string? budgetCategoryId = null);
     Task NotifyRecurringDueAsync(Guid userId, string name, string amount,
-        string dueDate, string? recurringId = null);
+        string dueDate, string? recurringId = null, string? milestone = null);
     Task NotifyRecurringOverdueAsync(Guid userId, string name, int missedCount,
         string? recurringId = null);
     Task NotifyRecurringAutoPaidAsync(Guid userId, string name, string amount,

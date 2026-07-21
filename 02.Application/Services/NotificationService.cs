@@ -11,15 +11,18 @@ public class NotificationService : INotificationService
 {
     private readonly INotificationRepository _repository;
     private readonly IMemberRepository _memberRepository;
+    private readonly IEmailNotificationService _emailNotification;
     private readonly IStringLocalizer _localizer;
 
     public NotificationService(
         INotificationRepository repository,
         IMemberRepository memberRepository,
+        IEmailNotificationService emailNotification,
         IStringLocalizer localizer)
     {
         _repository = repository;
         _memberRepository = memberRepository;
+        _emailNotification = emailNotification;
         _localizer = localizer;
     }
 
@@ -80,7 +83,9 @@ public class NotificationService : INotificationService
     // ── Create ──
 
     public async Task SendAsync(Guid userId, string type, string title, string message,
-        string? referenceId = null, string? referenceType = null)
+        string? referenceId = null, string? referenceType = null,
+        IReadOnlyDictionary<string, string>? emailPlaceholders = null,
+        string? emailMilestone = null)
     {
         if (!await IsNotificationEnabledAsync(userId, type)) return;
 
@@ -94,6 +99,19 @@ public class NotificationService : INotificationService
             ReferenceType = referenceType
         };
         await _repository.CreateAsync(notification);
+
+        if (emailPlaceholders is not null)
+        {
+            try
+            {
+                await _emailNotification.TrySendAsync(
+                    userId, type, emailPlaceholders, referenceId, emailMilestone);
+            }
+            catch (Exception)
+            {
+                // Email failures must not break in-app notifications
+            }
+        }
     }
 
     public async Task SendBatchAsync(List<(Guid UserId, string Type, string Title, string Message,
@@ -145,9 +163,6 @@ public class NotificationService : INotificationService
         new(n.Id, n.Type, n.Title, n.Message, n.ReferenceId, n.ReferenceType,
             n.IsRead, n.CreatedAt, n.ReadAt);
 
-    /// <summary>
-    /// Gets localized string for a key using the user's saved locale.
-    /// </summary>
     private string Localize(string locale, string key, params object[] args)
     {
         var prev = CultureInfo.CurrentUICulture;
@@ -178,7 +193,14 @@ public class NotificationService : INotificationService
         await SendAsync(userId, NotificationType.BudgetThresholdReached,
             Localize(loc, "Notif_BudgetThreshold_Title"),
             Localize(loc, "Notif_BudgetThreshold_Msg", percent, categoryName, spent, allocated),
-            budgetCategoryId, "budget");
+            budgetCategoryId, "budget",
+            new Dictionary<string, string>
+            {
+                ["categoryName"] = categoryName,
+                ["percent"] = percent.ToString(),
+                ["spent"] = spent,
+                ["allocated"] = allocated
+            });
     }
 
     public async Task NotifyBudgetExceededAsync(Guid userId, string categoryName,
@@ -188,17 +210,30 @@ public class NotificationService : INotificationService
         await SendAsync(userId, NotificationType.BudgetExceeded,
             Localize(loc, "Notif_BudgetExceeded_Title"),
             Localize(loc, "Notif_BudgetExceeded_Msg", categoryName, spent, allocated),
-            budgetCategoryId, "budget");
+            budgetCategoryId, "budget",
+            new Dictionary<string, string>
+            {
+                ["categoryName"] = categoryName,
+                ["spent"] = spent,
+                ["allocated"] = allocated
+            });
     }
 
     public async Task NotifyRecurringDueAsync(Guid userId, string name, string amount,
-        string dueDate, string? recurringId = null)
+        string dueDate, string? recurringId = null, string? milestone = null)
     {
         var loc = await GetUserLocaleAsync(userId);
         await SendAsync(userId, NotificationType.RecurringPaymentDue,
             Localize(loc, "Notif_RecurringDue_Title"),
             Localize(loc, "Notif_RecurringDue_Msg", name, amount, dueDate),
-            recurringId, "recurring_payment");
+            recurringId, "recurring_payment",
+            new Dictionary<string, string>
+            {
+                ["name"] = name,
+                ["amount"] = amount,
+                ["dueDate"] = dueDate
+            },
+            milestone);
     }
 
     public async Task NotifyRecurringOverdueAsync(Guid userId, string name, int missedCount,
@@ -208,7 +243,13 @@ public class NotificationService : INotificationService
         await SendAsync(userId, NotificationType.RecurringPaymentOverdue,
             Localize(loc, "Notif_RecurringOverdue_Title"),
             Localize(loc, "Notif_RecurringOverdue_Msg", name, missedCount),
-            recurringId, "recurring_payment");
+            recurringId, "recurring_payment",
+            new Dictionary<string, string>
+            {
+                ["name"] = name,
+                ["missedCount"] = missedCount.ToString()
+            },
+            emailMilestone: $"overdue_{missedCount}");
     }
 
     public async Task NotifyRecurringAutoPaidAsync(Guid userId, string name, string amount,
@@ -218,7 +259,12 @@ public class NotificationService : INotificationService
         await SendAsync(userId, NotificationType.RecurringPaymentAutoPaid,
             Localize(loc, "Notif_RecurringAutoPaid_Title"),
             Localize(loc, "Notif_RecurringAutoPaid_Msg", name, amount),
-            recurringId, "recurring_payment");
+            recurringId, "recurring_payment",
+            new Dictionary<string, string>
+            {
+                ["name"] = name,
+                ["amount"] = amount
+            });
     }
 
     public async Task NotifySavingGoalReachedAsync(Guid userId, string goalName,
@@ -228,7 +274,8 @@ public class NotificationService : INotificationService
         await SendAsync(userId, NotificationType.SavingGoalReached,
             Localize(loc, "Notif_SavingGoalReached_Title"),
             Localize(loc, "Notif_SavingGoalReached_Msg", goalName),
-            savingGoalId, "saving_goal");
+            savingGoalId, "saving_goal",
+            new Dictionary<string, string> { ["goalName"] = goalName });
     }
 
     public async Task NotifySavingGoalDeadlineAsync(Guid userId, string goalName, int daysLeft,
@@ -238,7 +285,15 @@ public class NotificationService : INotificationService
         await SendAsync(userId, NotificationType.SavingGoalDeadlineNear,
             Localize(loc, "Notif_SavingGoalDeadline_Title"),
             Localize(loc, "Notif_SavingGoalDeadline_Msg", goalName, daysLeft, current, target),
-            savingGoalId, "saving_goal");
+            savingGoalId, "saving_goal",
+            new Dictionary<string, string>
+            {
+                ["goalName"] = goalName,
+                ["daysLeft"] = daysLeft.ToString(),
+                ["current"] = current,
+                ["target"] = target
+            },
+            emailMilestone: $"deadline_{daysLeft}");
     }
 
     public async Task NotifyExportCompletedAsync(Guid userId, string startMonth, string endMonth,
@@ -248,7 +303,12 @@ public class NotificationService : INotificationService
         await SendAsync(userId, NotificationType.ExportCompleted,
             Localize(loc, "Notif_ExportCompleted_Title"),
             Localize(loc, "Notif_ExportCompleted_Msg", startMonth, endMonth),
-            exportJobId, "export");
+            exportJobId, "export",
+            new Dictionary<string, string>
+            {
+                ["startMonth"] = startMonth,
+                ["endMonth"] = endMonth
+            });
     }
 
     public async Task NotifyExportFailedAsync(Guid userId, string? exportJobId = null)
@@ -257,7 +317,8 @@ public class NotificationService : INotificationService
         await SendAsync(userId, NotificationType.ExportFailed,
             Localize(loc, "Notif_ExportFailed_Title"),
             Localize(loc, "Notif_ExportFailed_Msg"),
-            exportJobId, "export");
+            exportJobId, "export",
+            new Dictionary<string, string>());
     }
 
     public async Task NotifyLargeTransactionAsync(Guid userId, string amount, string description,
@@ -267,7 +328,12 @@ public class NotificationService : INotificationService
         await SendAsync(userId, NotificationType.LargeTransaction,
             Localize(loc, "Notif_LargeTransaction_Title"),
             Localize(loc, "Notif_LargeTransaction_Msg", amount, description),
-            transactionId, "transaction");
+            transactionId, "transaction",
+            new Dictionary<string, string>
+            {
+                ["amount"] = amount,
+                ["description"] = description
+            });
     }
 
     public async Task NotifyPaymentFailedAsync(Guid userId, string description, string amount,
@@ -277,6 +343,11 @@ public class NotificationService : INotificationService
         await SendAsync(userId, NotificationType.PaymentFailed,
             Localize(loc, "Notif_PaymentFailed_Title"),
             Localize(loc, "Notif_PaymentFailed_Msg", description, amount),
-            transactionId, "transaction");
+            transactionId, "transaction",
+            new Dictionary<string, string>
+            {
+                ["description"] = description,
+                ["amount"] = amount
+            });
     }
 }
