@@ -242,8 +242,9 @@ public class EmailNotificationService : IEmailNotificationService
 
             NotificationType.PaymentFailed => profile.NotifyPaymentFailures,
 
+            // Export email removed — never send SMTP for export types
             NotificationType.ExportCompleted or
-            NotificationType.ExportFailed => profile.NotifyExports,
+            NotificationType.ExportFailed => false,
 
             _ => true
         };

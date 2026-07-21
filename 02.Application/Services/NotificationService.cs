@@ -300,25 +300,21 @@ public class NotificationService : INotificationService
         string? exportJobId = null)
     {
         var loc = await GetUserLocaleAsync(userId);
+        // In-app only — export email intentionally not supported
         await SendAsync(userId, NotificationType.ExportCompleted,
             Localize(loc, "Notif_ExportCompleted_Title"),
             Localize(loc, "Notif_ExportCompleted_Msg", startMonth, endMonth),
-            exportJobId, "export",
-            new Dictionary<string, string>
-            {
-                ["startMonth"] = startMonth,
-                ["endMonth"] = endMonth
-            });
+            exportJobId, "export");
     }
 
     public async Task NotifyExportFailedAsync(Guid userId, string? exportJobId = null)
     {
         var loc = await GetUserLocaleAsync(userId);
+        // In-app only — export email intentionally not supported
         await SendAsync(userId, NotificationType.ExportFailed,
             Localize(loc, "Notif_ExportFailed_Title"),
             Localize(loc, "Notif_ExportFailed_Msg"),
-            exportJobId, "export",
-            new Dictionary<string, string>());
+            exportJobId, "export");
     }
 
     public async Task NotifyLargeTransactionAsync(Guid userId, string amount, string description,

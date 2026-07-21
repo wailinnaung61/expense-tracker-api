@@ -201,10 +201,10 @@ Indexes: (user_id, is_read), (user_id, created_at)
 
 | Field         | Value |
 |---------------|-------|
-| **When**      | Lambda finishes processing the Excel export |
-| **Where**     | ⏳ Not yet wired — requires Lambda callback endpoint |
-| **Example**   | *"Your transaction export (Jan–Mar 2026) is ready to download"* |
-| **Reference** | `exportJobId` → `export` |
+| **When**      | Not wired for production email |
+| **Email**     | **Removed** — export emails are not sent |
+| **In-app**    | Helpers exist but require a Lambda callback (still not wired) |
+| **Frontend**  | Hide “Export Notifications” on Email Sent page |
 
 ---
 
