@@ -14,6 +14,11 @@ public class EmailSettings
     public EmailTimingSettings Timings { get; set; } = new();
 
     /// <summary>
+    /// Shared HTML shell. Use <c>{{content}}</c> for the template body and optional <c>{{preheader}}</c>.
+    /// </summary>
+    public string? LayoutHtml { get; set; }
+
+    /// <summary>
     /// Templates keyed by notification type, then locale (en/ja/my).
     /// Example: Templates["RECURRING_PAYMENT_DUE"]["en"].Subject
     /// </summary>

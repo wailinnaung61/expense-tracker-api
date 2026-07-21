@@ -11,19 +11,22 @@ public class TranactionService : ITranactionService
     private readonly IBudgetRepository _budgetRepository;
     private readonly INotificationService _notificationService;
     private readonly IMemberRepository _memberRepository;
+    private readonly IExpenseCategoryRepository _categoryRepository;
 
     public TranactionService(
         ITranactionRepository repository,
         IAggregationRepository aggregationRepository,
         IBudgetRepository budgetRepository,
         INotificationService notificationService,
-        IMemberRepository memberRepository)
+        IMemberRepository memberRepository,
+        IExpenseCategoryRepository categoryRepository)
     {
         _repository = repository;
         _aggregationRepository = aggregationRepository;
         _budgetRepository = budgetRepository;
         _notificationService = notificationService;
         _memberRepository = memberRepository;
+        _categoryRepository = categoryRepository;
     }
 
     public async Task<PagedResult<DTOs.Tranaction>> GetTransactionsAsync(Guid userId, TransactionFilterRequest filter)
@@ -104,7 +107,8 @@ public class TranactionService : ITranactionService
         // Notify on payment failure
         if (created.Status == Domain.Shared.Constants.AppConstants.PaymentStatus.Failed)
             await _notificationService.NotifyPaymentFailedAsync(
-                userId, created.Description ?? "", created.Amount.ToString("N0"), created.TransactionId);
+                userId, await ResolveTransactionLabelAsync(userId, created),
+                created.Amount.ToString("N0"), created.TransactionId);
 
         // Notify if single expense exceeds user's daily spending limit
         if (created.Type == Domain.Shared.Constants.AppConstants.TransactionType.Expense
@@ -158,7 +162,8 @@ public class TranactionService : ITranactionService
         var failed = Domain.Shared.Constants.AppConstants.PaymentStatus.Failed;
         if (oldStatus != failed && updated.Status == failed)
             await _notificationService.NotifyPaymentFailedAsync(
-                userId, updated.Description ?? "", updated.Amount.ToString("N0"), updated.TransactionId);
+                userId, await ResolveTransactionLabelAsync(userId, updated),
+                updated.Amount.ToString("N0"), updated.TransactionId);
 
         return MapToDto(updated);
     }
@@ -229,7 +234,31 @@ public class TranactionService : ITranactionService
         if (tx.Amount >= profile.DailyLimit)
         {
             await _notificationService.NotifyLargeTransactionAsync(
-                userId, tx.Amount.ToString("N0"), tx.Description ?? "", tx.TransactionId);
+                userId, tx.Amount.ToString("N0"),
+                await ResolveTransactionLabelAsync(userId, tx),
+                tx.TransactionId);
         }
+    }
+
+    /// <summary>
+    /// Prefer description; if empty, category name; never return blank (avoids email text like for "").
+    /// </summary>
+    private async Task<string> ResolveTransactionLabelAsync(Guid userId, Domain.Entities.Transaction tx)
+    {
+        if (!string.IsNullOrWhiteSpace(tx.Description))
+            return tx.Description.Trim();
+
+        if (!string.IsNullOrWhiteSpace(tx.Notes))
+            return tx.Notes.Trim();
+
+        if (!string.IsNullOrWhiteSpace(tx.CategoryId)
+            && Guid.TryParse(tx.CategoryId, out var categoryId))
+        {
+            var category = await _categoryRepository.GetExpenseCategoryByIdAsync(userId, categoryId);
+            if (!string.IsNullOrWhiteSpace(category?.DisplayName))
+                return category.DisplayName.Trim();
+        }
+
+        return "Untitled expense";
     }
 }

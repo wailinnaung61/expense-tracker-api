@@ -82,8 +82,9 @@ public class EmailNotificationService : IEmailNotificationService
             return;
         }
 
-        var subject = Render(template.Subject, placeholders);
-        var bodyHtml = Render(template.BodyHtml, placeholders);
+        var subject = Render(template.Subject, placeholders, htmlEncode: false);
+        var innerHtml = Render(template.BodyHtml, placeholders, htmlEncode: true);
+        var bodyHtml = ApplyLayout(innerHtml, subject);
 
         var log = new EmailSentLog
         {
@@ -247,9 +248,25 @@ public class EmailNotificationService : IEmailNotificationService
             _ => true
         };
 
-    private static string Render(string template, IReadOnlyDictionary<string, string> placeholders) =>
+    private string ApplyLayout(string contentHtml, string preheader)
+    {
+        var layout = _settings.LayoutHtml;
+        if (string.IsNullOrWhiteSpace(layout) || !layout.Contains("{{content}}", StringComparison.Ordinal))
+            return contentHtml;
+
+        var safePreheader = System.Net.WebUtility.HtmlEncode(preheader);
+        return layout
+            .Replace("{{preheader}}", safePreheader, StringComparison.Ordinal)
+            .Replace("{{content}}", contentHtml, StringComparison.Ordinal);
+    }
+
+    private static string Render(string template, IReadOnlyDictionary<string, string> placeholders, bool htmlEncode) =>
         PlaceholderRegex.Replace(template, m =>
-            placeholders.TryGetValue(m.Groups[1].Value, out var value) ? value : m.Value);
+        {
+            if (!placeholders.TryGetValue(m.Groups[1].Value, out var value))
+                return m.Value;
+            return htmlEncode ? System.Net.WebUtility.HtmlEncode(value) : value;
+        });
 
     private static string NormalizeLocale(string? locale) =>
         locale switch
