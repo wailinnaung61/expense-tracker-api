@@ -23,7 +23,6 @@ public static class MenuDefinitions
         new("savings", "/saving"),
         new("investments", "/investment"),
         new("reports", "/report"),
-        new("emailSent", "/email-sent"),
         new("users", "/user"),
         new("settings", "/setting")
     ];
@@ -37,7 +36,6 @@ public static class MenuDefinitions
         new("savings", "/saving"),
         new("investments", "/investment"),
         new("reports", "/report"),
-        new("emailSent", "/email-sent"),
         new("settings", "/setting")
     ];
 
