@@ -58,6 +58,9 @@ public class MemberRepository : IMemberRepository
         existing.NotifyPaymentFailures = profile.NotifyPaymentFailures;
         existing.NotifyExports = profile.NotifyExports;
         existing.NotifyEmailEnabled = profile.NotifyEmailEnabled;
+        existing.AvatarSource = profile.AvatarSource;
+        existing.AvatarPresetId = profile.AvatarPresetId;
+        existing.AvatarStorageKey = profile.AvatarStorageKey;
         existing.Status = profile.Status;
         existing.UpdatedAt = DateTime.UtcNow;
 

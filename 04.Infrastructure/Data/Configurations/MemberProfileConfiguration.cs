@@ -114,6 +114,20 @@ public class MemberProfileConfiguration : IEntityTypeConfiguration<MemberProfile
             .HasColumnName("notify_email_enabled")
             .HasDefaultValue(false);
 
+        builder.Property(m => m.AvatarSource)
+            .HasColumnName("avatar_source")
+            .HasMaxLength(20)
+            .HasDefaultValue("preset");
+
+        builder.Property(m => m.AvatarPresetId)
+            .HasColumnName("avatar_preset_id")
+            .HasMaxLength(50)
+            .HasDefaultValue("avatar-01");
+
+        builder.Property(m => m.AvatarStorageKey)
+            .HasColumnName("avatar_storage_key")
+            .HasMaxLength(500);
+
         builder.Property(m => m.CreatedAt)
             .HasColumnName("created_at");
 

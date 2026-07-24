@@ -87,6 +87,7 @@ public static class DependencyInjection
         services.AddScoped<IEmailSentLogRepository, EmailSentLogRepository>();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddScoped<IEmailNotificationService, EmailNotificationService>();
+        services.AddScoped<IProfileAvatarService, ProfileAvatarService>();
         // INotificationService registered in Program.cs (needs SharedResource localizer)
 
         // Export

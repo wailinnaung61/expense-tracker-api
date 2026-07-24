@@ -14,10 +14,26 @@ public record ProfileResponse(
     string? MfaMethod,
     NotificationPreferencesDto NotificationPreferences,
     bool NotifyEmailEnabled,
+    AvatarDto Avatar,
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     DateTime? LastLoginAt
 );
+
+public record AvatarDto(
+    string Source,
+    string? PresetId,
+    string Url
+);
+
+public record AvatarPresetDto(
+    string Id,
+    string Label,
+    string AccentColor,
+    string Url
+);
+
+public record SelectAvatarPresetRequest(string PresetId);
 
 public record UpdateProfileSettingsRequest(
     string? PhoneNumber,
@@ -25,7 +41,8 @@ public record UpdateProfileSettingsRequest(
     string? Locale,
     decimal? DailyLimit,
     NotificationPreferencesDto? NotificationPreferences,
-    bool? NotifyEmailEnabled
+    bool? NotifyEmailEnabled,
+    string? AvatarPresetId
 );
 
 public record NotificationPreferencesDto(

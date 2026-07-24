@@ -617,6 +617,27 @@ namespace _04.Infrastructure.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("notify_email_enabled");
 
+                    b.Property<string>("AvatarSource")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("preset")
+                        .HasColumnName("avatar_source");
+
+                    b.Property<string>("AvatarPresetId")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("avatar-01")
+                        .HasColumnName("avatar_preset_id");
+
+                    b.Property<string>("AvatarStorageKey")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("avatar_storage_key");
+
                     b.Property<bool>("NotifyLargeTransactions")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
