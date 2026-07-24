@@ -114,6 +114,10 @@ public class ChatPreFilter
     {
         var trimmed = message.Trim();
 
+        var multiItems = TryParseMultiExpenseItems(trimmed);
+        if (multiItems is not null)
+            return multiItems;
+
         var addExpense = TryParseFlexibleMoneyCommand(trimmed, "add expense", "add_expense");
         if (addExpense is not null)
             return addExpense;
@@ -180,6 +184,124 @@ public class ChatPreFilter
     /// Parses "add expense|income …" tails: amount-first ("500 coffee", "50 and 100 lunch"),
     /// or description-first with one or more amounts ("groceries 2418 and 1371").
     /// </summary>
+    private static readonly Regex CategoryAmountDescriptionPattern = new(
+        @"^(?:category(?:\s+name)?\s+is\s+|category\s+)?(?<category>[A-Za-z][A-Za-z0-9 &\-]{0,40}?)\s+(?:amount\s+)?(?<amount>\d[\d,.]*k?)\s+(?:description(?:\s+is)?\s+)?(?<description>.+)$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static readonly Regex CategoryAmountOnlyPattern = new(
+        @"^(?:pay\s+)?(?<category>[A-Za-z][A-Za-z0-9 &\-]{0,40}?)\s+(?<amount>\d[\d,.]*k?)$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static readonly Regex EatMealPattern = new(
+        @"(?:i\s+)?(?:eat|ate|had)\s+(?<a1>\d[\d,.]*k?)\s+(?<d1>lunch|luch|dinner|breakfast)\s+(?<a2>\d[\d,.]*k?)\s+(?:for\s+)?(?<d2>lunch|luch|dinner|breakfast)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static readonly Regex PayBillPattern = new(
+        @"(?:i\s+)?pay\s+(?<category>.+?)\s+(?<amount>\d[\d,.]*k?)\s*$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    /// <summary>
+    /// Parses multi-item natural language like:
+    /// "groceries 100 description coffee, and then i eat 1000 lunch 2000 for dinner and i pay epos credit card 4560"
+    /// </summary>
+    private static DirectCommandMatch? TryParseMultiExpenseItems(string trimmed)
+    {
+        var lines = new List<ExpenseLineDraft>();
+        var working = trimmed;
+        string? groceriesContext = null;
+
+        // 1) Explicit "category amount description ..." first segment(s)
+        var first = Regex.Match(working,
+            @"^(?<category>[A-Za-z][A-Za-z0-9 &\-]{0,40}?)\s+(?<amount>\d[\d,.]*k?)\s+description(?:\s+is)?\s+(?<description>[^,]+)",
+            RegexOptions.IgnoreCase);
+        if (first.Success)
+        {
+            var amt = ParseAmount(first.Groups["amount"].Value);
+            var cat = first.Groups["category"].Value.Trim();
+            var desc = NormalizeDesc(first.Groups["description"].Value);
+            if (amt > 0)
+            {
+                lines.Add(new ExpenseLineDraft(amt, cat, desc));
+                if (cat.Contains("grocer", StringComparison.OrdinalIgnoreCase))
+                    groceriesContext = cat;
+            }
+            working = working[first.Length..].Trim().TrimStart(',', ' ', '.');
+            working = Regex.Replace(working, @"^(and\s+then\s+|and\s+|then\s+)", "", RegexOptions.IgnoreCase).Trim();
+        }
+
+        // 2) "i eat 1000 lunch 2000 for dinner"
+        var eat = EatMealPattern.Match(working);
+        if (eat.Success)
+        {
+            var cat = groceriesContext ?? "groceries";
+            var a1 = ParseAmount(eat.Groups["a1"].Value);
+            var a2 = ParseAmount(eat.Groups["a2"].Value);
+            var d1 = NormalizeDesc(eat.Groups["d1"].Value);
+            var d2 = NormalizeDesc(eat.Groups["d2"].Value);
+            if (a1 > 0) lines.Add(new ExpenseLineDraft(a1, cat, d1));
+            if (a2 > 0) lines.Add(new ExpenseLineDraft(a2, cat, d2));
+            working = (working[..eat.Index] + working[(eat.Index + eat.Length)..]).Trim();
+            working = Regex.Replace(working, @"^(and\s+then\s+|and\s+|then\s+|,)\s*", "", RegexOptions.IgnoreCase).Trim();
+        }
+
+        // 3) "i pay epos credit card 4560"
+        var pay = PayBillPattern.Match(working);
+        if (pay.Success)
+        {
+            var amt = ParseAmount(pay.Groups["amount"].Value);
+            var cat = pay.Groups["category"].Value.Trim();
+            // Prefer shorter category label for matching (drop trailing "card")
+            var catForMatch = Regex.Replace(cat, @"\s+card$", "", RegexOptions.IgnoreCase).Trim();
+            if (amt > 0)
+                lines.Add(new ExpenseLineDraft(amt, catForMatch, cat));
+            working = (working[..pay.Index] + working[(pay.Index + pay.Length)..]).Trim();
+        }
+
+        // 4) Remaining comma segments like "groceries 100 description coffee"
+        foreach (var rawSeg in Regex.Split(working, @"\s*,\s*|\s+and\s+then\s+|\s+and\s+"))
+        {
+            var seg = rawSeg.Trim().TrimEnd('.');
+            if (string.IsNullOrWhiteSpace(seg)) continue;
+
+            var m1 = CategoryAmountDescriptionPattern.Match(seg);
+            if (m1.Success)
+            {
+                var amt = ParseAmount(m1.Groups["amount"].Value);
+                if (amt > 0)
+                    lines.Add(new ExpenseLineDraft(amt, m1.Groups["category"].Value.Trim(), NormalizeDesc(m1.Groups["description"].Value)));
+                continue;
+            }
+
+            var m2 = CategoryAmountOnlyPattern.Match(seg);
+            if (m2.Success)
+            {
+                var amt = ParseAmount(m2.Groups["amount"].Value);
+                var cat = m2.Groups["category"].Value.Trim();
+                if (amt > 0 && !IsNoiseCategory(cat))
+                    lines.Add(new ExpenseLineDraft(amt, cat, cat));
+            }
+        }
+
+        // Need at least 2 distinct lines to treat as multi-item (otherwise let normal parsers handle)
+        if (lines.Count < 2)
+            return null;
+
+        return new DirectCommandMatch("add_expense", Lines: lines);
+    }
+
+    private static bool IsNoiseCategory(string cat)
+    {
+        var c = cat.ToLowerInvariant();
+        return c is "i" or "then" or "and" or "for" or "the" or "a" or "an" or "my" or "to" or "of";
+    }
+
+    private static string NormalizeDesc(string value)
+    {
+        var d = value.Trim().TrimEnd(',', '.');
+        if (d.Equals("luch", StringComparison.OrdinalIgnoreCase)) return "lunch";
+        return d;
+    }
+
     private static DirectCommandMatch? TryParseFlexibleMoneyCommand(string trimmed, string prefix, string functionName)
     {
         var lead = prefix + " ";
@@ -279,16 +401,22 @@ public class ChatPreFilter
     }
 }
 
+public record ExpenseLineDraft(decimal Amount, string Category, string Description);
+
 public record DirectCommandMatch(
     string FunctionName,
     decimal Amount = 0,
     string Description = "",
     string Category = "",
-    IReadOnlyList<decimal>? AdditionalAmounts = null)
+    IReadOnlyList<decimal>? AdditionalAmounts = null,
+    IReadOnlyList<ExpenseLineDraft>? Lines = null)
 {
     /// <summary>Non-empty amounts for add_expense / add_income / add_savings direct commands.</summary>
     public IReadOnlyList<decimal> GetMoneyAmounts()
     {
+        if (Lines is { Count: > 0 })
+            return Array.Empty<decimal>(); // use Lines path instead
+
         if (FunctionName is not ("add_expense" or "add_income" or "add_savings"))
             return Array.Empty<decimal>();
         if (Amount <= 0)

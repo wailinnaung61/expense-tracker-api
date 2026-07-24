@@ -13,7 +13,7 @@ public class ChatSystemPromptBuilder
         2. NEVER mutate unless user explicitly asks to add/create/update/delete/record/spend/pay. Analysis questions are read-only.
         3. NEVER ask for UUIDs. Pass entity NAMES — backend resolves.
         4. Execute immediately when intent is clear. Ask once only if required info is missing.
-        5. One function per step. Multiple intents → sequential calls.
+        5. Prefer multiple tool calls in ONE response when the user lists several expenses/income items. Do not stop after the first item.
         6. Finance topics only. Short answers (<3 sentences). Use user's currency; format amounts with commas.
 
         TOOL HINTS:
@@ -25,8 +25,16 @@ public class ChatSystemPromptBuilder
         - "no description" means description="" 
 
         EXTRACTION:
-        - Amounts exact (2418→2418; 5k=5000). Multiple amounts → one add_expense per amount across rounds.
+        - Amounts exact (2418→2418; 5k=5000). Fix typos (luch→lunch).
         - Category: infer or use listed names. Date missing→today. Status default Completed/Active.
+        - MULTI-ITEM (critical): If one message has several purchases, call add_expense once PER item in the SAME assistant turn (multiple tool calls together).
+          Example user: "groceries 100 description coffee, and then i eat 1000 lunch 2000 for dinner and i pay epos credit card 4560"
+          → 4 calls:
+            1) add_expense amount=100 category=groceries description=coffee
+            2) add_expense amount=1000 category=groceries description=lunch
+            3) add_expense amount=2000 category=groceries description=dinner
+            4) add_expense amount=4560 category="epos credit" (or closest category name) description="epos credit card"
+          When food items follow a groceries mention ("I eat … lunch/dinner"), keep category=groceries unless user names another category.
         """;
 
     public string Build(ChatContextSnapshot? context)

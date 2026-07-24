@@ -32,14 +32,18 @@ public class ChatService : IChatService
     private readonly AggregationChatHandler _aggregationHandler;
 
     private const int MaxToolCallIterations = 3;
-    private const int MaxToolCallIterationsMulti = 5;
+    private const int MaxToolCallIterationsMulti = 8;
     private static readonly Regex MutationIntentPattern = new(
-        @"\b(add|create|record|log|spent|spend|spending|paid|pay|invested|invest|save|saved|contribute|contribution|update|edit|change|delete|remove|bought|buy|grabbed|got|took|ordered|purchased|receive[d]?|earn(ed)?|deposit(ed)?|withdraw(n|al)?|acknowledge|mark)\b|" +
-        @"\b(追加|記録|支出|収入|買った|払った|削除|更新|登録)\b",
+        @"\b(add|create|record|log|spent|spend|spending|paid|pay|invested|invest|save|saved|contribute|contribution|update|edit|change|delete|remove|bought|buy|grabbed|got|took|ordered|purchased|receive[d]?|earn(ed)?|deposit(ed)?|withdraw(n|al)?|acknowledge|mark|eat|ate|had|lunch|dinner|breakfast|description)\b|" +
+        @"\b(追加|記録|支出|収入|買った|払った|削除|更新|登録|食べ|昼|夜|朝食)\b",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex MultiAmountPattern = new(
-        @"\b\d[\d,.]*k?\b.*\band\b.*\b\d[\d,.]*k?\b",
+        @"\b\d[\d,.]*k?\b.*\b\d[\d,.]*k?\b",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly HashSet<string> BatchableAddTools = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "add_expense", "add_income", "add_savings", "add_investment"
+    };
     private static readonly HashSet<string> TerminalSummaryTools = new(StringComparer.OrdinalIgnoreCase)
     {
         "add_expense", "add_income", "add_investment", "add_savings",
@@ -165,6 +169,33 @@ public class ChatService : IChatService
     {
         try
         {
+            if (command.Lines is { Count: > 0 })
+            {
+                var functionsCalled = new List<FunctionCallResult>();
+                var summaries = new List<string>();
+                ChatClientAction? clientAction = null;
+
+                foreach (var line in command.Lines)
+                {
+                    var payloadJson =
+                        $"{{\"amount\":{line.Amount},\"description\":\"{EscapeJson(line.Description)}\",\"category\":\"{EscapeJson(line.Category)}\"}}";
+                    using var doc = JsonDocument.Parse(payloadJson);
+                    var args = doc.RootElement.Clone();
+                    var (summary, data) = await ExecuteFunctionAsync(userId, command.FunctionName, args);
+                    summaries.Add(summary);
+                    functionsCalled.Add(new FunctionCallResult(command.FunctionName, data is ChatClientAction ? null : data));
+                    if (data is ChatClientAction ca)
+                        clientAction = ca;
+                }
+
+                var refreshTarget = _refreshResolver.Resolve(functionsCalled);
+                if (refreshTarget is not null)
+                    await _contextLoader.InvalidateAsync(userId);
+
+                var combinedSummary = string.Join("\n", summaries);
+                return new ChatResponse(combinedSummary, userName, refreshTarget, functionsCalled, DateTime.UtcNow, clientAction);
+            }
+
             var moneyAmounts = command.GetMoneyAmounts();
             if (moneyAmounts.Count > 0)
             {
@@ -189,7 +220,7 @@ public class ChatService : IChatService
                 if (refreshTarget is not null)
                     await _contextLoader.InvalidateAsync(userId);
 
-                var combinedSummary = string.Join(" ", summaries);
+                var combinedSummary = string.Join("\n", summaries);
                 return new ChatResponse(combinedSummary, userName, refreshTarget, functionsCalled, DateTime.UtcNow, clientAction);
             }
 
@@ -247,32 +278,46 @@ public class ChatService : IChatService
             iterations++;
             messages.Add(new AssistantChatMessage(choice));
 
-            var primaryCall = choice.ToolCalls[0];
-            foreach (var extra in choice.ToolCalls.Skip(1))
+            var toolCalls = choice.ToolCalls.ToList();
+            var allBatchableAdds = toolCalls.Count > 1
+                && toolCalls.All(c => BatchableAddTools.Contains(c.FunctionName));
+
+            IReadOnlyList<ChatToolCall> callsToExecute = allBatchableAdds
+                ? toolCalls
+                : new[] { toolCalls[0] };
+
+            if (!allBatchableAdds)
             {
-                _logger.LogWarning("Ignoring extra tool call: {FunctionName}", extra.FunctionName);
-                messages.Add(new ToolChatMessage(extra.Id, "Only one function per step is allowed."));
+                foreach (var extra in toolCalls.Skip(1))
+                {
+                    _logger.LogWarning("Ignoring extra tool call: {FunctionName}", extra.FunctionName);
+                    messages.Add(new ToolChatMessage(extra.Id, "Only one function per step is allowed (except multiple add_expense/add_income in one turn)."));
+                }
             }
 
-            _logger.LogInformation("Tool call [{Iter}]: {FunctionName}", iterations, primaryCall.FunctionName);
+            var batchSummaries = new List<string>();
 
-            var argsJson = primaryCall.FunctionArguments.ToString();
-            if (!IsValidJson(argsJson))
+            foreach (var call in callsToExecute)
             {
-                _logger.LogError("Invalid JSON args for {FunctionName}: {Args}", primaryCall.FunctionName, argsJson);
-                messages.Add(new ToolChatMessage(primaryCall.Id, "Invalid arguments. Please try again."));
-            }
-            else
-            {
-                if (_refreshResolver.IsMutation(primaryCall.FunctionName)
-                    && !HasExplicitMutationIntent(message, primaryCall.FunctionName, argsJson))
+                _logger.LogInformation("Tool call [{Iter}]: {FunctionName}", iterations, call.FunctionName);
+
+                var argsJson = call.FunctionArguments.ToString();
+                if (!IsValidJson(argsJson))
+                {
+                    _logger.LogError("Invalid JSON args for {FunctionName}: {Args}", call.FunctionName, argsJson);
+                    messages.Add(new ToolChatMessage(call.Id, "Invalid arguments. Please try again."));
+                    continue;
+                }
+
+                if (_refreshResolver.IsMutation(call.FunctionName)
+                    && !HasExplicitMutationIntent(message, call.FunctionName, argsJson))
                 {
                     _logger.LogWarning(
                         "Blocked mutation tool call {FunctionName} due to non-mutation user intent. Message: {Message}",
-                        primaryCall.FunctionName, message);
+                        call.FunctionName, message);
                     var blockedText = BuildBlockedMutationMessage(message, context);
                     messages.Add(new ToolChatMessage(
-                        primaryCall.Id,
+                        call.Id,
                         "Mutation blocked: user did not explicitly ask to add/update/delete data."));
                     messages.Add(new AssistantChatMessage(blockedText));
                     await _historyStore.SaveHistoryAsync(userId, messages.Skip(1).ToList());
@@ -281,27 +326,43 @@ public class ChatService : IChatService
 
                 using var doc = JsonDocument.Parse(argsJson);
                 var args = doc.RootElement.Clone();
-                var (result, resultObj) = await ExecuteFunctionAsync(userId, primaryCall.FunctionName, args);
+                var (result, resultObj) = await ExecuteFunctionAsync(userId, call.FunctionName, args);
                 if (resultObj is ChatClientAction ca)
                     clientActionFromTools = ca;
                 lastToolSummary = result;
-                messages.Add(new ToolChatMessage(primaryCall.Id, result ?? string.Empty));
-                functionsCalled.Add(new FunctionCallResult(primaryCall.FunctionName, resultObj is ChatClientAction ? null : resultObj));
+                if (!string.IsNullOrWhiteSpace(result))
+                    batchSummaries.Add(result);
+                messages.Add(new ToolChatMessage(call.Id, result ?? string.Empty));
+                functionsCalled.Add(new FunctionCallResult(call.FunctionName, resultObj is ChatClientAction ? null : resultObj));
+            }
 
-                // Fast path: skip rewrite round-trip when tool summary is already user-ready
-                if (TerminalSummaryTools.Contains(primaryCall.FunctionName)
-                    && !string.IsNullOrWhiteSpace(result)
-                    && !MultiAmountPattern.IsMatch(message)
-                    && primaryCall.FunctionName is not ("find_transaction"))
-                {
-                    var refreshTargetFast = _refreshResolver.Resolve(functionsCalled);
-                    if (refreshTargetFast is not null)
-                        await _contextLoader.InvalidateAsync(userId);
+            // Fast path: single terminal tool, or a finished multi-add batch
+            var isMultiItemMessage = MultiAmountPattern.IsMatch(message) || allBatchableAdds;
+            if (callsToExecute.Count == 1
+                && TerminalSummaryTools.Contains(callsToExecute[0].FunctionName)
+                && !string.IsNullOrWhiteSpace(lastToolSummary)
+                && !isMultiItemMessage
+                && callsToExecute[0].FunctionName is not "find_transaction")
+            {
+                var refreshTargetFast = _refreshResolver.Resolve(functionsCalled);
+                if (refreshTargetFast is not null)
+                    await _contextLoader.InvalidateAsync(userId);
 
-                    messages.Add(new AssistantChatMessage(result));
-                    await _historyStore.SaveHistoryAsync(userId, messages.Skip(1).ToList());
-                    return new ChatResponse(result, userName, refreshTargetFast, functionsCalled, DateTime.UtcNow, clientActionFromTools);
-                }
+                messages.Add(new AssistantChatMessage(lastToolSummary));
+                await _historyStore.SaveHistoryAsync(userId, messages.Skip(1).ToList());
+                return new ChatResponse(lastToolSummary, userName, refreshTargetFast, functionsCalled, DateTime.UtcNow, clientActionFromTools);
+            }
+
+            if (allBatchableAdds && batchSummaries.Count > 0)
+            {
+                var combined = string.Join("\n", batchSummaries);
+                var refreshTargetBatch = _refreshResolver.Resolve(functionsCalled);
+                if (refreshTargetBatch is not null)
+                    await _contextLoader.InvalidateAsync(userId);
+
+                messages.Add(new AssistantChatMessage(combined));
+                await _historyStore.SaveHistoryAsync(userId, messages.Skip(1).ToList());
+                return new ChatResponse(combined, userName, refreshTargetBatch, functionsCalled, DateTime.UtcNow, clientActionFromTools);
             }
 
             var next = await _chatClient.CompleteChatAsync(messages, options);
