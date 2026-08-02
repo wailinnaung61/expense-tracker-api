@@ -91,8 +91,11 @@ public static class DependencyInjection
         // INotificationService registered in Program.cs (needs SharedResource localizer)
 
         // Export
+        services.Configure<expense_tracker_backend.Application.ExportLocal.ExportSettings>(
+            configuration.GetSection(expense_tracker_backend.Application.ExportLocal.ExportSettings.SectionName));
         services.AddScoped<IExportJobRepository, ExportJobRepository>();
         services.AddScoped<IExportService, ExportService>();
+        services.AddSingleton<ILocalExportProcessor, LocalExportProcessor>();
         services.AddSingleton<IExportEventPublisher, EventBridgeExportPublisher>();
         services.AddSingleton<IExportFileService, S3ExportFileService>();
 

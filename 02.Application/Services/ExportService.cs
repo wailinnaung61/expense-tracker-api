@@ -1,7 +1,10 @@
 using expense_tracker_backend.Application.DTOs;
+using expense_tracker_backend.Application.ExportLocal;
 using expense_tracker_backend.Application.Interfaces;
 using expense_tracker_backend.Domain.Entities;
 using expense_tracker_backend.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace expense_tracker_backend.Application.Services;
 
@@ -10,20 +13,29 @@ public class ExportService : IExportService
     private readonly IExportJobRepository _repository;
     private readonly IExportEventPublisher _eventPublisher;
     private readonly IExportFileService _fileService;
+    private readonly ILocalExportProcessor _localProcessor;
+    private readonly ExportSettings _exportSettings;
+    private readonly ILogger<ExportService> _logger;
 
     public ExportService(
         IExportJobRepository repository,
         IExportEventPublisher eventPublisher,
-        IExportFileService fileService)
+        IExportFileService fileService,
+        ILocalExportProcessor localProcessor,
+        IOptions<ExportSettings> exportSettings,
+        ILogger<ExportService> logger)
     {
         _repository = repository;
         _eventPublisher = eventPublisher;
         _fileService = fileService;
+        _localProcessor = localProcessor;
+        _exportSettings = exportSettings.Value;
+        _logger = logger;
     }
 
     public async Task<ExportJobResponse> RequestExportAsync(Guid userId, CreateExportRequest request, string locale)
     {
-        // 1. Save job to DB with PENDING status
+        // 1. Save job to DB with PENDING status (same for Local + Production)
         var job = new ExportJob
         {
             UserId = userId.ToString(),
@@ -33,7 +45,6 @@ public class ExportService : IExportService
         };
         await _repository.CreateAsync(job);
 
-        // 2. Publish event to EventBridge → SQS → Lambda
         var detail = new ExportEventDetail
         {
             UserId = userId.ToString(),
@@ -43,7 +54,23 @@ public class ExportService : IExportService
             JobId = job.Id.ToString(),
             Locale = locale
         };
-        await _eventPublisher.PublishExportRequestedAsync(detail);
+
+        // 2. Local: same Lambda logic in-process (Excel → S3 → update DB).
+        //    Production: EventBridge → SQS → Lambda.
+        if (_exportSettings.IsLocal)
+        {
+            _logger.LogInformation(
+                "Export Mode=Local — processing job {JobId} in-process (no EventBridge/Lambda)",
+                job.Id);
+            _localProcessor.Enqueue(detail);
+        }
+        else
+        {
+            _logger.LogInformation(
+                "Export Mode=Production — publishing job {JobId} to EventBridge",
+                job.Id);
+            await _eventPublisher.PublishExportRequestedAsync(detail);
+        }
 
         return MapToResponse(job);
     }
@@ -69,7 +96,6 @@ public class ExportService : IExportService
         var url = await _fileService.GenerateDownloadUrlAsync(job.S3Key, 5);
         if (url is null) return null;
 
-        // Extract filename from S3 key: exports/{userId}/{startMonth}_{endMonth}_{timestamp}.xlsx
         var fileName = Path.GetFileName(job.S3Key);
         return new ExportDownloadResponse(url, fileName, DateTime.UtcNow.AddMinutes(5));
     }

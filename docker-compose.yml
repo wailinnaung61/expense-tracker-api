@@ -43,6 +43,8 @@ services:
       - CorsSettings__AllowedOrigins__2=http://localhost:8082
       - OpenAI__ApiKey=${OPENAI_API_KEY:-}
       - OpenAI__Model=gpt-4o-mini
+      # Local = in-process Excel (no Lambda). Production = EventBridge → SQS → Lambda.
+      - Export__Mode=${EXPORT_MODE:-Local}
     depends_on:
       postgres:
         condition: service_healthy

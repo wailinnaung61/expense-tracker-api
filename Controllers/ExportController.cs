@@ -26,8 +26,10 @@ public class ExportController : BaseController
     {
         if (UserId is null) return Unauthorized();
 
-        // Read locale from Accept-Language header (e.g. "ja", "en", "my")
-        var locale = Request.Headers.AcceptLanguage.FirstOrDefault()?.Split(',').FirstOrDefault()?.Trim() ?? "en";
+        // Accept-Language e.g. "ja-JP,ja;q=0.9" → "ja" (Excel LocaleProvider: en/ja/my)
+        var localeRaw = Request.Headers.AcceptLanguage.FirstOrDefault()?.Split(',').FirstOrDefault()?.Trim() ?? "en";
+        var locale = localeRaw.Split('-', 2)[0].ToLowerInvariant();
+        if (locale is not ("en" or "ja" or "my")) locale = "en";
 
         var job = await _exportService.RequestExportAsync(UserId.Value, request, locale);
         _logger.LogInformation("Export job {JobId} queued for user {UserId}", job.JobId, UserId);
