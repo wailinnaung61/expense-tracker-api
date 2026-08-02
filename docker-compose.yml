@@ -1,16 +1,35 @@
+# Local / multi-PC Docker Compose — API + Postgres + Redis
+#
+# First time on this PC:
+#   1. Copy .env.example → .env  (set DOCKERHUB_USER + secrets)
+#   2. docker compose up -d --build
+#
+# Push API image to Docker Hub (this PC):
+#   .\scripts\deploy-dockerhub.ps1
+#
+# Other PC (Docker already installed):
+#   1. Copy this repo (or at least compose + .env + docker/ + backups/)
+#   2. Same .env with same DOCKERHUB_USER
+#   3. docker compose pull api && docker compose up -d
+
 services:
   api:
-    image: 908027401522.dkr.ecr.us-east-1.amazonaws.com/expense_tracker/api:latest
+    image: ${DOCKERHUB_USER}/expense-tracker-api:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: expense-tracker-api
     ports:
       - "8080:8080"
     env_file:
       - .env
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=ExpenseTracker;Username=${DB_USER:-postgres};Password=${DB_PASSWORD:-admin}
-      - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD:-},abortConnect=false,connectTimeout=10000,syncTimeout=10000,asyncTimeout=10000,connectRetry=3
+      - ConnectionStrings__Redis=redis:6379,abortConnect=false,connectTimeout=10000,syncTimeout=10000,asyncTimeout=10000,connectRetry=3
       - AWS__Region=${AWS_REGION:-us-east-1}
+      - AWS__AccessKey=${AWS_ACCESS_KEY:-}
+      - AWS__SecretKey=${AWS_SECRET_KEY:-}
       - AWS__Cognito__UserPoolId=${COGNITO_USER_POOL_ID:-}
       - AWS__Cognito__ClientId=${COGNITO_CLIENT_ID:-}
       - AWS__Cognito__ClientSecret=${COGNITO_CLIENT_SECRET:-}
@@ -19,10 +38,11 @@ services:
       - AWS__EventBridge__Source=expense-tracker.export
       - AWS__S3__ExportBucketName=${S3_EXPORT_BUCKET:-}
       - AWS__S3__PresignedUrlExpiryMinutes=5
-      - CorsSettings__AllowedOrigins__0=https://usespendio.com
-      - CorsSettings__AllowedOrigins__1=https://www.usespendio.com
+      - CorsSettings__AllowedOrigins__0=http://localhost:5173
+      - CorsSettings__AllowedOrigins__1=http://localhost:8081
+      - CorsSettings__AllowedOrigins__2=http://localhost:8082
       - OpenAI__ApiKey=${OPENAI_API_KEY:-}
-      - OpenAI__Model=gpt-4o-mini56
+      - OpenAI__Model=gpt-4o-mini
     depends_on:
       postgres:
         condition: service_healthy
@@ -41,8 +61,10 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-admin}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./backups:/backups:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 5
